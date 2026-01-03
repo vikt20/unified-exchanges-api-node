@@ -9,17 +9,40 @@ export type CustomUserData = {
     orders: OrderData[]
 }
 
+/**
+ * BinanceUserData - Reference implementation of IUserDataManager
+ * 
+ * Manages local user data state (positions, orders) specifically for Binance Futures.
+ * Uses a static EventEmitter to facilitate communication between the data manager 
+ * and UI/Bot components.
+ */
 export default class BinanceUserData extends BinanceFutures implements IUserDataManager {
     constructor(apiKey: string, apiSecret: string) {
         super(apiKey, apiSecret)
     }
 
+    /**
+     * Shared Emitter for all BinanceUserData instances.
+     * Components can subscribe to this to receive live updates.
+     */
     public static Emitter: EventEmitter = new EventEmitter();
+
+    // --- Outbound Events (Broadcasts) ---
+    /** Emitted when a position's data changes for a symbol */
     public static POSITION_EVENT = 'position';
+    /** Emitted when the list of open orders changes for a symbol */
     public static ORDER_EVENT = 'order';
+
+    // --- Inbound Events (Requests) ---
+    /** Listen for this to re-emit the current position state */
     public static TRIGGER_POSITION_EVENT = 'triggerPosition';
+    /** Listen for this to re-emit the current orders state */
     public static TRIGGER_ORDER_EVENT = 'triggerOrder';
 
+    /**
+     * Local "Single Source of Truth" for user data.
+     * Continuously updated by the WebSocket stream.
+     */
     userData: CustomUserData = {
         positions: [],
         orders: []
