@@ -12,6 +12,15 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": ["binance/**/*", "core/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "binance/**/*",
+    "core/**/*",
+    "bybit/**/*",
+    "test.ts",
+    "testing/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

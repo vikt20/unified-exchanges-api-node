@@ -44,6 +44,6 @@ export interface BalanceData {
 
 // ━━ Account Data ━━
 export interface AccountData {
-    balances: BalanceData[];
-    positions: PositionData[];
+    balances: BalanceData[] | undefined;
+    positions: PositionData[] | undefined;
 }

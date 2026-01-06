@@ -161,8 +161,8 @@ export type LongShortRatioDataByRequest = {
 } */
 
 export default class BinanceFutures extends BinanceStreams implements IExchangeClient {
-    constructor(apiKey?: string, apiSecret?: string, pingServer: boolean = false) {
-        super(apiKey, apiSecret, pingServer);
+    constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false, pingServer: boolean = false) {
+        super(apiKey, apiSecret, isTest, pingServer);
     }
 
 

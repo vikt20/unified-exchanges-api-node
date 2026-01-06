@@ -147,8 +147,8 @@ export type DepthDataWebSocket = {
         s: string;
         U: number;
         u: number;
-        b: [string, string]; // Array of bids
-        a: [string, string]; // Array of asks
+        b: Array<[string, string]>; // Array of bids
+        a: Array<[string, string]>; // Array of asks
     };
 };
 
@@ -159,8 +159,8 @@ export type UserData = {
 }
 export type DepthData = {
     symbol: string,
-    asks: [string, string],
-    bids: [string, string]
+    asks: Array<[string, string]>,
+    bids: Array<[string, string]>
 }
 
 export type KlineData = {
@@ -215,8 +215,8 @@ export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG'
 
 
 export default class BinanceStreams extends BinanceBase implements IStreamManager {
-    constructor(apiKey?: string, apiSecret?: string, pingServer: boolean = false) {
-        super(apiKey, apiSecret, pingServer)
+    constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false, pingServer: boolean = false) {
+        super(apiKey, apiSecret, isTest, pingServer)
     }
 
     protected subscriptions: { id: string, disconnect: Function }[] = [];
@@ -369,7 +369,7 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
     //subscribe to spot depth stream
     spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
-        const createWs = () => new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('spot') + streams.join('/'));
 
         return this.handleWebSocket(createWs, convertDepthData, callback, 'spotDepthStream()', statusCallback);
     }
@@ -377,49 +377,49 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
     //subscribe to futures depth stream
     futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
-        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
 
         return this.handleWebSocket(createWs, convertDepthData, callback, 'futuresDepthStream()', statusCallback);
     }
 
     spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@kline_${interval}`);
-        const createWs = () => new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('spot') + streams.join('/'));
 
         return this.handleWebSocket(createWs, convertKlineData, callback, 'spotCandleStickStream()', statusCallback);
     }
 
     futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@kline_${interval}`);
-        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
 
         return this.handleWebSocket(createWs, convertKlineData, callback, 'futuresCanldeStickStream()', statusCallback);
     }
 
     futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
-        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
 
         return this.handleWebSocket(createWs, convertBookTickerData, callback, 'futuresBookTicketStream()', statusCallback);
     }
 
     spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
-        const createWs = () => new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('spot') + streams.join('/'));
 
         return this.handleWebSocket(createWs, convertBookTickerData, callback, 'spotBookTicketStream()', statusCallback);
     }
 
     async futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@aggTrade`);
-        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
 
         return this.handleWebSocket(createWs, convertTradeDataWebSocket, callback, 'futuresTradeStream()', statusCallback);
     }
 
     async spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@aggTrade`);
-        const createWs = () => new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('spot') + streams.join('/'));
 
         return this.handleWebSocket(createWs, convertTradeDataWebSocket, callback, 'spotTradeStream()', statusCallback);
     }
@@ -434,7 +434,7 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
         // send ping every 30min to keep listenKey alive
         this.keepAliveListenKeyByInterval('futures')
 
-        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL + listenKey.data!.listenKey);
+        const createWs = () => new ws(this.getStreamUrl('futures') + listenKey.data!.listenKey);
 
         return this.handleWebSocket(createWs, convertUserData, callback, 'futuresUserDataStream()', statusCallback);
     }

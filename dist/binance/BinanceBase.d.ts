@@ -1,0 +1,113 @@
+export { FormattedResponse, MarketType, OrderSide, OrderType, OrderStatus, TimeInForce, OrderWorkingType, PositionDirection, PositionSide, OrderData, OrderInput, OrderRequestResponse, AccountData, PositionData, BalanceData, StaticDepth, AggTradesData, KlineData, DepthData, BookTickerData, TradeData, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, CancelOrderByIdParams, CancelAllOpenOrdersParams, GetOpenOrdersBySymbolParams, GetStaticDepthParams, GetAggTradesParams, } from '../core/types.js';
+import type { FormattedResponse, OrderSide, OrderType, OrderStatus, TimeInForce, OrderWorkingType, PositionSide } from '../core/types.js';
+import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
+export type Type = 'futures' | 'spot';
+export type ListenKey = {
+    listenKey: string;
+};
+export type ExchangeInfo = {
+    symbols: Array<{
+        symbol: string;
+        status: string;
+        baseAsset: string;
+        baseAssetPrecision: number;
+        quoteAsset: string;
+        quotePrecision: number;
+        quoteAssetPrecision: number;
+        baseCommissionPrecision: number;
+        quoteCommissionPrecision: number;
+        orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>;
+        icebergAllowed: boolean;
+        ocoAllowed: boolean;
+        quoteOrderQtyMarketAllowed: boolean;
+        isSpotTradingAllowed: boolean;
+        isMarginTradingAllowed: boolean;
+        filters: Array<{
+            filterType: string;
+            minPrice: string;
+            maxPrice: string;
+            tickSize: string;
+            multiplierUp: string;
+            multiplierDown: string;
+            minQty: string;
+            maxQty: string;
+            stepSize: string;
+            minNotional?: string;
+            notional: number;
+            applyToMarket: boolean;
+            avgPriceMins: number;
+            limit: number;
+            maxNumAlgoOrders: number;
+        }>;
+    }>;
+};
+export type ExtractedInfo = {
+    status: string;
+    minPrice: number;
+    maxPrice: number;
+    tickSize: number;
+    stepSize: number;
+    minQty: number;
+    maxQty: number;
+    minNotional: number;
+    orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>;
+    icebergAllowed: boolean;
+    baseAsset: string;
+    quoteAsset: string;
+};
+export type AlgoOrderResponse = {
+    algoId: number;
+    clientAlgoId: string;
+    algoType: 'CONDITIONAL';
+    orderType: OrderType;
+    symbol: string;
+    side: OrderSide;
+    positionSide: PositionSide;
+    timeInForce: TimeInForce;
+    quantity: string;
+    algoStatus: OrderStatus;
+    actualOrderId: string;
+    actualPrice: string;
+    triggerPrice: string;
+    price: string;
+    icebergQuantity: string;
+    tpTriggerPrice: string;
+    tpPrice: string;
+    slTriggerPrice: string;
+    slPrice: string;
+    tpOrderType: string;
+    selfTradePreventionMode: string;
+    workingType: OrderWorkingType;
+    priceMatch: string;
+    closePosition: boolean;
+    priceProtect: boolean;
+    reduceOnly: boolean;
+    createTime: number;
+    updateTime: number;
+    triggerTime: number;
+    goodTillDate: number;
+};
+export default class BinanceBase extends AbstractExchangeBase {
+    static FUTURES_STREAM_URL: string;
+    static SPOT_STREAM_URL: string;
+    static FUTURES_STREAM_URL_COMBINED: string;
+    static SPOT_STREAM_URL_COMBINED: string;
+    static FUTURES_BASE_URL: string;
+    static SPOT_BASE_URL: string;
+    constructor(apiKey?: string, apiSecret?: string, pingServer?: boolean);
+    private doPingServer;
+    protected getBaseUrl(marketType: string): string;
+    protected getStreamUrl(marketType: string): string;
+    protected generateSignature(queryString: string): string;
+    getFuturesListenKey(): Promise<FormattedResponse<ListenKey>>;
+    keepAliveListenKey(type: Type): Promise<FormattedResponse<any>>;
+    setTimeOffset(): Promise<void>;
+    getServerTime(): Promise<number>;
+    publicRequest(type: Type, method: string, endpoint: string, params?: any): Promise<FormattedResponse<any>>;
+    protected signedRequest(type: Type, method: 'POST' | 'GET' | 'DELETE' | 'PUT', endpoint: string, params?: any): Promise<FormattedResponse<any>>;
+    formattedResponse(object: {
+        data?: any;
+        errors?: string;
+    }): FormattedResponse<any>;
+}
+//# sourceMappingURL=BinanceBase.d.ts.map

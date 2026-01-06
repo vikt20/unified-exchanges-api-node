@@ -25,8 +25,8 @@ export interface StaticDepth {
 
 export interface DepthData {
     symbol: string;
-    asks: [string, string];
-    bids: [string, string];
+    asks: Array<[string, string]>;
+    bids: Array<[string, string]>;
 }
 
 // ━━ Ticker Data ━━

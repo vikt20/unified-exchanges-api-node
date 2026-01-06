@@ -1,0 +1,1 @@
+{"version":3,"file":"ExchangeConnection.d.ts","sourceRoot":"","sources":["../../core/ExchangeConnection.ts"],"names":[],"mappings":"AAMA,qBAAa,kBAAkB;IAC3B,OAAO,CAAC,MAAM,CAAC,CAAS;IACxB,OAAO,CAAC,SAAS,CAAC,CAAS;IAC3B,OAAO,CAAC,UAAU,CAAS;gBAEf,UAAU,EAAE,MAAM,EAAE,MAAM,CAAC,EAAE,MAAM,EAAE,SAAS,CAAC,EAAE,MAAM;IAQnE,OAAO,CAAC,gBAAgB;CAkB3B"}

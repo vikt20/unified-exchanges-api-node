@@ -6,8 +6,8 @@ import { IExchangeClient } from '../core/IExchangeClient.js';
 import type { ExchangeInfoData, PositionRiskData } from '../core/types.js';
 
 export default class BinanceSpot extends BinanceStreams implements IExchangeClient {
-    constructor(apiKey?: string, apiSecret?: string) {
-        super(apiKey, apiSecret)
+    constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false) {
+        super(apiKey, apiSecret, isTest)
     }
 
     async closeListenKey() {

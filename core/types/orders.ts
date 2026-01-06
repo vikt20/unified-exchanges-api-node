@@ -27,7 +27,7 @@ export interface OrderData {
     stopPrice: number;
     executionType: string;
     orderStatus: OrderStatus;
-    orderId: number;
+    orderId: number | string;
     orderLastFilledQuantity: number;
     orderFilledAccumulatedQuantity: number;
     lastFilledPrice: number;

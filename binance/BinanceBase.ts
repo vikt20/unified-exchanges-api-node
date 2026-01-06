@@ -156,26 +156,47 @@ export default class BinanceBase extends AbstractExchangeBase {
     public static FUTURES_BASE_URL: string = 'https://fapi.binance.com';
     public static SPOT_BASE_URL: string = 'https://api.binance.com';
 
-    constructor(apiKey?: string, apiSecret?: string, pingServer: boolean = false) {
-        super(apiKey, apiSecret);
+    public static FUTURES_STREAM_URL_TESTNET: string = 'wss://stream.binancefuture.com/ws/';
+    public static SPOT_STREAM_URL_TESTNET: string = 'wss://stream.testnet.binance.vision/ws/';
+    public static FUTURES_STREAM_URL_COMBINED_TESTNET: string = 'wss://stream.binancefuture.com/stream?streams=';
+    public static SPOT_STREAM_URL_COMBINED_TESTNET: string = 'wss://stream.testnet.binance.vision/stream?streams=';
+    public static FUTURES_BASE_URL_TESTNET: string = 'https://testnet.binancefuture.com';
+    public static SPOT_BASE_URL_TESTNET: string = 'https://testnet.binance.vision';
+
+    constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false, pingServer: boolean = false) {
+        super(apiKey, apiSecret, isTest);
         if (pingServer) this.doPingServer();
         this.setTimeOffset()
     }
 
     private doPingServer(): void {
+        const baseUrl = this.isTest ? BinanceBase.FUTURES_BASE_URL_TESTNET : BinanceBase.FUTURES_BASE_URL;
         if (this.pingServerInterval) {
             clearInterval(this.pingServerInterval);
         }
-        this.pingServerInterval = setInterval(() => this._AXIOS_INSTANCE.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/ping`).catch(() => { }), 30000)
+        this.pingServerInterval = setInterval(() => this._AXIOS_INSTANCE.get(`${baseUrl}/fapi/v1/ping`).catch(() => { }), 30000)
     }
 
     // ━━ Abstract Method Implementations ━━
     protected getBaseUrl(marketType: string): string {
+        if (this.isTest) {
+            return marketType === 'futures' ? BinanceBase.FUTURES_BASE_URL_TESTNET : BinanceBase.SPOT_BASE_URL_TESTNET;
+        }
         return marketType === 'futures' ? BinanceBase.FUTURES_BASE_URL : BinanceBase.SPOT_BASE_URL;
     }
 
-    protected getStreamUrl(marketType: string): string {
+    public getStreamUrl(marketType: string): string {
+        if (this.isTest) {
+            return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL_TESTNET : BinanceBase.SPOT_STREAM_URL_TESTNET;
+        }
         return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL : BinanceBase.SPOT_STREAM_URL;
+    }
+
+    public getCombinedStreamUrl(marketType: string): string {
+        if (this.isTest) {
+            return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL_COMBINED_TESTNET : BinanceBase.SPOT_STREAM_URL_COMBINED_TESTNET;
+        }
+        return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL_COMBINED : BinanceBase.SPOT_STREAM_URL_COMBINED;
     }
 
     protected generateSignature(queryString: string): string {
@@ -202,7 +223,8 @@ export default class BinanceBase extends AbstractExchangeBase {
 
     async getServerTime(): Promise<number> {
         try {
-            const response: AxiosResponse<any> = await this._AXIOS_INSTANCE.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/time`);
+            const baseUrl = this.isTest ? BinanceBase.FUTURES_BASE_URL_TESTNET : BinanceBase.FUTURES_BASE_URL;
+            const response: AxiosResponse<any> = await this._AXIOS_INSTANCE.get(`${baseUrl}/fapi/v1/time`);
             return response.data!.serverTime;
         } catch (error) {
             throw new Error(`Failed to retrieve server time`);
@@ -212,7 +234,7 @@ export default class BinanceBase extends AbstractExchangeBase {
 
     public async publicRequest(type: Type, method: string, endpoint: string, params: any = {}): Promise<FormattedResponse<any>> {
         try {
-            const _URL = type === 'futures' ? BinanceBase.FUTURES_BASE_URL : BinanceBase.SPOT_BASE_URL;
+            const _URL = this.getBaseUrl(type);
             const response: AxiosResponse<any> = await this._AXIOS_INSTANCE.request({
                 method: method,
                 url: `${_URL}${endpoint}`,
@@ -237,7 +259,7 @@ export default class BinanceBase extends AbstractExchangeBase {
             const queryString = convertObjectIntoUrlEncoded(params);
             const signature = this.generateSignature(queryString);
             // console.log(`query:`, queryString);
-            const _URL = type === 'futures' ? BinanceBase.FUTURES_BASE_URL : BinanceBase.SPOT_BASE_URL;
+            const _URL = this.getBaseUrl(type);
             const response: AxiosResponse<any> = await this._AXIOS_INSTANCE.request({
                 method: method,
                 url: `${_URL}${endpoint}`,

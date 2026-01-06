@@ -26,6 +26,7 @@ import { FormattedResponse } from './types.js';
 export abstract class AbstractExchangeBase {
     protected apiKey: string;
     protected apiSecret: string;
+    protected isTest: boolean;
 
     // HTTP connection pooling for performance
     protected _HTTP_AGENT = new http.Agent({ keepAlive: true, timeout: 3600000 });
@@ -39,9 +40,10 @@ export abstract class AbstractExchangeBase {
     // Lifecycle management
     protected pingServerInterval: NodeJS.Timeout | undefined;
 
-    constructor(apiKey?: string, apiSecret?: string) {
+    constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false) {
         this.apiKey = apiKey || '';
         this.apiSecret = apiSecret || '';
+        this.isTest = isTest;
         this._AXIOS_INSTANCE = axios.create({
             httpAgent: this._HTTP_AGENT,
             httpsAgent: this._HTTPS_AGENT

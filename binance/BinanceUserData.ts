@@ -70,7 +70,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
 
         switch (data.event) {
             case "ACCOUNT_UPDATE":
-                if (data.accountData) data.accountData.positions.forEach(this.setPosition)
+                if (data.accountData) data.accountData.positions?.forEach(this.setPosition)
                 break;
             case "ORDER_TRADE_UPDATE":
                 // console.log(data.orderData)
