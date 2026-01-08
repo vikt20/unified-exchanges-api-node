@@ -263,6 +263,18 @@ export const StreamDepthSchema: SchemaDefinition = {
     }
 };
 
+// ━━ Funding Data Schema ━━
+export const FundingDataSchema: SchemaDefinition = {
+    type: 'object',
+    required: true,
+    properties: {
+        symbol: { type: 'string', required: true },
+        rate: { type: 'number', required: true },
+        nextFundingTime: { type: 'number', required: true },
+        interval: { type: 'number', required: false }
+    }
+};
+
 // ━━ User Data Event Schema ━━
 // This schema validates the complete UserData structure including nested accountData and orderData
 export const UserDataEventSchema: SchemaDefinition = {

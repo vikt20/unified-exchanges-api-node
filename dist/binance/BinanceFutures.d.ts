@@ -85,7 +85,7 @@ export type LongShortRatioDataByRequest = {
     "timestamp": number;
 };
 export default class BinanceFutures extends BinanceStreams implements IExchangeClient {
-    constructor(apiKey?: string, apiSecret?: string, pingServer?: boolean);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean);
     closeListenKey(): Promise<FormattedResponse<any>>;
     getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>>;
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;

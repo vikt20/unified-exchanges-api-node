@@ -2,7 +2,6 @@
   "name": "unified-exchanges-api-node",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,6 +9,17 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "main": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "require": "./dist/core/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@types/node": "^25.0.3",
     "@types/ws": "^8.18.1",

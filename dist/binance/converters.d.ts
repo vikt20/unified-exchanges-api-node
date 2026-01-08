@@ -20,4 +20,18 @@ export declare function convertKlinesDataByRequest(rawData: KlineDataByRequest[]
 export declare function convertTradeDataWebSocket(rawData: TradeDataWebSocket): TradeData;
 export declare function convertAggTradesDataByRequest(rawData: AggTradesDataByRequest[], symbol: string): AggTradesData[];
 export declare function convertAlgoOrderByRequest(rawData: AlgoOrderResponse): OrderData;
+export type FundingDataWebSocket = {
+    stream: string;
+    data: {
+        e: "markPriceUpdate";
+        E: number;
+        s: string;
+        p: string;
+        i: string;
+        P: string;
+        r: string;
+        T: number;
+    };
+};
+export declare function convertFundingData(inputData: FundingDataWebSocket): import('../core/types.js').FundingData;
 //# sourceMappingURL=converters.d.ts.map

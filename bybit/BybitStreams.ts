@@ -4,7 +4,7 @@ import { IStreamManager } from "../core/IStreamManager.js";
 import ws from 'ws';
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
 import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, OrderWorkingType, OrderType } from "../core/types.js";
-import { convertBybitKline, BybitWsMessage, BybitOrderWsData, BybitPositionWsData, BybitWalletWsData, mapBybitTriggerBy, BybitDepthWsData, BybitKlineWsData, BybitBookTickerWsData, BybitTradeWsData } from "./converters.js";
+import { convertBybitKline, BybitWsMessage, BybitOrderWsData, BybitPositionWsData, BybitWalletWsData, mapBybitTriggerBy, BybitDepthWsData, BybitKlineWsData, BybitBookTickerWsData, BybitTradeWsData, convertBybitFunding, BybitTickerWsData } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
 
 // Extend BybitBase to get access to API keys and Base URLs
@@ -442,6 +442,19 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
     public spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const topics = symbols.map(s => `publicTrade.${s}`);
         return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseTrade, 'spotTradeStream', statusCallback);
+    }
+
+    private parseFunding(msg: BybitWsMessage): import("../core/types.js").FundingData | undefined {
+        const data = msg.data as BybitTickerWsData;
+        if (data && data.fundingRate && data.nextFundingTime) {
+            return convertBybitFunding(data);
+        }
+        return undefined;
+    }
+
+    public fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
+        const topics = symbols.map(s => `tickers.${s}`);
+        return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseFunding, 'fundingStream', statusCallback);
     }
 
 

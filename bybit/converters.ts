@@ -232,6 +232,27 @@ export interface BybitBookTickerWsData {
     ask1Size: string;
 }
 
+export interface BybitTickerWsData {
+    symbol: string;
+    bid1Price: string;
+    bid1Size: string;
+    ask1Price: string;
+    ask1Size: string;
+    lastPrice: string;
+    fundingRate: string;
+    nextFundingTime: string;
+    fundingIntervalHour: string;
+}
+
+export function convertBybitFunding(item: BybitTickerWsData): import('../core/types.js').FundingData {
+    return {
+        symbol: item.symbol,
+        rate: parseFloat(item.fundingRate),
+        nextFundingTime: parseInt(item.nextFundingTime),
+        interval: parseInt(item.fundingIntervalHour)
+    };
+}
+
 export interface BybitTradeWsData {
     T: number; // Timestamp
     s: string; // Symbol

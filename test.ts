@@ -129,12 +129,12 @@ const RUN_CONFIG: TestConfig = {
         'bybit'
     ], // Options: 'binance', 'bybit', or ['all']
     target: {
-        spot: true,      // Set to true to test Spot
+        spot: false,      // Set to true to test Spot
         futures: true,    // Set to true to test Futures
     },
     mode: {
         public: true,     // Set to true to test Public Data
-        authenticated: true // Set to true to test Order Flow/Private Data
+        authenticated: false // Set to true to test Order Flow/Private Data
     }
 };
 

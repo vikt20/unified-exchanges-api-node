@@ -35,7 +35,7 @@ export interface BalanceData {
     balanceChange: string;
 }
 export interface AccountData {
-    balances: BalanceData[];
-    positions: PositionData[];
+    balances: BalanceData[] | undefined;
+    positions: PositionData[] | undefined;
 }
 //# sourceMappingURL=account.d.ts.map

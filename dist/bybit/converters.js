@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.convertExchangeInfo = convertExchangeInfo;
 exports.convertObjectIntoUrlEncoded = convertObjectIntoUrlEncoded;
+exports.convertBybitFunding = convertBybitFunding;
+exports.mapBybitTriggerBy = mapBybitTriggerBy;
 exports.convertBybitKline = convertBybitKline;
 exports.convertBybitOrder = convertBybitOrder;
 exports.convertBybitPosition = convertBybitPosition;
@@ -54,6 +56,21 @@ function convertObjectIntoUrlEncoded(obj) {
         }
         return encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]);
     }).join('&');
+}
+function convertBybitFunding(item) {
+    return {
+        symbol: item.symbol,
+        rate: parseFloat(item.fundingRate),
+        nextFundingTime: parseInt(item.nextFundingTime),
+        interval: parseInt(item.fundingIntervalHour)
+    };
+}
+// --- Helpers ---
+function mapBybitTriggerBy(triggerBy) {
+    if (triggerBy === 'MarkPrice')
+        return 'MARK_PRICE';
+    // Map LastPrice and IndexPrice (fallback) to CONTRACT_PRICE
+    return 'CONTRACT_PRICE';
 }
 // --- Converters ---
 function convertBybitKline(item, symbol) {

@@ -43,19 +43,28 @@ class BybitBase extends AbstractExchangeBase_js_1.AbstractExchangeBase {
     static WS_PUBLIC_LINEAR_MAINNET = 'wss://stream.bybit.com/v5/public/linear';
     static WS_PUBLIC_SPOT_MAINNET = 'wss://stream.bybit.com/v5/public/spot';
     static WS_PRIVATE_MAINNET = 'wss://stream.bybit.com/v5/private';
-    // Add logic to toggle testnet if needed, defaulting to Mainnet for now
-    isTestnet = false;
-    constructor(apiKey, apiSecret) {
-        super(apiKey, apiSecret);
-        // We can pass an optional flag for testnet later if required
+    static WS_PUBLIC_LINEAR_TESTNET = 'wss://stream-testnet.bybit.com/v5/public/linear';
+    static WS_PUBLIC_SPOT_TESTNET = 'wss://stream-testnet.bybit.com/v5/public/spot';
+    static WS_PRIVATE_TESTNET = 'wss://stream-testnet.bybit.com/v5/private';
+    constructor(apiKey, apiSecret, isTest = false) {
+        super(apiKey, apiSecret, isTest);
     }
     getBaseUrl(marketType) {
-        return this.isTestnet ? BybitBase.BASE_URL_TESTNET : BybitBase.BASE_URL_MAINNET;
+        return this.isTest ? BybitBase.BASE_URL_TESTNET : BybitBase.BASE_URL_MAINNET;
     }
     getStreamUrl(marketType) {
-        // Bybit distinguishes WSS by category in V5 public channels
-        // For private, it's a single endpoint
-        return BybitBase.WS_PUBLIC_LINEAR_MAINNET;
+        if (this.isTest) {
+            if (marketType === 'linear')
+                return BybitBase.WS_PUBLIC_LINEAR_TESTNET;
+            if (marketType === 'spot')
+                return BybitBase.WS_PUBLIC_SPOT_TESTNET;
+            return BybitBase.WS_PRIVATE_TESTNET;
+        }
+        if (marketType === 'linear')
+            return BybitBase.WS_PUBLIC_LINEAR_MAINNET;
+        if (marketType === 'spot')
+            return BybitBase.WS_PUBLIC_SPOT_MAINNET;
+        return BybitBase.WS_PRIVATE_MAINNET;
     }
     async setTimeOffset() {
         try {

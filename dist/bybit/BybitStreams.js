@@ -5,11 +5,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const BybitBase_js_1 = __importDefault(require("./BybitBase.js"));
 const ws_1 = __importDefault(require("ws"));
+const converters_js_1 = require("./converters.js");
 // Extend BybitBase to get access to API keys and Base URLs
 class BybitStreams extends BybitBase_js_1.default {
     subscriptions = [];
-    constructor(apiKey, apiSecret) {
-        super(apiKey, apiSecret);
+    constructor(apiKey, apiSecret, isTest = false) {
+        super(apiKey, apiSecret, isTest);
     }
     // --- Base WebSocket Handler ---
     handleWebSocket(url, topics, callback, parser, title, statusCallback, auth = false) {
@@ -150,17 +151,18 @@ class BybitStreams extends BybitBase_js_1.default {
     }
     // --- Parsers ---
     parseDepth(msg) {
+        const data = msg.data;
         if (msg.type === 'snapshot') {
             return {
-                symbol: msg.data.s,
-                asks: msg.data.a,
-                bids: msg.data.b
+                symbol: data.s,
+                asks: data.a,
+                bids: data.b
             };
         }
         return {
             symbol: msg.topic?.split('.')[2] || '',
-            asks: msg.data.a,
-            bids: msg.data.b
+            asks: data.a,
+            bids: data.b
         };
     }
     parseKline(msg) {
@@ -202,10 +204,30 @@ class BybitStreams extends BybitBase_js_1.default {
         }
         return undefined;
     }
+    /**
+     * Maps Bybit order statuses to unified format (Binance standard)
+     * Bybit statuses: Created, New, Rejected, PartiallyFilled, PartiallyFilled (Cancelled), Filled, Cancelled, Untriggered, Triggered, Deactivated
+     * Unified statuses: NEW, PARTIALLY_FILLED, FILLED, CANCELED, PENDING_CANCEL, REJECTED, EXPIRED, PENDING, TRIGGERED, FINISHED
+     */
+    mapBybitOrderStatus(bybitStatus) {
+        const statusMap = {
+            'Created': 'NEW',
+            'New': 'NEW',
+            'Rejected': 'REJECTED',
+            'PartiallyFilled': 'PARTIALLY_FILLED',
+            'Filled': 'FILLED',
+            'Cancelled': 'CANCELED',
+            'PendingCancel': 'PENDING_CANCEL',
+            'Untriggered': 'PENDING',
+            'Triggered': 'TRIGGERED',
+            'Deactivated': 'EXPIRED'
+        };
+        return statusMap[bybitStatus] || bybitStatus;
+    }
     // --- Future Streams (Linear) ---
     futuresDepthStream(symbols, callback, statusCallback) {
         const topics = symbols.map(s => `orderbook.50.${s}`);
-        return this.handleWebSocket(BybitBase_js_1.default.WS_PUBLIC_LINEAR_MAINNET, topics, callback, this.parseDepth, 'futuresDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseDepth, 'futuresDepthStream', statusCallback);
     }
     futuresCandleStickStream(symbols, interval, callback, statusCallback) {
         let bybitInterval = interval.replace('m', '');
@@ -216,19 +238,19 @@ class BybitStreams extends BybitBase_js_1.default {
         if (interval === '1d')
             bybitInterval = 'D';
         const topics = symbols.map(s => `kline.${bybitInterval}.${s}`);
-        return this.handleWebSocket(BybitBase_js_1.default.WS_PUBLIC_LINEAR_MAINNET, topics, callback, this.parseKline, 'futuresCandleStickStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseKline, 'futuresCandleStickStream', statusCallback);
     }
     futuresBookTickerStream(symbols, callback, statusCallback) {
         const topics = symbols.map(s => `tickers.${s}`);
-        return this.handleWebSocket(BybitBase_js_1.default.WS_PUBLIC_LINEAR_MAINNET, topics, callback, this.parseBookTicker, 'futuresBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseBookTicker, 'futuresBookTickerStream', statusCallback);
     }
     futuresTradeStream(symbols, callback, statusCallback) {
         const topics = symbols.map(s => `publicTrade.${s}`);
-        return this.handleWebSocket(BybitBase_js_1.default.WS_PUBLIC_LINEAR_MAINNET, topics, callback, this.parseTrade, 'futuresTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseTrade, 'futuresTradeStream', statusCallback);
     }
     async futuresUserDataStream(callback, statusCallback) {
         const topics = ['execution', 'order', 'position', 'wallet'];
-        return this.handleWebSocket(BybitBase_js_1.default.WS_PRIVATE_MAINNET, topics, callback, (msg) => {
+        return this.handleWebSocket(this.getStreamUrl('private'), topics, callback, (msg) => {
             const topic = msg.topic;
             const dataList = msg.data;
             if (topic === 'position') {
@@ -239,7 +261,7 @@ class BybitStreams extends BybitBase_js_1.default {
                     return {
                         symbol: p.symbol,
                         positionAmount: parseFloat(p.size),
-                        entryPrice: parseFloat(p.avgPrice || '0'),
+                        entryPrice: parseFloat(p.avgPrice || p.entryPrice || '0'),
                         positionDirection: dir,
                         isInPosition: parseFloat(p.size) > 0,
                         unrealizedPnL: parseFloat(p.unrealisedPnl || '0')
@@ -247,24 +269,44 @@ class BybitStreams extends BybitBase_js_1.default {
                 });
                 return {
                     event: 'ACCOUNT_UPDATE',
-                    accountData: { balances: [], positions: positions },
+                    accountData: { balances: undefined, positions: positions },
                     orderData: undefined
                 };
             }
             if (topic === 'order') {
                 const o = dataList[0];
+                // Handle Bybit's special case: order may show as "Filled" but actually was cancelled
+                // Bybit v5 API: "You may receive two orderStatus=Filled messages when the cancel request
+                // is accepted but the order is executed at the same time. Generally, one message contains
+                // orderStatus=Filled, rejectReason=EC_NoError, and another message contains
+                // orderStatus=Filled, cancelType=CancelByUser, rejectReason=EC_OrigClOrdIDDoesNotExist.
+                // The first message tells you the order is executed, and the second message tells you
+                // the followed cancel request is rejected due to order is executed."
+                let orderStatus = o.orderStatus;
+                // If order status is "Filled" but cancelType indicates cancellation, treat it as CANCELED
+                if (o.orderStatus === 'Filled' && o.cancelType && o.cancelType !== 'UNKNOWN') {
+                    // Check if this is actually a cancellation (not an execution)
+                    // CancelType can be: CancelByUser, CancelByReduceOnly, CancelByPrepareLiq, CancelAllBeforeLiq, etc.
+                    // If rejectReason is EC_OrigClOrdIDDoesNotExist or similar, and cancelType is set,
+                    // this is the cancellation message, not the execution
+                    if (o.rejectReason && o.rejectReason !== 'EC_NoError') {
+                        orderStatus = 'CANCELED'; // Map to Bybit's "Cancelled" which we'll convert to "CANCELED"
+                    }
+                }
+                // Map Bybit order statuses to unified format (Binance standard)
+                const unifiedOrderStatus = this.mapBybitOrderStatus(orderStatus);
                 const orderData = {
                     symbol: o.symbol,
                     clientOrderId: o.orderLinkId || o.orderId,
                     side: o.side.toUpperCase(),
                     orderType: o.orderType.toUpperCase(),
-                    timeInForce: o.timeInForce,
+                    timeInForce: (o.timeInForce === 'PostOnly' ? 'GTX' : o.timeInForce),
                     originalQuantity: parseFloat(o.qty),
                     originalPrice: parseFloat(o.price || '0'),
                     averagePrice: parseFloat(o.avgPrice || '0'),
                     stopPrice: parseFloat(o.triggerPrice || '0'),
-                    executionType: o.orderStatus,
-                    orderStatus: o.orderStatus,
+                    executionType: unifiedOrderStatus,
+                    orderStatus: unifiedOrderStatus,
                     orderId: o.orderId,
                     orderLastFilledQuantity: parseFloat(o.lastExecQty || '0'),
                     orderFilledAccumulatedQuantity: parseFloat(o.cumExecQty || '0'),
@@ -275,7 +317,7 @@ class BybitStreams extends BybitBase_js_1.default {
                     tradeId: 0,
                     isMakerSide: false,
                     isReduceOnly: o.reduceOnly,
-                    workingType: 'CONTRACT_PRICE',
+                    workingType: (0, converters_js_1.mapBybitTriggerBy)(o.triggerBy),
                     originalOrderType: o.orderType.toUpperCase(),
                     positionSide: o.positionIdx === 1 ? 'LONG' : (o.positionIdx === 2 ? 'SHORT' : 'BOTH'),
                     closeAll: false,
@@ -290,6 +332,29 @@ class BybitStreams extends BybitBase_js_1.default {
                     accountData: undefined
                 };
             }
+            if (topic === 'wallet') {
+                const balances = [];
+                // Bybit V5 wallet stream structure: data is array of accounts, each has 'coin' array
+                if (Array.isArray(dataList)) {
+                    dataList.forEach((account) => {
+                        if (Array.isArray(account.coin)) {
+                            account.coin.forEach((c) => {
+                                balances.push({
+                                    asset: c.coin,
+                                    balance: c.walletBalance || '0',
+                                    crossWalletBalance: c.equity || '0',
+                                    balanceChange: '0'
+                                });
+                            });
+                        }
+                    });
+                }
+                return {
+                    event: 'ACCOUNT_UPDATE',
+                    accountData: { balances: balances, positions: undefined },
+                    orderData: undefined
+                };
+            }
             return undefined;
         }, 'futuresUserDataStream', statusCallback, true);
     }
@@ -297,7 +362,7 @@ class BybitStreams extends BybitBase_js_1.default {
     // Bybit V5 Spot Public topics use same structure as Linear
     spotDepthStream(symbols, callback, statusCallback) {
         const topics = symbols.map(s => `orderbook.50.${s}`);
-        return this.handleWebSocket(BybitBase_js_1.default.WS_PUBLIC_SPOT_MAINNET, topics, callback, this.parseDepth, 'spotDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseDepth, 'spotDepthStream', statusCallback);
     }
     spotCandleStickStream(symbols, interval, callback, statusCallback) {
         let bybitInterval = interval.replace('m', '');
@@ -308,15 +373,26 @@ class BybitStreams extends BybitBase_js_1.default {
         if (interval === '1d')
             bybitInterval = 'D';
         const topics = symbols.map(s => `kline.${bybitInterval}.${s}`);
-        return this.handleWebSocket(BybitBase_js_1.default.WS_PUBLIC_SPOT_MAINNET, topics, callback, this.parseKline, 'spotCandleStickStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseKline, 'spotCandleStickStream', statusCallback);
     }
     spotBookTickerStream(symbols, callback, statusCallback) {
         const topics = symbols.map(s => `tickers.${s}`);
-        return this.handleWebSocket(BybitBase_js_1.default.WS_PUBLIC_SPOT_MAINNET, topics, callback, this.parseBookTicker, 'spotBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseBookTicker, 'spotBookTickerStream', statusCallback);
     }
     spotTradeStream(symbols, callback, statusCallback) {
         const topics = symbols.map(s => `publicTrade.${s}`);
-        return this.handleWebSocket(BybitBase_js_1.default.WS_PUBLIC_SPOT_MAINNET, topics, callback, this.parseTrade, 'spotTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseTrade, 'spotTradeStream', statusCallback);
+    }
+    parseFunding(msg) {
+        const data = msg.data;
+        if (data && data.fundingRate && data.nextFundingTime) {
+            return (0, converters_js_1.convertBybitFunding)(data);
+        }
+        return undefined;
+    }
+    fundingStream(symbols, callback, statusCallback) {
+        const topics = symbols.map(s => `tickers.${s}`);
+        return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseFunding, 'fundingStream', statusCallback);
     }
 }
 exports.default = BybitStreams;

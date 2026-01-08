@@ -426,3 +426,26 @@ export function convertAlgoOrderByRequest(rawData: AlgoOrderResponse): OrderData
         isAlgoOrder: true
     };
 }
+
+export type FundingDataWebSocket = {
+    stream: string;
+    data: {
+        e: "markPriceUpdate";
+        E: number;
+        s: string;
+        p: string; // Mark price
+        i: string; // Index price
+        P: string; // Estimated Settle Price
+        r: string; // Funding rate
+        T: number; // Next funding time
+    }
+};
+
+export function convertFundingData(inputData: FundingDataWebSocket): import('../core/types.js').FundingData {
+    const { s: symbol, r, T } = inputData.data;
+    return {
+        symbol,
+        rate: parseFloat(r),
+        nextFundingTime: T
+    };
+}

@@ -58,7 +58,7 @@ class BinanceUserData extends BinanceFutures_js_1.default {
         switch (data.event) {
             case "ACCOUNT_UPDATE":
                 if (data.accountData)
-                    data.accountData.positions.forEach(this.setPosition);
+                    data.accountData.positions?.forEach(this.setPosition);
                 break;
             case "ORDER_TRADE_UPDATE":
                 // console.log(data.orderData)

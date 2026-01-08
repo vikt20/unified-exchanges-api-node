@@ -6,10 +6,12 @@ export default class BybitBase extends AbstractExchangeBase {
     static WS_PUBLIC_LINEAR_MAINNET: string;
     static WS_PUBLIC_SPOT_MAINNET: string;
     static WS_PRIVATE_MAINNET: string;
-    protected isTestnet: boolean;
-    constructor(apiKey?: string, apiSecret?: string);
+    static WS_PUBLIC_LINEAR_TESTNET: string;
+    static WS_PUBLIC_SPOT_TESTNET: string;
+    static WS_PRIVATE_TESTNET: string;
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
     protected getBaseUrl(marketType: string): string;
-    protected getStreamUrl(marketType: string): string;
+    getStreamUrl(marketType: 'linear' | 'spot' | 'private'): string;
     setTimeOffset(): Promise<void>;
     getServerTime(): Promise<number>;
     protected generateSignature(parameters: string): string;

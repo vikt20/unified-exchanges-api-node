@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "declarationMap": true,
     "outDir": "./dist",
@@ -15,9 +14,7 @@
   "include": [
     "binance/**/*",
     "core/**/*",
-    "bybit/**/*",
-    "test.ts",
-    "testing/**/*"
+    "bybit/**/*"
   ],
   "exclude": [
     "node_modules",

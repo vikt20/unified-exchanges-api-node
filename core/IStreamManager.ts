@@ -10,6 +10,7 @@ import type {
     DepthData,
     BookTickerData,
     TradeData,
+    FundingData,
     UserData,
     HandleWebSocket,
     SocketStatus,
@@ -77,6 +78,13 @@ export interface IStreamManager {
     futuresTradeStream(
         symbols: string[],
         callback: (data: TradeData) => void,
+        statusCallback?: (status: SocketStatus) => void
+    ): Promise<HandleWebSocket>;
+
+    // ━━ Funding Data Stream ━━
+    fundingStream(
+        symbols: string[],
+        callback: (data: FundingData) => void,
         statusCallback?: (status: SocketStatus) => void
     ): Promise<HandleWebSocket>;
 

@@ -47,6 +47,14 @@ export interface TradeData {
     orderType: 'BUY' | 'SELL';
 }
 
+// ━━ Funding Data ━━
+export interface FundingData {
+    symbol: string;
+    nextFundingTime: number;
+    rate: number;
+    interval?: number;
+}
+
 // ━━ Aggregated Trades ━━
 export interface AggTradesData {
     symbol: string;

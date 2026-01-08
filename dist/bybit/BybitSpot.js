@@ -6,8 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const BybitStreams_js_1 = __importDefault(require("./BybitStreams.js"));
 const converters_js_1 = require("./converters.js");
 class BybitSpot extends BybitStreams_js_1.default {
-    constructor(apiKey, apiSecret) {
-        super(apiKey, apiSecret);
+    constructor(apiKey, apiSecret, isTest) {
+        super(apiKey, apiSecret, isTest);
     }
     async closeListenKey() {
         return this.formattedResponse({ data: "Not applicable for Bybit V5" });

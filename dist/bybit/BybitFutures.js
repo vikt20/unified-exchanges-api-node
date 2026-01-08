@@ -6,8 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const BybitStreams_1 = __importDefault(require("./BybitStreams"));
 const converters_1 = require("./converters");
 class BybitFutures extends BybitStreams_1.default {
-    constructor(apiKey, apiSecret) {
-        super(apiKey, apiSecret);
+    constructor(apiKey, apiSecret, isTest = false) {
+        super(apiKey, apiSecret, isTest);
     }
     async closeListenKey() {
         return this.formattedResponse({ data: "Not applicable for Bybit V5" });
@@ -172,6 +172,8 @@ class BybitFutures extends BybitStreams_1.default {
         const query = { category: 'linear', limit: 50 };
         if (symbol)
             query.symbol = symbol;
+        else
+            query.settleCoin = 'USDT'; // Required for linear if symbol is not provided
         const res = await this.signedRequest('linear', 'GET', '/v5/order/realtime', query);
         const data = res.data;
         if (res.success && data && data.list) {
@@ -201,19 +203,22 @@ class BybitFutures extends BybitStreams_1.default {
     }
     // --- Order Execution ---
     async customOrder(orderInput) {
-        const { symbol, side, type, quantity, price, triggerPrice, timeInForce, reduceOnly, closePosition, workingType } = orderInput;
+        const { symbol, side, type, quantity, price, triggerPrice, timeInForce = 'GTC', reduceOnly = false, closePosition = false, workingType = 'CONTRACT_PRICE' } = orderInput;
+        // Verify if we can construct a clientOrderID to track this order
+        const orderLinkId = `bybit-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const payload = {
             category: 'linear',
             symbol,
             side: side === 'BUY' ? 'Buy' : 'Sell',
             orderType: type === 'MARKET' ? 'Market' : 'Limit',
             qty: quantity?.toString(),
-            timeInForce: timeInForce || 'GTC',
+            timeInForce: timeInForce,
+            orderLinkId: orderLinkId, // Sent to Bybit to enable cancellation by clientOrderId
+            reduceOnly: reduceOnly,
+            closeOnTrigger: closePosition
         };
         if (price)
             payload.price = price.toString();
-        if (reduceOnly)
-            payload.reduceOnly = true;
         if (triggerPrice) {
             payload.triggerPrice = triggerPrice.toString();
             if (workingType === 'MARK_PRICE')
@@ -223,18 +228,29 @@ class BybitFutures extends BybitStreams_1.default {
         }
         const res = await this.signedRequest('linear', 'POST', '/v5/order/create', payload);
         if (res.success && res.data) {
+            const data = {
+                orderId: res.data.orderId,
+                symbol: symbol,
+                status: 'NEW',
+                clientOrderId: res.data.orderLinkId || orderLinkId,
+                price: price?.toString() || '0',
+                avgPrice: '0',
+                origQty: quantity?.toString() || '0',
+                executedQty: '0',
+                cumQuote: '0',
+                timeInForce: timeInForce,
+                type: type,
+                reduceOnly: reduceOnly,
+                closePosition: closePosition,
+                side: side,
+                positionSide: 'BOTH',
+                stopPrice: triggerPrice?.toString(),
+                workingType: workingType,
+                priceProtect: false,
+                origType: type
+            };
             return this.formattedResponse({
-                data: {
-                    orderId: res.data.orderId,
-                    clientOrderId: res.data.orderLinkId,
-                    symbol,
-                    status: 'NEW',
-                    price: price?.toString() || '0',
-                    origQty: quantity?.toString() || '0',
-                    executedQty: '0',
-                    side: side,
-                    type: type
-                }
+                data
             });
         }
         return this.formattedResponse({ errors: res.errors });

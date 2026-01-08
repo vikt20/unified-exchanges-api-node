@@ -15,7 +15,8 @@ import {
     TradeDataSchema,
     BookTickerDataSchema,
     UserDataEventSchema,
-    OrderRequestResponseSchema
+    OrderRequestResponseSchema,
+    FundingDataSchema
 } from './Validator.js';
 
 interface TestContext {
@@ -516,6 +517,13 @@ export class ExchangeTester {
                 suffix: 'TradeStream',
                 args: [[this.symbol]],
                 schema: TradeDataSchema
+            },
+            {
+                name: 'Funding Stream',
+                suffix: 'fundingStream', // implementation uses fundingStream() directly (core interface)
+                args: [[this.symbol]],
+                schema: FundingDataSchema,
+                isExactName: true
             }
         ];
 
@@ -534,7 +542,11 @@ export class ExchangeTester {
 
             let method: Function | undefined;
             const isSpot = this.name.toLowerCase().includes('spot');
-            const candidate = isSpot ? `spot${task.suffix}` : `futures${task.suffix}`;
+            let candidate = isSpot ? `spot${task.suffix}` : `futures${task.suffix}`;
+
+            if (task.isExactName) {
+                candidate = task.suffix;
+            }
 
             if (typeof (client as any)[candidate] === 'function') {
                 method = (client as any)[candidate].bind(client);

@@ -6,8 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const BinanceStreams_js_1 = __importDefault(require("./BinanceStreams.js"));
 const converters_js_1 = require("./converters.js");
 class BinanceSpot extends BinanceStreams_js_1.default {
-    constructor(apiKey, apiSecret) {
-        super(apiKey, apiSecret);
+    constructor(apiKey, apiSecret, isTest = false) {
+        super(apiKey, apiSecret, isTest);
     }
     async closeListenKey() {
         return await this.signedRequest('spot', 'DELETE', '/api/v3/userDataStream');

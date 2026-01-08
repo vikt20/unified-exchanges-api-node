@@ -24,13 +24,14 @@ import { FormattedResponse } from './types.js';
 export declare abstract class AbstractExchangeBase {
     protected apiKey: string;
     protected apiSecret: string;
+    protected isTest: boolean;
     protected _HTTP_AGENT: http.Agent;
     protected _HTTPS_AGENT: https.Agent;
     protected _AXIOS_INSTANCE: AxiosInstance;
     protected timeOffset: number;
     protected recvWindow: number;
     protected pingServerInterval: NodeJS.Timeout | undefined;
-    constructor(apiKey?: string, apiSecret?: string);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
     /**
      * Clean up resources (intervals, connections)
      */

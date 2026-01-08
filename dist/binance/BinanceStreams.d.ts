@@ -137,8 +137,8 @@ export type DepthDataWebSocket = {
         s: string;
         U: number;
         u: number;
-        b: [string, string];
-        a: [string, string];
+        b: Array<[string, string]>;
+        a: Array<[string, string]>;
     };
 };
 export type UserData = {
@@ -148,8 +148,8 @@ export type UserData = {
 };
 export type DepthData = {
     symbol: string;
-    asks: [string, string];
-    bids: [string, string];
+    asks: Array<[string, string]>;
+    bids: Array<[string, string]>;
 };
 export type KlineData = {
     symbol: string;
@@ -196,7 +196,7 @@ export type HandleWebSocket = {
 };
 export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG';
 export default class BinanceStreams extends BinanceBase implements IStreamManager {
-    constructor(apiKey?: string, apiSecret?: string, pingServer?: boolean);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean);
     protected subscriptions: {
         id: string;
         disconnect: Function;
@@ -222,5 +222,6 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
     futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
 }
 //# sourceMappingURL=BinanceStreams.d.ts.map

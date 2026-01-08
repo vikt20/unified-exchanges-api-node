@@ -1,7 +1,7 @@
 // import BinanceBase, { AccountData,  } from "./BinanceBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import BinanceBase, { AccountData, OrderData, OrderType, TimeInForce, OrderStatus, OrderWorkingType, PositionDirection, Type } from "./BinanceBase.js";
-import { convertTradeDataWebSocket, convertDepthData, convertKlineData, convertUserData, convertBookTickerData } from "./converters.js";
+import { convertTradeDataWebSocket, convertDepthData, convertKlineData, convertUserData, convertBookTickerData, convertFundingData, FundingDataWebSocket } from "./converters.js";
 import ws from 'ws';
 
 
@@ -151,6 +151,7 @@ export type DepthDataWebSocket = {
         a: Array<[string, string]>; // Array of asks
     };
 };
+
 
 export type UserData = {
     event: "ACCOUNT_UPDATE" | "ORDER_TRADE_UPDATE" | "ALGO_UPDATE" | "listenKeyExpired",
@@ -440,6 +441,13 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
     }
 
 
+
+    async fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
+        const streams = symbols.map(symbol => `${symbol.toLowerCase()}@markPrice`);
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+
+        return this.handleWebSocket(createWs, convertFundingData, callback, 'fundingStream()', statusCallback);
+    }
 
 }
 

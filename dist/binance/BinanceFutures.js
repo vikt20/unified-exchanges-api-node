@@ -32,8 +32,8 @@ const converters_js_1 = require("./converters.js");
     getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
 } */
 class BinanceFutures extends BinanceStreams_js_1.default {
-    constructor(apiKey, apiSecret, pingServer = false) {
-        super(apiKey, apiSecret, pingServer);
+    constructor(apiKey, apiSecret, isTest = false, pingServer = false) {
+        super(apiKey, apiSecret, isTest, pingServer);
     }
     async closeListenKey() {
         return await this.signedRequest('futures', 'DELETE', '/fapi/v1/listenKey');

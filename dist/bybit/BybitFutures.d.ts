@@ -2,7 +2,7 @@ import BybitStreams from "./BybitStreams";
 import { IExchangeClient } from "../core/IExchangeClient";
 import { FormattedResponse, ExchangeInfoData, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput } from "../core/types";
 export default class BybitFutures extends BybitStreams implements IExchangeClient {
-    constructor(apiKey?: string, apiSecret?: string);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
     closeListenKey(): Promise<FormattedResponse<unknown>>;
     getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>>;
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;

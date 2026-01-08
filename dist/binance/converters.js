@@ -17,6 +17,7 @@ exports.convertKlinesDataByRequest = convertKlinesDataByRequest;
 exports.convertTradeDataWebSocket = convertTradeDataWebSocket;
 exports.convertAggTradesDataByRequest = convertAggTradesDataByRequest;
 exports.convertAlgoOrderByRequest = convertAlgoOrderByRequest;
+exports.convertFundingData = convertFundingData;
 function convertObjectIntoUrlEncoded(obj) {
     return Object.keys(obj).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k])).join('&');
 }
@@ -335,5 +336,13 @@ function convertAlgoOrderByRequest(rawData) {
         callbackRate: '',
         realizedProfit: '',
         isAlgoOrder: true
+    };
+}
+function convertFundingData(inputData) {
+    const { s: symbol, r, T } = inputData.data;
+    return {
+        symbol,
+        rate: parseFloat(r),
+        nextFundingTime: T
     };
 }

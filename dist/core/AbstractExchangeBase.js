@@ -29,6 +29,7 @@ const axios_1 = __importDefault(require("axios"));
 class AbstractExchangeBase {
     apiKey;
     apiSecret;
+    isTest;
     // HTTP connection pooling for performance
     _HTTP_AGENT = new http_1.default.Agent({ keepAlive: true, timeout: 3600000 });
     _HTTPS_AGENT = new https_1.default.Agent({ keepAlive: true, timeout: 3600000 });
@@ -38,9 +39,10 @@ class AbstractExchangeBase {
     recvWindow = 3000;
     // Lifecycle management
     pingServerInterval;
-    constructor(apiKey, apiSecret) {
+    constructor(apiKey, apiSecret, isTest = false) {
         this.apiKey = apiKey || '';
         this.apiSecret = apiSecret || '';
+        this.isTest = isTest;
         this._AXIOS_INSTANCE = axios_1.default.create({
             httpAgent: this._HTTP_AGENT,
             httpsAgent: this._HTTPS_AGENT

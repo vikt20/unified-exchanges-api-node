@@ -3,7 +3,7 @@ import BinanceStreams, { KlineData } from "./BinanceStreams.js";
 import { IExchangeClient } from '../core/IExchangeClient.js';
 import type { ExchangeInfoData, PositionRiskData } from '../core/types.js';
 export default class BinanceSpot extends BinanceStreams implements IExchangeClient {
-    constructor(apiKey?: string, apiSecret?: string);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
     closeListenKey(): Promise<FormattedResponse<any>>;
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;
     getKlines(params: {
