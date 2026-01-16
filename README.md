@@ -24,7 +24,7 @@ npm install unified-exchanges-api-node
 The entry point for using this package is the `ExchangeFactory`. It allows you to create a unified connection to a specific exchange.
 
 ```typescript
-import { ExchangeFactory } from 'unified-exchanges-api-node';
+import { ExchangeFactory, BinanceUserData } from 'unified-exchanges-api-node';
 
 // Initialize connection (API Key & Secret are optional for public data)
 const binance = ExchangeFactory.create('binance', 'YOUR_API_KEY', 'YOUR_API_SECRET');
@@ -39,6 +39,16 @@ async function main() {
     await binance.streams.futuresDepthStream(['BTCUSDT'], (data) => {
         console.log('Depth Update:', data);
     });
+
+    // Example: Subscribe to User Data Events (if keys provided)
+    if (binance.userData) {
+        await binance.userData.init();
+        
+        // Listen to position updates
+        BinanceUserData.Emitter.on(BinanceUserData.POSITION_EVENT, (symbol, position) => {
+           console.log(`Position Update for ${symbol}:`, position);
+        });
+    }
 }
 
 main();
@@ -121,28 +131,80 @@ Implements `IStreamManager`. Handles real-time WebSocket connections.
 *   `closeAllSockets()`: Closes all active WebSocket connections.
 *   `closeById(id)`: Closes a specific socket by its ID.
 
-#### Public Streams
-*   `spotDepthStream(symbols, callback)` / `futuresDepthStream(...)`: Subscribe to order book depth updates.
-*   `spotCandleStickStream(symbols, interval, callback)` / `futuresCandleStickStream(...)`: Subscribe to candlestick/kline updates.
-*   `spotBookTickerStream(symbols, callback)` / `futuresBookTickerStream(...)`: Subscribe to best bid/ask (book ticker) updates.
-*   `spotTradeStream(symbols, callback)` / `futuresTradeStream(...)`: Subscribe to real-time trade execution updates.
-*   `fundingStream(symbols, callback)`: Subscribe to funding rate updates.
+#### Spot WebSockets
+*   `spotDepthStream(symbols, callback)`: Subscribe to order book depth updates.
+*   `spotCandleStickStream(symbols, interval, callback)`: Subscribe to candlestick/kline updates.
+*   `spotBookTickerStream(symbols, callback)`: Subscribe to best bid/ask (book ticker) updates.
+*   `spotTradeStream(symbols, callback)`: Subscribe to real-time trade execution updates.
 
-#### User Streams
+#### Futures WebSockets
+*   `futuresDepthStream(symbols, callback)`: Subscribe to order book depth updates (Futures).
+*   `futuresCandleStickStream(symbols, interval, callback)`: Subscribe to candlestick/kline updates (Futures).
+*   `futuresBookTickerStream(symbols, callback)`: Subscribe to best bid/ask (book ticker) updates (Futures).
+*   `futuresTradeStream(symbols, callback)`: Subscribe to real-time trade execution updates (Futures).
+*   `fundingStream(symbols, callback)`: Subscribe to funding rate updates.
 *   `futuresUserDataStream(callback)`: Subscribe to private account updates (order status, balance updates, etc.).
 
 ---
 
 ### User Data Manager (`IUnifiedExchange.userData`)
 
-Implements `IUserDataManager`. Available only if API keys are provided. It acts as a **Single Source of Truth** for specific user state, keeping local state in sync using both REST snapshots and WebSockets.
+Implements `IUserDataManager`. Available only if API keys are provided.
 
-#### Properties
-*   `userData`: Holds the current state:
+The `UserData` manager acts as a **Single Source of Truth** for your account state. It initializes by fetching a REST snapshot of your Orders and Positions, and then maintains this state in real-time via a private WebSocket stream.
+
+#### Usage (Event Subscription)
+
+To listen for real-time updates (like order fills or position changes), you must subscribe to the **Static Events** of the specific exchange class (`BinanceUserData` or `BybitUserData`).
+
+**Example:**
+
+```typescript
+import { ExchangeFactory, BinanceUserData, BybitUserData } from 'unified-exchanges-api-node';
+
+const binance = ExchangeFactory.create('binance', 'KEY', 'SECRET');
+
+if (binance.userData) {
+    // 1. Initialize (Start Stream + Fetch Snapshot)
+    await binance.userData.init();
+
+    // 2. Subscribe to Static Events
+    BinanceUserData.Emitter.on(BinanceUserData.POSITION_EVENT, (symbol, position) => {
+        console.log(`[Binance] Position updated for ${symbol}`, position);
+    });
+
+    BinanceUserData.Emitter.on(BinanceUserData.ORDER_EVENT, (symbol, orders) => {
+        console.log(`[Binance] Order list updated for ${symbol}`, orders);
+    });
+}
+```
+
+#### Event Reference
+
+All UserData classes (`BinanceUserData`, `BybitUserData`) export the following static event constants:
+
+| Event Constant | Description | Payload Arguments |
+| :--- | :--- | :--- |
+| `POSITION_EVENT` | Emitted when a position is updated. | `(symbol: string, position: PositionData)` |
+| `ORDER_EVENT` | Emitted when the order list changes. | `(symbol: string, orders: OrderData[])` |
+| `TRIGGER_POSITION_EVENT` | Emit this to **request** current position. | `(symbol: string)` |
+| `TRIGGER_ORDER_EVENT` | Emit this to **request** current orders. | `(symbol: string)` |
+
+**Manual Trigger Example:**
+
+If you need to get the current state for a symbol on-demand via the event system:
+```typescript
+// Request state check
+BinanceUserData.Emitter.emit(BinanceUserData.TRIGGER_POSITION_EVENT, 'BTCUSDT');
+
+// ... The 'POSITION_EVENT' will be emitted immediately with the cached data.
+```
+
+#### Class Properties & Methods
+
+*   `userData`: Holds the current synchronous state:
     *   `positions`: Array of `PositionData`.
     *   `orders`: Array of `OrderData`.
-
-#### Methods
-*   `init()`: Initializes the manager. Starts the User Data stream and fetches initial REST snapshots.
-*   `requestAllOrders()`: Manually re-fetches all open orders from the exchange to sync local state.
-*   `requestAllPositions()`: Manually re-fetches all open positions from the exchange to sync local state.
+*   `init()`: Connects the WebSocket and fetches initial snapshots.
+*   `requestAllOrders()`: Force-refresh all open orders from API.
+*   `requestAllPositions()`: Force-refresh all open positions from API.
