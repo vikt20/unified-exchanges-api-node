@@ -40,9 +40,8 @@ class BinanceFutures extends BinanceStreams_js_1.default {
     }
     async getExchangeInfo() {
         let request = await this.publicRequest('futures', 'GET', '/fapi/v1/exchangeInfo');
-        // return this.formattedResponse({ data: this.extractInfo(request.data) });
-        if (request.success) {
-            return this.formattedResponse({ data: request.data });
+        if (request.success && request.data) {
+            return this.formattedResponse({ data: (0, converters_js_1.extractInfo)(request.data.symbols) });
         }
         else {
             return this.formattedResponse({ errors: request.errors });

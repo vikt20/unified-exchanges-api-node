@@ -12,7 +12,7 @@ import type {
     AccountData,
     PositionData,
     PositionRiskData,
-    ExchangeInfoData,
+    ExtractedInfo,
     OrderData,
     OrderRequestResponse,
     GetOpenOrdersBySymbolParams,
@@ -46,7 +46,7 @@ export interface IExchangeClient {
 
     // ━━ Market Data ━━
     /** Returns unified exchange info with symbol details and filters. */
-    getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>>;
+    getExchangeInfo(): Promise<FormattedResponse<{ [key: string]: ExtractedInfo }>>;
 
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;
 

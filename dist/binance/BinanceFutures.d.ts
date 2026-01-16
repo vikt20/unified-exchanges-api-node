@@ -1,6 +1,6 @@
 import BinanceStreams, { KlineData } from './BinanceStreams.js';
-import { FormattedResponse, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, OrderWorkingType, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, ReducePositionParams, GetAggTradesParams, AggTradesData, StopMarketOrderParams } from './BinanceBase.js';
-import type { ExchangeInfoData, PositionRiskData } from '../core/types.js';
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, OrderWorkingType, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, ReducePositionParams, ExtractedInfo, GetAggTradesParams, AggTradesData, StopMarketOrderParams } from './BinanceBase.js';
+import type { PositionRiskData } from '../core/types.js';
 import { IExchangeClient } from '../core/IExchangeClient.js';
 type OrderInput = {
     symbol: string;
@@ -87,7 +87,9 @@ export type LongShortRatioDataByRequest = {
 export default class BinanceFutures extends BinanceStreams implements IExchangeClient {
     constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean);
     closeListenKey(): Promise<FormattedResponse<any>>;
-    getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>>;
+    getExchangeInfo(): Promise<FormattedResponse<{
+        [key: string]: ExtractedInfo;
+    }>>;
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;
     getKlines(params: {
         symbol: string;

@@ -24,7 +24,8 @@ import {
     ReduceOrderParams,
     ReducePositionParams,
     TrailingStopOrderParams,
-    OrderInput
+    OrderInput,
+    ExtractedInfo
 } from "../core/types.js";
 import { convertBybitKline, convertBybitOrder, convertExchangeInfo } from "./converters.js";
 
@@ -38,7 +39,7 @@ export default class BybitSpot extends BybitStreams implements IExchangeClient {
         return this.formattedResponse({ data: "Not applicable for Bybit V5" });
     }
 
-    async getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>> {
+    async getExchangeInfo(): Promise<FormattedResponse<{ [key: string]: ExtractedInfo }>> {
         const res = await this.publicRequest('spot', 'GET', '/v5/market/instruments-info', { category: 'spot' });
         if (res.success && res.data) {
             const info = convertExchangeInfo(res.data);
@@ -51,7 +52,7 @@ export default class BybitSpot extends BybitStreams implements IExchangeClient {
         const res = await this.publicRequest('spot', 'GET', '/v5/market/orderbook', {
             category: 'spot',
             symbol: params.symbol,
-            limit: params.limit || 50
+            limit: params.limit || 500
         });
 
         if (res.success && res.data) {

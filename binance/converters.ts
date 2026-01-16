@@ -6,7 +6,7 @@ export function convertObjectIntoUrlEncoded(obj: any) {
     return Object.keys(obj).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k])).join('&');
 }
 
-export function extractInfo(data: ExchangeInfo['symbols']) {
+export function extractInfo(data: ExchangeInfo['symbols']): { [key: string]: ExtractedInfo } {
     let info: { [key: string]: ExtractedInfo } = {};
     for (let obj of data) {
         if (obj.status !== "TRADING") continue
@@ -29,13 +29,11 @@ export function extractInfo(data: ExchangeInfo['symbols']) {
                 filters.maxQty = parseFloat(filter.maxQty);
             }
         }
-        //filters.baseAssetPrecision = obj.baseAssetPrecision;
-        //filters.quoteAssetPrecision = obj.quoteAssetPrecision;
+
         filters.orderTypes = obj.orderTypes;
         filters.baseAsset = obj.baseAsset;
         filters.quoteAsset = obj.quoteAsset;
-        filters.icebergAllowed = obj.icebergAllowed;
-        // filters.pair = obj.pair
+        filters.symbol = obj.symbol;
         info[obj.symbol] = filters;
     }
     return info

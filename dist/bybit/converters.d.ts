@@ -1,4 +1,4 @@
-import { KlineData, OrderData, PositionData, ExchangeInfoData, OrderWorkingType } from '../core/types.js';
+import { KlineData, OrderData, PositionData, OrderType, OrderWorkingType, ExtractedInfo } from '../core/types.js';
 export interface BybitWsMessage {
     topic?: string;
     op?: string;
@@ -16,6 +16,7 @@ export type BybitSide = 'Buy' | 'Sell';
 export type BybitOrderType = 'Market' | 'Limit';
 export type BybitTimeInForce = 'GTC' | 'IOC' | 'FOK' | 'PostOnly';
 export type BybitCategory = 'spot' | 'linear' | 'inverse' | 'option';
+export type BybitStopOrderType = 'TakeProfit' | 'StopLoss' | 'TrailingStop' | 'Stop' | 'PartialTakeProfit' | 'PartialStopLoss' | 'tpslOrder' | 'OcoOrder' | 'MmRateClose' | 'BidirectionalTpslOrder';
 export interface BybitOrderWsData {
     category: BybitCategory;
     symbol: string;
@@ -63,6 +64,7 @@ export interface BybitOrderWsData {
     smpOrderId: string;
     slFormat: string;
     tpFormat: string;
+    stopOrderType: BybitStopOrderType;
 }
 export interface BybitPositionWsData {
     category: string;
@@ -119,7 +121,9 @@ export interface BybitWalletWsData {
     accountType: string;
     coin: BybitWalletCoinData[];
 }
-export declare function convertExchangeInfo(data: any): ExchangeInfoData;
+export declare function convertExchangeInfo(data: any): {
+    [key: string]: ExtractedInfo;
+};
 export interface BybitParams {
     category: 'spot' | 'linear' | 'inverse' | 'option';
     [key: string]: any;
@@ -176,6 +180,7 @@ export interface BybitTradeWsData {
 }
 export declare function mapBybitTriggerBy(triggerBy: string): OrderWorkingType;
 export declare function convertBybitKline(item: string[], symbol: string): KlineData;
+export declare function mapBybitOrderType(bybitOrder: BybitOrderWsData): OrderType;
 export declare function convertBybitOrder(item: any): OrderData;
 export declare function convertBybitPosition(item: any): PositionData;
 //# sourceMappingURL=converters.d.ts.map

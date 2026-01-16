@@ -24,10 +24,10 @@ export default class BinanceSpot extends BinanceStreams implements IExchangeClie
         return this.formattedResponse({ data: convertKlinesDataByRequest(request.data, params.symbol) });
     }
 
-    async getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>> {
-        let request = await this.publicRequest('spot', 'GET', '/api/v1/exchangeInfo')
-        if (request.success) {
-            return this.formattedResponse({ data: request.data as ExchangeInfoData });
+    async getExchangeInfo(): Promise<FormattedResponse<{ [key: string]: ExtractedInfo; }>> {
+        let request = await this.publicRequest('spot', 'GET', '/api/v1/exchangeInfo') as FormattedResponse<ExchangeInfo>;
+        if (request.success && request.data) {
+            return this.formattedResponse({ data: extractInfo(request.data.symbols) });
         } else {
             return this.formattedResponse({ errors: request.errors });
         }

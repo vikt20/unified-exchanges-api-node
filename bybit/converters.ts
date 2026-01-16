@@ -9,7 +9,8 @@ import {
     PositionDirection,
     ExchangeInfoData,
     SymbolInfo,
-    OrderWorkingType
+    OrderWorkingType,
+    ExtractedInfo
 } from '../core/types.js';
 
 // --- WebSocket Types ---
@@ -32,7 +33,7 @@ export type BybitSide = 'Buy' | 'Sell';
 export type BybitOrderType = 'Market' | 'Limit';
 export type BybitTimeInForce = 'GTC' | 'IOC' | 'FOK' | 'PostOnly';
 export type BybitCategory = 'spot' | 'linear' | 'inverse' | 'option';
-
+export type BybitStopOrderType = 'TakeProfit' | 'StopLoss' | 'TrailingStop' | 'Stop' | 'PartialTakeProfit' | 'PartialStopLoss' | 'tpslOrder' | 'OcoOrder' | 'MmRateClose' | 'BidirectionalTpslOrder';
 export interface BybitOrderWsData {
     category: BybitCategory;
     symbol: string;
@@ -80,6 +81,8 @@ export interface BybitOrderWsData {
     smpOrderId: string;
     slFormat: string;
     tpFormat: string;
+
+    stopOrderType: BybitStopOrderType;
 }
 
 export interface BybitPositionWsData {
@@ -140,48 +143,27 @@ export interface BybitWalletWsData {
     coin: BybitWalletCoinData[];
 }
 
-export function convertExchangeInfo(data: any): ExchangeInfoData {
-    // V5 Instruments Info
-    const symbols: SymbolInfo[] = [];
+export function convertExchangeInfo(data: any): { [key: string]: ExtractedInfo } {
+    const info: { [key: string]: ExtractedInfo } = {};
     if (data && Array.isArray(data.list)) {
         for (const item of data.list) {
-            // Map filters
-            // Bybit: lotSizeFilter, priceFilter, leverageFilter
-            const filters = [];
-            if (item.lotSizeFilter) {
-                filters.push({
-                    filterType: 'LOT_SIZE',
-                    minQty: item.lotSizeFilter.minOrderQty,
-                    maxQty: item.lotSizeFilter.maxOrderQty,
-                    stepSize: item.lotSizeFilter.qtyStep
-                });
-            }
-            if (item.priceFilter) {
-                filters.push({
-                    filterType: 'PRICE_FILTER',
-                    minPrice: item.priceFilter.minPrice,
-                    maxPrice: item.priceFilter.maxPrice,
-                    tickSize: item.priceFilter.tickSize
-                });
-            }
-
-            symbols.push({
+            info[item.symbol] = {
                 symbol: item.symbol,
                 status: item.status === 'Trading' ? 'TRADING' : 'BREAK',
                 baseAsset: item.baseCoin,
                 quoteAsset: item.quoteCoin,
-                baseAssetPrecision: parseInt(item.lotSizeFilter?.postOnlyMaxOrderQty || '8'), // No direct field, approximate
-                quoteAssetPrecision: 8,
-                filters: filters,
-                orderTypes: ['LIMIT', 'MARKET'] // V5 supports these
-            });
+                minPrice: parseFloat(item.priceFilter?.minPrice || '0'),
+                maxPrice: parseFloat(item.priceFilter?.maxPrice || '0'),
+                tickSize: parseFloat(item.priceFilter?.tickSize || '0'),
+                stepSize: parseFloat(item.lotSizeFilter?.qtyStep || '0'),
+                minQty: parseFloat(item.lotSizeFilter?.minOrderQty || '0'),
+                maxQty: parseFloat(item.lotSizeFilter?.maxOrderQty || '0'),
+                minNotional: parseFloat(item.lotSizeFilter?.minNotionalValue || '0'),
+                orderTypes: ['LIMIT', 'MARKET', 'STOP_LOSS_LIMIT', 'TAKE_PROFIT_LIMIT'],
+            };
         }
     }
-    return {
-        symbols,
-        timezone: 'UTC',
-        serverTime: Date.now() // Bybit instrument info response doesn't give server time, fetching separately or approximating
-    };
+    return info;
 }
 
 // Bybit V5 Response Types (Partial)
@@ -288,6 +270,40 @@ export function convertBybitKline(item: string[], symbol: string): KlineData {
     };
 }
 
+export function mapBybitOrderType(bybitOrder: BybitOrderWsData): OrderType {
+    const isConditional =
+        !!bybitOrder.triggerPrice && bybitOrder.closeOnTrigger === true;
+
+    if (isConditional) {
+        const isStopLoss =
+            (bybitOrder.side === 'Sell' && bybitOrder.triggerDirection === 2) ||
+            (bybitOrder.side === 'Buy' && bybitOrder.triggerDirection === 1);
+
+        const isTakeProfit =
+            (bybitOrder.side === 'Sell' && bybitOrder.triggerDirection === 1) ||
+            (bybitOrder.side === 'Buy' && bybitOrder.triggerDirection === 2);
+
+        if (isStopLoss) {
+            return bybitOrder.orderType === 'Limit'
+                ? 'LIMIT'
+                : 'STOP_MARKET';
+        }
+
+        if (isTakeProfit) {
+            return bybitOrder.orderType === 'Limit'
+                ? 'TAKE_PROFIT_LIMIT'
+                : 'TAKE_PROFIT_MARKET';
+        }
+    }
+
+    // Non-conditional
+    if (bybitOrder.orderType === 'Market' && bybitOrder.triggerPrice) return 'STOP';
+    if (bybitOrder.orderType === 'Limit') return 'LIMIT';
+    if (bybitOrder.orderType === 'Market') return 'MARKET';
+
+    return bybitOrder.orderType as OrderType;
+}
+
 export function convertBybitOrder(item: any): OrderData {
     // Map Bybit status to unified OrderStatus
     let status: OrderStatus = 'NEW';
@@ -303,7 +319,7 @@ export function convertBybitOrder(item: any): OrderData {
         symbol: item.symbol,
         clientOrderId: item.orderLinkId || item.orderId,
         side: item.side.toUpperCase() as OrderSide,
-        orderType: item.orderType.toUpperCase() as OrderType,
+        orderType: mapBybitOrderType(item) as OrderType,
         timeInForce: item.timeInForce as TimeInForce,
         originalQuantity: parseFloat(item.qty),
         originalPrice: parseFloat(item.price || '0'),
@@ -322,7 +338,7 @@ export function convertBybitOrder(item: any): OrderData {
         isMakerSide: false,
         isReduceOnly: item.reduceOnly,
         workingType: 'CONTRACT_PRICE', // Default assumption
-        originalOrderType: item.orderType.toUpperCase() as OrderType,
+        originalOrderType: mapBybitOrderType(item) as OrderType,
         positionSide: item.positionIdx === 1 ? 'LONG' : (item.positionIdx === 2 ? 'SHORT' : 'BOTH'),
         closeAll: false,
         activationPrice: item.triggerPrice,

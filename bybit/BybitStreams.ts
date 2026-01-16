@@ -4,7 +4,7 @@ import { IStreamManager } from "../core/IStreamManager.js";
 import ws from 'ws';
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
 import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, OrderWorkingType, OrderType } from "../core/types.js";
-import { convertBybitKline, BybitWsMessage, BybitOrderWsData, BybitPositionWsData, BybitWalletWsData, mapBybitTriggerBy, BybitDepthWsData, BybitKlineWsData, BybitBookTickerWsData, BybitTradeWsData, convertBybitFunding, BybitTickerWsData } from "./converters.js";
+import { convertBybitKline, BybitWsMessage, BybitOrderWsData, BybitPositionWsData, BybitWalletWsData, mapBybitTriggerBy, BybitDepthWsData, BybitKlineWsData, BybitBookTickerWsData, BybitTradeWsData, convertBybitFunding, BybitTickerWsData, mapBybitOrderType } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
 
 // Extend BybitBase to get access to API keys and Base URLs
@@ -247,12 +247,12 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
         const statusMap: { [key: string]: OrderStatus } = {
             'Created': 'NEW',
             'New': 'NEW',
+            'Untriggered': 'NEW',
             'Rejected': 'REJECTED',
             'PartiallyFilled': 'PARTIALLY_FILLED',
             'Filled': 'FILLED',
             'Cancelled': 'CANCELED',
             'PendingCancel': 'PENDING_CANCEL',
-            'Untriggered': 'PENDING',
             'Triggered': 'TRIGGERED',
             'Deactivated': 'EXPIRED'
         };
@@ -319,6 +319,7 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
                 }
 
                 if (topic === 'order') {
+                    // console.log(`RAW BYBIT ORDER:`, dataList[0]);
                     const o = dataList[0] as BybitOrderWsData;
 
                     // Handle Bybit's special case: order may show as "Filled" but actually was cancelled
@@ -348,7 +349,7 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
                         symbol: o.symbol,
                         clientOrderId: o.orderLinkId || o.orderId,
                         side: o.side.toUpperCase() as 'BUY' | 'SELL',
-                        orderType: o.orderType.toUpperCase() as OrderType,
+                        orderType: mapBybitOrderType(o) as OrderType,
                         timeInForce: (o.timeInForce === 'PostOnly' ? 'GTX' : o.timeInForce) as TimeInForce,
                         originalQuantity: parseFloat(o.qty),
                         originalPrice: parseFloat(o.price || '0'),
@@ -359,7 +360,7 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
                         orderId: o.orderId,
                         orderLastFilledQuantity: parseFloat(o.lastExecQty || '0'),
                         orderFilledAccumulatedQuantity: parseFloat(o.cumExecQty || '0'),
-                        lastFilledPrice: parseFloat(o.lastExecPrice || '0'),
+                        lastFilledPrice: parseFloat(o.avgPrice || '0'),
                         commissionAsset: '',
                         commission: o.cumExecFee || '0',
                         orderTradeTime: parseInt(o.updatedTime),
@@ -367,9 +368,9 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
                         isMakerSide: false,
                         isReduceOnly: o.reduceOnly,
                         workingType: mapBybitTriggerBy(o.triggerBy),
-                        originalOrderType: o.orderType.toUpperCase() as OrderType,
+                        originalOrderType: mapBybitOrderType(o) as OrderType,
                         positionSide: o.positionIdx === 1 ? 'LONG' : (o.positionIdx === 2 ? 'SHORT' : 'BOTH'),
-                        closeAll: false,
+                        closeAll: o.closeOnTrigger || false,
                         activationPrice: o.triggerPrice,
                         callbackRate: '',
                         realizedProfit: '',

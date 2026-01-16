@@ -403,11 +403,9 @@ export class ExchangeTester {
             this.assert(info.success, 'getExchangeInfo');
             if (info.success && info.data) {
                 this.validateObject('ExchangeInfo', info.data, ExchangeInfoSchema);
-                if (info.data.symbols && info.data.symbols.length > 0) {
-                    const sym = info.data.symbols.find(s => s.symbol === this.symbol);
-                    if (sym) console.log(`   [PASS] Found symbol ${this.symbol} in Info`);
-                    else console.warn(`   [WARN] Symbol ${this.symbol} not found in Info`);
-                }
+                const sym = info.data[this.symbol];
+                if (sym) console.log(`   [PASS] Found symbol ${this.symbol} in Info`);
+                else console.warn(`   [WARN] Symbol ${this.symbol} not found in Info`);
             }
         } catch (e) {
             this.fail('getExchangeInfo exception', e);

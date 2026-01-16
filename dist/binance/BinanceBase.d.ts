@@ -1,4 +1,4 @@
-export { FormattedResponse, MarketType, OrderSide, OrderType, OrderStatus, TimeInForce, OrderWorkingType, PositionDirection, PositionSide, OrderData, OrderInput, OrderRequestResponse, AccountData, PositionData, BalanceData, StaticDepth, AggTradesData, KlineData, DepthData, BookTickerData, TradeData, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, CancelOrderByIdParams, CancelAllOpenOrdersParams, GetOpenOrdersBySymbolParams, GetStaticDepthParams, GetAggTradesParams, } from '../core/types.js';
+export { FormattedResponse, ExtractedInfo, MarketType, OrderSide, OrderType, OrderStatus, TimeInForce, OrderWorkingType, PositionDirection, PositionSide, OrderData, OrderInput, OrderRequestResponse, AccountData, PositionData, BalanceData, StaticDepth, AggTradesData, KlineData, DepthData, BookTickerData, TradeData, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, CancelOrderByIdParams, CancelAllOpenOrdersParams, GetOpenOrdersBySymbolParams, GetStaticDepthParams, GetAggTradesParams, } from '../core/types.js';
 import type { FormattedResponse, OrderSide, OrderType, OrderStatus, TimeInForce, OrderWorkingType, PositionSide } from '../core/types.js';
 import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 export type Type = 'futures' | 'spot';
@@ -40,20 +40,6 @@ export type ExchangeInfo = {
             maxNumAlgoOrders: number;
         }>;
     }>;
-};
-export type ExtractedInfo = {
-    status: string;
-    minPrice: number;
-    maxPrice: number;
-    tickSize: number;
-    stepSize: number;
-    minQty: number;
-    maxQty: number;
-    minNotional: number;
-    orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>;
-    icebergAllowed: boolean;
-    baseAsset: string;
-    quoteAsset: string;
 };
 export type AlgoOrderResponse = {
     algoId: number;

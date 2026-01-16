@@ -46,13 +46,10 @@ function extractInfo(data) {
                 filters.maxQty = parseFloat(filter.maxQty);
             }
         }
-        //filters.baseAssetPrecision = obj.baseAssetPrecision;
-        //filters.quoteAssetPrecision = obj.quoteAssetPrecision;
         filters.orderTypes = obj.orderTypes;
         filters.baseAsset = obj.baseAsset;
         filters.quoteAsset = obj.quoteAsset;
-        filters.icebergAllowed = obj.icebergAllowed;
-        // filters.pair = obj.pair
+        filters.symbol = obj.symbol;
         info[obj.symbol] = filters;
     }
     return info;

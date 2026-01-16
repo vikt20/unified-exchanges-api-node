@@ -4,7 +4,7 @@
  * Extracted from IBinanceClass - Binance is the reference implementation.
  * All exchanges must implement this interface.
  */
-import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData, PositionData, PositionRiskData, ExchangeInfoData, OrderData, OrderRequestResponse, GetOpenOrdersBySymbolParams, GetAggTradesParams, AggTradesData, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, KlineData, OrderInput } from './types.js';
+import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData, PositionData, PositionRiskData, ExtractedInfo, OrderData, OrderRequestResponse, GetOpenOrdersBySymbolParams, GetAggTradesParams, AggTradesData, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, KlineData, OrderInput } from './types.js';
 /**
  * Unified Exchange Client Interface
  *
@@ -17,7 +17,9 @@ import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData,
 export interface IExchangeClient {
     closeListenKey(): Promise<FormattedResponse<unknown>>;
     /** Returns unified exchange info with symbol details and filters. */
-    getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>>;
+    getExchangeInfo(): Promise<FormattedResponse<{
+        [key: string]: ExtractedInfo;
+    }>>;
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;
     getKlines(params: {
         symbol: string;

@@ -55,6 +55,21 @@ export interface ExchangeInfoData {
     [key: string]: unknown;  // Allow additional exchange-specific properties
 }
 
+export type ExtractedInfo = {
+    symbol: string;
+    status: string;
+    minPrice: number;
+    maxPrice: number;
+    tickSize: number;
+    stepSize: number;
+    minQty: number;
+    maxQty: number;
+    minNotional: number;
+    orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>;
+    baseAsset: string;
+    quoteAsset: string;
+};
+
 // ━━ Extracted/Processed Symbol Info (Normalized data) ━━
 export interface ProcessedSymbolInfo {
     symbol: string;

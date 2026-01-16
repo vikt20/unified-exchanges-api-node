@@ -1,38 +1,60 @@
 import { IUnifiedExchange } from './IUnifiedExchange.js';
+
+import BinanceBase from '../binance/BinanceBase.js';
 import BinanceSpot from '../binance/BinanceSpot.js';
 import BinanceFutures from '../binance/BinanceFutures.js';
 import BinanceStreams from '../binance/BinanceStreams.js';
 import BinanceUserData from '../binance/BinanceUserData.js';
 
-export class ExchangeConnection {
-    private apiKey?: string;
-    private apiSecret?: string;
-    private exchangeId: string;
+import BybitSpot from '../bybit/BybitSpot.js';
+import BybitFutures from '../bybit/BybitFutures.js';
+import BybitStreams from '../bybit/BybitStreams.js';
+import BybitUserData from '../bybit/BybitUserData.js';
+import BybitBase from '../bybit/BybitBase.js';
 
-    constructor(exchangeId: string, apiKey?: string, apiSecret?: string) {
-        this.exchangeId = exchangeId;
-        this.apiKey = apiKey;
-        this.apiSecret = apiSecret;
 
-        return this.createConnection() as any;
-    }
+export class ExchangeFactory {
+    static create(exchangeId: string, apiKey?: string, apiSecret?: string): IUnifiedExchange {
+        switch (exchangeId.toLowerCase()) {
 
-    private createConnection(): IUnifiedExchange {
-        switch (this.exchangeId.toLowerCase()) {
             case 'binance':
                 const connection: IUnifiedExchange = {
-                    spot: new BinanceSpot(this.apiKey, this.apiSecret),
-                    futures: new BinanceFutures(this.apiKey, this.apiSecret),
-                    streams: new BinanceStreams(this.apiKey, this.apiSecret),
+                    spot: new BinanceSpot(apiKey, apiSecret),
+                    futures: new BinanceFutures(apiKey, apiSecret),
+                    streams: new BinanceStreams(apiKey, apiSecret),
                 };
-
-                if (this.apiKey && this.apiSecret) {
-                    connection.userData = new BinanceUserData(this.apiKey, this.apiSecret);
+                if (apiKey && apiSecret) {
+                    connection.userData = new BinanceUserData(apiKey, apiSecret);
                 }
-
                 return connection;
+
+            case 'bybit':
+                const connectionBybit: IUnifiedExchange = {
+                    spot: new BybitSpot(apiKey, apiSecret),
+                    futures: new BybitFutures(apiKey, apiSecret),
+                    streams: new BybitStreams(apiKey, apiSecret),
+                };
+                if (apiKey && apiSecret) {
+                    connectionBybit.userData = new BybitUserData(apiKey, apiSecret);
+                }
+                return connectionBybit;
+
             default:
-                throw new Error(`Exchange '${this.exchangeId}' is not supported.`);
+                throw new Error(`Exchange '${exchangeId}' is not supported.`);
         }
     }
 }
+
+export {
+    BinanceBase,
+    BinanceSpot,
+    BinanceFutures,
+    BinanceStreams,
+    BinanceUserData,
+
+    BybitBase,
+    BybitSpot,
+    BybitFutures,
+    BybitStreams,
+    BybitUserData
+};

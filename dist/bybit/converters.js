@@ -5,49 +5,30 @@ exports.convertObjectIntoUrlEncoded = convertObjectIntoUrlEncoded;
 exports.convertBybitFunding = convertBybitFunding;
 exports.mapBybitTriggerBy = mapBybitTriggerBy;
 exports.convertBybitKline = convertBybitKline;
+exports.mapBybitOrderType = mapBybitOrderType;
 exports.convertBybitOrder = convertBybitOrder;
 exports.convertBybitPosition = convertBybitPosition;
 function convertExchangeInfo(data) {
-    // V5 Instruments Info
-    const symbols = [];
+    const info = {};
     if (data && Array.isArray(data.list)) {
         for (const item of data.list) {
-            // Map filters
-            // Bybit: lotSizeFilter, priceFilter, leverageFilter
-            const filters = [];
-            if (item.lotSizeFilter) {
-                filters.push({
-                    filterType: 'LOT_SIZE',
-                    minQty: item.lotSizeFilter.minOrderQty,
-                    maxQty: item.lotSizeFilter.maxOrderQty,
-                    stepSize: item.lotSizeFilter.qtyStep
-                });
-            }
-            if (item.priceFilter) {
-                filters.push({
-                    filterType: 'PRICE_FILTER',
-                    minPrice: item.priceFilter.minPrice,
-                    maxPrice: item.priceFilter.maxPrice,
-                    tickSize: item.priceFilter.tickSize
-                });
-            }
-            symbols.push({
+            info[item.symbol] = {
                 symbol: item.symbol,
                 status: item.status === 'Trading' ? 'TRADING' : 'BREAK',
                 baseAsset: item.baseCoin,
                 quoteAsset: item.quoteCoin,
-                baseAssetPrecision: parseInt(item.lotSizeFilter?.postOnlyMaxOrderQty || '8'), // No direct field, approximate
-                quoteAssetPrecision: 8,
-                filters: filters,
-                orderTypes: ['LIMIT', 'MARKET'] // V5 supports these
-            });
+                minPrice: parseFloat(item.priceFilter?.minPrice || '0'),
+                maxPrice: parseFloat(item.priceFilter?.maxPrice || '0'),
+                tickSize: parseFloat(item.priceFilter?.tickSize || '0'),
+                stepSize: parseFloat(item.lotSizeFilter?.qtyStep || '0'),
+                minQty: parseFloat(item.lotSizeFilter?.minOrderQty || '0'),
+                maxQty: parseFloat(item.lotSizeFilter?.maxOrderQty || '0'),
+                minNotional: parseFloat(item.lotSizeFilter?.minNotionalValue || '0'),
+                orderTypes: ['LIMIT', 'MARKET', 'STOP_LOSS_LIMIT', 'TAKE_PROFIT_LIMIT'],
+            };
         }
     }
-    return {
-        symbols,
-        timezone: 'UTC',
-        serverTime: Date.now() // Bybit instrument info response doesn't give server time, fetching separately or approximating
-    };
+    return info;
 }
 function convertObjectIntoUrlEncoded(obj) {
     return Object.keys(obj).map(k => {
@@ -86,6 +67,33 @@ function convertBybitKline(item, symbol) {
         trades: 0 // Bybit V5 kline doesn't provide trade count in the standard array
     };
 }
+function mapBybitOrderType(bybitOrder) {
+    const isConditional = !!bybitOrder.triggerPrice && bybitOrder.closeOnTrigger === true;
+    if (isConditional) {
+        const isStopLoss = (bybitOrder.side === 'Sell' && bybitOrder.triggerDirection === 2) ||
+            (bybitOrder.side === 'Buy' && bybitOrder.triggerDirection === 1);
+        const isTakeProfit = (bybitOrder.side === 'Sell' && bybitOrder.triggerDirection === 1) ||
+            (bybitOrder.side === 'Buy' && bybitOrder.triggerDirection === 2);
+        if (isStopLoss) {
+            return bybitOrder.orderType === 'Limit'
+                ? 'LIMIT'
+                : 'STOP_MARKET';
+        }
+        if (isTakeProfit) {
+            return bybitOrder.orderType === 'Limit'
+                ? 'TAKE_PROFIT_LIMIT'
+                : 'TAKE_PROFIT_MARKET';
+        }
+    }
+    // Non-conditional
+    if (bybitOrder.orderType === 'Market' && bybitOrder.triggerPrice)
+        return 'STOP';
+    if (bybitOrder.orderType === 'Limit')
+        return 'LIMIT';
+    if (bybitOrder.orderType === 'Market')
+        return 'MARKET';
+    return bybitOrder.orderType;
+}
 function convertBybitOrder(item) {
     // Map Bybit status to unified OrderStatus
     let status = 'NEW';
@@ -107,7 +115,7 @@ function convertBybitOrder(item) {
         symbol: item.symbol,
         clientOrderId: item.orderLinkId || item.orderId,
         side: item.side.toUpperCase(),
-        orderType: item.orderType.toUpperCase(),
+        orderType: mapBybitOrderType(item),
         timeInForce: item.timeInForce,
         originalQuantity: parseFloat(item.qty),
         originalPrice: parseFloat(item.price || '0'),
@@ -126,7 +134,7 @@ function convertBybitOrder(item) {
         isMakerSide: false,
         isReduceOnly: item.reduceOnly,
         workingType: 'CONTRACT_PRICE', // Default assumption
-        originalOrderType: item.orderType.toUpperCase(),
+        originalOrderType: mapBybitOrderType(item),
         positionSide: item.positionIdx === 1 ? 'LONG' : (item.positionIdx === 2 ? 'SHORT' : 'BOTH'),
         closeAll: false,
         activationPrice: item.triggerPrice,

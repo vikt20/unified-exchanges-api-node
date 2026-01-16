@@ -47,12 +47,24 @@ export class Validator {
         }
 
         // 4. Object Properties Recursion
-        if (currentType === 'object' && schema.properties) {
-            for (const key in schema.properties) {
-                const fieldSchema = schema.properties[key];
-                const result = this.validate(data[key], fieldSchema, `${path}.${key}`);
-                if (!result.valid) {
-                    errors.push(...result.errors);
+        if (currentType === 'object') {
+            if (schema.properties) {
+                for (const key in schema.properties) {
+                    const fieldSchema = schema.properties[key];
+                    const result = this.validate(data[key], fieldSchema, `${path}.${key}`);
+                    if (!result.valid) {
+                        errors.push(...result.errors);
+                    }
+                }
+            }
+            // Support dictionary validation: validate all values in object against 'items' schema
+            if (schema.items) {
+                for (const key in data) {
+                    if (schema.properties && schema.properties[key]) continue; // Already validated
+                    const result = this.validate(data[key], schema.items, `${path}.${key}`);
+                    if (!result.valid) {
+                        errors.push(...result.errors);
+                    }
                 }
             }
         }
@@ -122,7 +134,7 @@ export const StaticDepthSchema: SchemaDefinition = {
 };
 
 // From core/types/exchange.ts
-export const SymbolInfoSchema: SchemaDefinition = {
+export const ExtractedInfoSchema: SchemaDefinition = {
     type: 'object',
     required: true,
     properties: {
@@ -130,22 +142,21 @@ export const SymbolInfoSchema: SchemaDefinition = {
         status: { type: 'string', required: true },
         baseAsset: { type: 'string', required: true },
         quoteAsset: { type: 'string', required: true },
-        baseAssetPrecision: { type: 'number', required: false },
-        quoteAssetPrecision: { type: 'number', required: false },
-        orderTypes: { type: 'array', required: false, items: { type: 'string', required: true } },
-        filters: { type: 'array', required: false, items: { type: 'object', required: false } }
-        // allow generic keys
+        minPrice: { type: 'number', required: true },
+        maxPrice: { type: 'number', required: true },
+        tickSize: { type: 'number', required: true },
+        stepSize: { type: 'number', required: true },
+        minQty: { type: 'number', required: true },
+        maxQty: { type: 'number', required: true },
+        minNotional: { type: 'number', required: true },
+        orderTypes: { type: 'array', required: true, items: { type: 'string', required: true } },
     }
 };
 
 export const ExchangeInfoSchema: SchemaDefinition = {
     type: 'object',
     required: true,
-    properties: {
-        symbols: { type: 'array', required: true, items: SymbolInfoSchema },
-        serverTime: { type: 'number', required: false },
-        timezone: { type: 'string', required: false }
-    }
+    items: ExtractedInfoSchema
 };
 
 // From core/types/account.ts

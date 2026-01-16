@@ -37,6 +37,20 @@ export interface ExchangeInfoData {
     timezone?: string;
     [key: string]: unknown;
 }
+export type ExtractedInfo = {
+    symbol: string;
+    status: string;
+    minPrice: number;
+    maxPrice: number;
+    tickSize: number;
+    stepSize: number;
+    minQty: number;
+    maxQty: number;
+    minNotional: number;
+    orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>;
+    baseAsset: string;
+    quoteAsset: string;
+};
 export interface ProcessedSymbolInfo {
     symbol: string;
     status: string;

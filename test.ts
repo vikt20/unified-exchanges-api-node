@@ -134,7 +134,7 @@ const RUN_CONFIG: TestConfig = {
     },
     mode: {
         public: true,     // Set to true to test Public Data
-        authenticated: false // Set to true to test Order Flow/Private Data
+        authenticated: true // Set to true to test Order Flow/Private Data
     }
 };
 

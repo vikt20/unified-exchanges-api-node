@@ -93,6 +93,7 @@ export interface OrderInput {
     callbackRate?: number;
     activatePrice?: number;
     algoType?: 'CONDITIONAL';
+    triggerDirection?: 1 | 2; // 1: Rise, 2: Fall (Bybit specific)
 }
 
 // ━━ Order Request Params ━━
@@ -113,7 +114,9 @@ export interface StopOrderParams {
     price: number;
     side: OrderSide;
     type: OrderType;
+    quantity?: number;
     workingType?: OrderWorkingType;
+    triggerDirection?: 1 | 2;
 }
 
 export interface StopMarketOrderParams {
@@ -121,6 +124,7 @@ export interface StopMarketOrderParams {
     price: number;
     quantity: number;
     side: OrderSide;
+    triggerDirection?: 1 | 2;
 }
 
 export interface ReduceOrderParams {

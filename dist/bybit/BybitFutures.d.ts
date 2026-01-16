@@ -1,10 +1,12 @@
 import BybitStreams from "./BybitStreams";
 import { IExchangeClient } from "../core/IExchangeClient";
-import { FormattedResponse, ExchangeInfoData, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput } from "../core/types";
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo } from "../core/types";
 export default class BybitFutures extends BybitStreams implements IExchangeClient {
     constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
     closeListenKey(): Promise<FormattedResponse<unknown>>;
-    getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>>;
+    getExchangeInfo(): Promise<FormattedResponse<{
+        [key: string]: ExtractedInfo;
+    }>>;
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;
     getKlines(params: {
         symbol: string;
@@ -35,5 +37,6 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
     trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
+    private getTickerPrice;
 }
 //# sourceMappingURL=BybitFutures.d.ts.map

@@ -213,12 +213,12 @@ class BybitStreams extends BybitBase_js_1.default {
         const statusMap = {
             'Created': 'NEW',
             'New': 'NEW',
+            'Untriggered': 'NEW',
             'Rejected': 'REJECTED',
             'PartiallyFilled': 'PARTIALLY_FILLED',
             'Filled': 'FILLED',
             'Cancelled': 'CANCELED',
             'PendingCancel': 'PENDING_CANCEL',
-            'Untriggered': 'PENDING',
             'Triggered': 'TRIGGERED',
             'Deactivated': 'EXPIRED'
         };
@@ -274,6 +274,7 @@ class BybitStreams extends BybitBase_js_1.default {
                 };
             }
             if (topic === 'order') {
+                // console.log(`RAW BYBIT ORDER:`, dataList[0]);
                 const o = dataList[0];
                 // Handle Bybit's special case: order may show as "Filled" but actually was cancelled
                 // Bybit v5 API: "You may receive two orderStatus=Filled messages when the cancel request
@@ -299,7 +300,7 @@ class BybitStreams extends BybitBase_js_1.default {
                     symbol: o.symbol,
                     clientOrderId: o.orderLinkId || o.orderId,
                     side: o.side.toUpperCase(),
-                    orderType: o.orderType.toUpperCase(),
+                    orderType: (0, converters_js_1.mapBybitOrderType)(o),
                     timeInForce: (o.timeInForce === 'PostOnly' ? 'GTX' : o.timeInForce),
                     originalQuantity: parseFloat(o.qty),
                     originalPrice: parseFloat(o.price || '0'),
@@ -310,7 +311,7 @@ class BybitStreams extends BybitBase_js_1.default {
                     orderId: o.orderId,
                     orderLastFilledQuantity: parseFloat(o.lastExecQty || '0'),
                     orderFilledAccumulatedQuantity: parseFloat(o.cumExecQty || '0'),
-                    lastFilledPrice: parseFloat(o.lastExecPrice || '0'),
+                    lastFilledPrice: parseFloat(o.avgPrice || '0'),
                     commissionAsset: '',
                     commission: o.cumExecFee || '0',
                     orderTradeTime: parseInt(o.updatedTime),
@@ -318,9 +319,9 @@ class BybitStreams extends BybitBase_js_1.default {
                     isMakerSide: false,
                     isReduceOnly: o.reduceOnly,
                     workingType: (0, converters_js_1.mapBybitTriggerBy)(o.triggerBy),
-                    originalOrderType: o.orderType.toUpperCase(),
+                    originalOrderType: (0, converters_js_1.mapBybitOrderType)(o),
                     positionSide: o.positionIdx === 1 ? 'LONG' : (o.positionIdx === 2 ? 'SHORT' : 'BOTH'),
-                    closeAll: false,
+                    closeAll: o.closeOnTrigger || false,
                     activationPrice: o.triggerPrice,
                     callbackRate: '',
                     realizedProfit: '',

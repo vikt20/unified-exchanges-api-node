@@ -78,6 +78,7 @@ export interface OrderInput {
     callbackRate?: number;
     activatePrice?: number;
     algoType?: 'CONDITIONAL';
+    triggerDirection?: 1 | 2;
 }
 export interface MarketOrderParams {
     symbol: string;
@@ -94,13 +95,16 @@ export interface StopOrderParams {
     price: number;
     side: OrderSide;
     type: OrderType;
+    quantity?: number;
     workingType?: OrderWorkingType;
+    triggerDirection?: 1 | 2;
 }
 export interface StopMarketOrderParams {
     symbol: string;
     price: number;
     quantity: number;
     side: OrderSide;
+    triggerDirection?: 1 | 2;
 }
 export interface ReduceOrderParams {
     symbol: string;

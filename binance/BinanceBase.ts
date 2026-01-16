@@ -8,6 +8,7 @@ import { convertObjectIntoUrlEncoded } from './converters.js';
 // ━━ Import Unified Types from Core ━━
 export {
     FormattedResponse,
+    ExtractedInfo,
     MarketType,
     OrderSide,
     OrderType,
@@ -96,23 +97,6 @@ export type ExchangeInfo = {
         }>;
     }>;
 };
-
-export type ExtractedInfo = {
-    status: string;
-    minPrice: number;
-    maxPrice: number;
-    tickSize: number;
-    stepSize: number;
-    minQty: number;
-    maxQty: number;
-    minNotional: number;
-    orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>;
-    icebergAllowed: boolean;
-    baseAsset: string;
-    quoteAsset: string;
-};
-
-
 
 export type AlgoOrderResponse = {
     algoId: number;

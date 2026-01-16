@@ -27,7 +27,8 @@ import {
     OrderSide,
     OrderType,
     TimeInForce,
-    PositionDirection
+    PositionDirection,
+    ExtractedInfo
 } from "../core/types";
 import { convertBybitKline, convertBybitOrder, convertBybitPosition, convertExchangeInfo } from "./converters";
 
@@ -41,7 +42,7 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
         return this.formattedResponse({ data: "Not applicable for Bybit V5" });
     }
 
-    async getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>> {
+    async getExchangeInfo(): Promise<FormattedResponse<{ [key: string]: ExtractedInfo }>> {
         const res = await this.publicRequest('linear', 'GET', '/v5/market/instruments-info', { category: 'linear' });
         if (res.success && res.data) {
             const info = convertExchangeInfo(res.data);
@@ -54,7 +55,7 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
         const res = await this.publicRequest('linear', 'GET', '/v5/market/orderbook', {
             category: 'linear',
             symbol: params.symbol,
-            limit: params.limit || 50
+            limit: params.limit || 1000
         });
 
         if (res.success && res.data) {
@@ -165,7 +166,7 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
                     leverage: parseFloat(p.leverage),
                     marginType: p.tradeMode === 1 ? 'isolated' : 'cross',
                     isolatedMargin: parseFloat(p.positionBalance),
-                    positionSide: dir === 'LONG' ? 'LONG' : 'SHORT',
+                    positionSide: dir,
                     notionalValue: parseFloat(p.positionValue),
                     maxNotionalValue: 0,
                     isAutoAddMargin: p.autoAddMargin === 1,
@@ -184,9 +185,9 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
                 .filter((p: PositionRiskData) => p.positionAmount !== 0)
                 .map((p: PositionRiskData) => ({
                     symbol: p.symbol,
-                    positionAmount: p.positionAmount,
+                    positionAmount: p.positionSide === 'LONG' ? p.positionAmount : -p.positionAmount,
                     entryPrice: p.entryPrice,
-                    positionDirection: (p.positionAmount > 0 ? "LONG" : "SHORT") as PositionDirection,
+                    positionDirection: p.positionSide as PositionDirection,
                     isInPosition: true,
                     unrealizedPnL: p.unrealizedPnL
                 }));
@@ -225,11 +226,15 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
     }
 
     async cancelAllOpenOrders(params: CancelAllOpenOrdersParams): Promise<FormattedResponse<unknown>> {
-        const res = await this.signedRequest('linear', 'POST', '/v5/order/cancel-all', {
-            category: 'linear',
-            symbol: params.symbol
-        });
-        return res;
+        return await this.signedRequest(
+            'linear',
+            'POST',
+            '/v5/order/cancel-all',
+            {
+                category: 'linear',
+                symbol: params.symbol
+            }
+        );
     }
 
     async cancelOrderById(params: CancelOrderByIdParams): Promise<FormattedResponse<unknown>> {
@@ -255,7 +260,8 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
             timeInForce = 'GTC',
             reduceOnly = false,
             closePosition = false,
-            workingType = 'CONTRACT_PRICE'
+            workingType = 'CONTRACT_PRICE',
+            triggerDirection
         } = orderInput;
 
         // Verify if we can construct a clientOrderID to track this order
@@ -265,7 +271,7 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
             category: 'linear',
             symbol,
             side: side === 'BUY' ? 'Buy' : 'Sell',
-            orderType: type === 'MARKET' ? 'Market' : 'Limit',
+            orderType: type.includes('MARKET') ? 'Market' : 'Limit',
             qty: quantity?.toString(),
             timeInForce: timeInForce,
             orderLinkId: orderLinkId, // Sent to Bybit to enable cancellation by clientOrderId
@@ -279,6 +285,18 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
             payload.triggerPrice = triggerPrice.toString();
             if (workingType === 'MARK_PRICE') payload.triggerBy = 'MarkPrice';
             else if (workingType === 'CONTRACT_PRICE') payload.triggerBy = 'LastPrice';
+
+            if (triggerDirection) {
+                payload.triggerDirection = triggerDirection;
+            } else {
+                // Auto-detect trigger direction if not provided
+                const prices = await this.getTickerPrice(symbol);
+                if (prices) {
+                    const refPrice = workingType === 'MARK_PRICE' ? prices.markPrice : prices.lastPrice;
+                    // 1: Rise (Current < Trigger), 2: Fall (Current > Trigger)
+                    payload.triggerDirection = triggerPrice > refPrice ? 1 : 2;
+                }
+            }
         }
 
         const res = await this.signedRequest('linear', 'POST', '/v5/order/create', payload);
@@ -354,15 +372,17 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
         });
     }
 
+    // Stop loss or take profit order
     async stopOrder(params: StopOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
         return this.customOrder({
             symbol: params.symbol,
             side: params.side,
             type: params.type,
-            quantity: undefined,
+            quantity: params.quantity,
             price: params.price,
             triggerPrice: params.price,
-            closePosition: true
+            closePosition: true,
+            triggerDirection: params.triggerDirection
         });
     }
 
@@ -373,7 +393,7 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
             type: 'MARKET',
             quantity: params.quantity,
             triggerPrice: params.price,
-            reduceOnly: true
+            triggerDirection: params.triggerDirection
         });
     }
 
@@ -415,5 +435,20 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
             return this.formattedResponse({ data: total });
         }
         return this.formattedResponse({ errors: res.errors });
+    }
+
+    private async getTickerPrice(symbol: string): Promise<{ lastPrice: number; markPrice: number } | null> {
+        const res = await this.publicRequest('linear', 'GET', '/v5/market/tickers', {
+            category: 'linear',
+            symbol: symbol
+        });
+        if (res.success && res.data && (res.data as any).list && (res.data as any).list[0]) {
+            const ticker = (res.data as any).list[0];
+            return {
+                lastPrice: parseFloat(ticker.lastPrice),
+                markPrice: parseFloat(ticker.markPrice)
+            };
+        }
+        return null;
     }
 }

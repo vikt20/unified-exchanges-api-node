@@ -1,6 +1,5 @@
 import BinanceStreams, { KlineData } from './BinanceStreams.js';
 import { convertPositionDataByRequest, convertPositionRiskDataByRequest, convertPositionRiskToPositionData, convertOrderDataRequestResponse, extractInfo, convertKlinesDataByRequest, convertAggTradesDataByRequest, convertAlgoOrderByRequest } from './converters.js';
-
 import {
     FormattedResponse, ListenKey, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionDirection, PositionSide, GetOpenOrdersBySymbolParams,
     CancelAllOpenOrdersParams,
@@ -10,13 +9,13 @@ import {
     LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams,
     ReducePositionParams,
     ExtractedInfo,
-    ExchangeInfo,
     GetAggTradesParams,
     AggTradesData,
     AlgoOrderResponse,
-    StopMarketOrderParams
+    StopMarketOrderParams,
+    ExchangeInfo
 } from './BinanceBase.js';
-import type { ExchangeInfoData, PositionRiskData } from '../core/types.js';
+import type { PositionRiskData } from '../core/types.js';
 import { IExchangeClient } from '../core/IExchangeClient.js';
 
 type OrderInput = {
@@ -170,11 +169,10 @@ export default class BinanceFutures extends BinanceStreams implements IExchangeC
         return await this.signedRequest('futures', 'DELETE', '/fapi/v1/listenKey');
     }
 
-    async getExchangeInfo(): Promise<FormattedResponse<ExchangeInfoData>> {
-        let request = await this.publicRequest('futures', 'GET', '/fapi/v1/exchangeInfo')
-        // return this.formattedResponse({ data: this.extractInfo(request.data) });
-        if (request.success) {
-            return this.formattedResponse({ data: request.data as ExchangeInfoData });
+    async getExchangeInfo(): Promise<FormattedResponse<{ [key: string]: ExtractedInfo }>> {
+        let request = await this.publicRequest('futures', 'GET', '/fapi/v1/exchangeInfo') as FormattedResponse<ExchangeInfo>;
+        if (request.success && request.data) {
+            return this.formattedResponse({ data: extractInfo(request.data.symbols) });
         } else {
             return this.formattedResponse({ errors: request.errors });
         }
