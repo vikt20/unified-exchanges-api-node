@@ -4,6 +4,10 @@
  * Unified exchange information type definitions.
  */
 import { OrderType } from './common.js';
+export declare enum ExchangeList {
+    BINANCE = "BINANCE",
+    BYBIT = "BYBIT"
+}
 export type FilterType = 'PRICE_FILTER' | 'LOT_SIZE' | 'MIN_NOTIONAL' | 'NOTIONAL' | 'MARKET_LOT_SIZE' | 'MAX_NUM_ORDERS' | 'MAX_NUM_ALGO_ORDERS' | 'PERCENT_PRICE';
 export interface SymbolFilter {
     filterType: string;

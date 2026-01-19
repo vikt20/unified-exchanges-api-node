@@ -263,8 +263,8 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
 
     // --- Future Streams (Linear) ---
 
-    public futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        const topics = symbols.map(s => `orderbook.50.${s}`);
+    public futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void, levels?: number): Promise<HandleWebSocket> {
+        const topics = symbols.map(s => `orderbook.${levels || 50}.${s}`);
         return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseDepth, 'futuresDepthStream', statusCallback);
     }
 
@@ -420,8 +420,8 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
     // --- Spot Streams (Public) ---
     // Bybit V5 Spot Public topics use same structure as Linear
 
-    public spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        const topics = symbols.map(s => `orderbook.50.${s}`);
+    public spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void, levels?: number): Promise<HandleWebSocket> {
+        const topics = symbols.map(s => `orderbook.${levels || 50}.${s}`);
         return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseDepth, 'spotDepthStream', statusCallback);
     }
 

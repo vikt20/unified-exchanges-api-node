@@ -6,6 +6,12 @@
 
 import { OrderType } from './common.js';
 
+// Exchange list
+export enum ExchangeList {
+    BINANCE = 'BINANCE',
+    BYBIT = 'BYBIT',
+}
+
 // ━━ Common Filter Types ━━
 export type FilterType =
     | 'PRICE_FILTER'

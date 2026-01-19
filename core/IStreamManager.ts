@@ -31,13 +31,15 @@ export interface IStreamManager {
     spotDepthStream(
         symbols: string[],
         callback: (data: DepthData) => void,
-        statusCallback?: (status: SocketStatus) => void
+        statusCallback?: (status: SocketStatus) => void,
+        levels?: number
     ): Promise<HandleWebSocket>;
 
     futuresDepthStream(
         symbols: string[],
         callback: (data: DepthData) => void,
-        statusCallback?: (status: SocketStatus) => void
+        statusCallback?: (status: SocketStatus) => void,
+        levels?: number
     ): Promise<HandleWebSocket>;
 
     // ━━ Kline/Candlestick Streams ━━

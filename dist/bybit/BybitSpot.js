@@ -24,7 +24,7 @@ class BybitSpot extends BybitStreams_js_1.default {
         const res = await this.publicRequest('spot', 'GET', '/v5/market/orderbook', {
             category: 'spot',
             symbol: params.symbol,
-            limit: params.limit || 500
+            limit: params.limit || 1000
         });
         if (res.success && res.data) {
             const data = res.data;

@@ -11,13 +11,14 @@ import BybitFutures from '../bybit/BybitFutures.js';
 import BybitStreams from '../bybit/BybitStreams.js';
 import BybitUserData from '../bybit/BybitUserData.js';
 import BybitBase from '../bybit/BybitBase.js';
+import { ExchangeList } from './types.js';
 
 
 export class ExchangeFactory {
-    static create(exchangeId: string, apiKey?: string, apiSecret?: string): IUnifiedExchange {
-        switch (exchangeId.toLowerCase()) {
+    static create(exchangeId: ExchangeList, apiKey?: string, apiSecret?: string): IUnifiedExchange {
+        switch (exchangeId) {
 
-            case 'binance':
+            case ExchangeList.BINANCE:
                 const connection: IUnifiedExchange = {
                     spot: new BinanceSpot(apiKey, apiSecret),
                     futures: new BinanceFutures(apiKey, apiSecret),
@@ -28,7 +29,7 @@ export class ExchangeFactory {
                 }
                 return connection;
 
-            case 'bybit':
+            case ExchangeList.BYBIT:
                 const connectionBybit: IUnifiedExchange = {
                     spot: new BybitSpot(apiKey, apiSecret),
                     futures: new BybitFutures(apiKey, apiSecret),

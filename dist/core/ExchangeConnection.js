@@ -24,10 +24,11 @@ const BybitUserData_js_1 = __importDefault(require("../bybit/BybitUserData.js"))
 exports.BybitUserData = BybitUserData_js_1.default;
 const BybitBase_js_1 = __importDefault(require("../bybit/BybitBase.js"));
 exports.BybitBase = BybitBase_js_1.default;
+const types_js_1 = require("./types.js");
 class ExchangeFactory {
     static create(exchangeId, apiKey, apiSecret) {
-        switch (exchangeId.toLowerCase()) {
-            case 'binance':
+        switch (exchangeId) {
+            case types_js_1.ExchangeList.BINANCE:
                 const connection = {
                     spot: new BinanceSpot_js_1.default(apiKey, apiSecret),
                     futures: new BinanceFutures_js_1.default(apiKey, apiSecret),
@@ -37,7 +38,7 @@ class ExchangeFactory {
                     connection.userData = new BinanceUserData_js_1.default(apiKey, apiSecret);
                 }
                 return connection;
-            case 'bybit':
+            case types_js_1.ExchangeList.BYBIT:
                 const connectionBybit = {
                     spot: new BybitSpot_js_1.default(apiKey, apiSecret),
                     futures: new BybitFutures_js_1.default(apiKey, apiSecret),

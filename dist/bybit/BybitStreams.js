@@ -225,8 +225,8 @@ class BybitStreams extends BybitBase_js_1.default {
         return statusMap[bybitStatus] || bybitStatus;
     }
     // --- Future Streams (Linear) ---
-    futuresDepthStream(symbols, callback, statusCallback) {
-        const topics = symbols.map(s => `orderbook.50.${s}`);
+    futuresDepthStream(symbols, callback, statusCallback, levels) {
+        const topics = symbols.map(s => `orderbook.${levels || 50}.${s}`);
         return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseDepth, 'futuresDepthStream', statusCallback);
     }
     futuresCandleStickStream(symbols, interval, callback, statusCallback) {
@@ -361,8 +361,8 @@ class BybitStreams extends BybitBase_js_1.default {
     }
     // --- Spot Streams (Public) ---
     // Bybit V5 Spot Public topics use same structure as Linear
-    spotDepthStream(symbols, callback, statusCallback) {
-        const topics = symbols.map(s => `orderbook.50.${s}`);
+    spotDepthStream(symbols, callback, statusCallback, levels) {
+        const topics = symbols.map(s => `orderbook.${levels || 50}.${s}`);
         return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseDepth, 'spotDepthStream', statusCallback);
     }
     spotCandleStickStream(symbols, interval, callback, statusCallback) {

@@ -52,7 +52,7 @@ export default class BybitSpot extends BybitStreams implements IExchangeClient {
         const res = await this.publicRequest('spot', 'GET', '/v5/market/orderbook', {
             category: 'spot',
             symbol: params.symbol,
-            limit: params.limit || 500
+            limit: params.limit || 1000
         });
 
         if (res.success && res.data) {
