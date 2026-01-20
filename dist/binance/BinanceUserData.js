@@ -4,33 +4,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const BinanceFutures_js_1 = __importDefault(require("./BinanceFutures.js"));
-const events_1 = require("events");
 /**
  * BinanceUserData - Reference implementation of IUserDataManager
  *
  * Manages local user data state (positions, orders) specifically for Binance Futures.
- * Uses a static EventEmitter to facilitate communication between the data manager
- * and UI/Bot components.
+ * Uses instance-based callbacks for communication with UI/Bot components.
  */
 class BinanceUserData extends BinanceFutures_js_1.default {
     constructor(apiKey, apiSecret) {
         super(apiKey, apiSecret);
     }
-    /**
-     * Shared Emitter for all BinanceUserData instances.
-     * Components can subscribe to this to receive live updates.
-     */
-    static Emitter = new events_1.EventEmitter();
-    // --- Outbound Events (Broadcasts) ---
-    /** Emitted when a position's data changes for a symbol */
-    static POSITION_EVENT = 'position';
-    /** Emitted when the list of open orders changes for a symbol */
-    static ORDER_EVENT = 'order';
-    // --- Inbound Events (Requests) ---
-    /** Listen for this to re-emit the current position state */
-    static TRIGGER_POSITION_EVENT = 'triggerPosition';
-    /** Listen for this to re-emit the current orders state */
-    static TRIGGER_ORDER_EVENT = 'triggerOrder';
     /**
      * Local "Single Source of Truth" for user data.
      * Continuously updated by the WebSocket stream.
@@ -39,20 +22,83 @@ class BinanceUserData extends BinanceFutures_js_1.default {
         positions: [],
         orders: []
     };
+    /**
+     * Private storage for multiple position update callbacks
+     */
+    positionCallbacks = new Set();
+    /**
+     * Private storage for multiple order update callbacks
+     */
+    orderCallbacks = new Set();
+    /**
+     * Register a callback to receive position updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onPositionUpdate(callback) {
+        this.positionCallbacks.add(callback);
+        return () => {
+            this.positionCallbacks.delete(callback);
+        };
+    }
+    /**
+     * Register a callback to receive order updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onOrderUpdate(callback) {
+        this.orderCallbacks.add(callback);
+        return () => {
+            this.orderCallbacks.delete(callback);
+        };
+    }
+    /**
+     * Manually trigger position update callback for a specific symbol
+     */
+    triggerPositionUpdate(symbol) {
+        const position = this.userData.positions.find(p => p.symbol === symbol);
+        for (const cb of this.positionCallbacks) {
+            cb(symbol, position);
+        }
+    }
+    /**
+     * Manually trigger order update callback for a specific symbol
+     */
+    triggerOrderUpdate(symbol) {
+        const orders = this.userData.orders.filter(order => order.symbol === symbol);
+        for (const cb of this.orderCallbacks) {
+            cb(symbol, orders);
+        }
+    }
     async init() {
-        BinanceUserData.Emitter.on(BinanceUserData.TRIGGER_POSITION_EVENT, this.emitPosition);
-        BinanceUserData.Emitter.on(BinanceUserData.TRIGGER_ORDER_EVENT, this.emitOrders);
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData),
             this.requestAllOrders(),
             this.requestAllPositions()
         ]);
     }
+    destroy() {
+        this.closeListenKey();
+        this.closeAllSockets();
+        // Clear all registered callbacks
+        this.positionCallbacks.clear();
+        this.orderCallbacks.clear();
+    }
+    /**
+     * Internal method to emit position update via callbacks
+     */
     emitPosition = (symbol) => {
-        BinanceUserData.Emitter.emit(BinanceUserData.POSITION_EVENT, symbol, this.userData.positions.find(p => p.symbol === symbol));
+        const position = this.userData.positions.find(p => p.symbol === symbol);
+        for (const cb of this.positionCallbacks) {
+            cb(symbol, position);
+        }
     };
+    /**
+     * Internal method to emit order update via callbacks
+     */
     emitOrders = (symbol) => {
-        BinanceUserData.Emitter.emit(BinanceUserData.ORDER_EVENT, symbol, this.userData.orders.filter(order => order.symbol === symbol));
+        const orders = this.userData.orders.filter(order => order.symbol === symbol);
+        for (const cb of this.orderCallbacks) {
+            cb(symbol, orders);
+        }
     };
     handleUserData = (data) => {
         switch (data.event) {
@@ -108,7 +154,7 @@ class BinanceUserData extends BinanceFutures_js_1.default {
             default:
                 return;
         }
-        //Emit event to listeners
+        //Call callback for listeners
         this.emitOrders(symbol);
     };
     setPosition = async (data) => {
@@ -125,7 +171,7 @@ class BinanceUserData extends BinanceFutures_js_1.default {
                 return p;
             });
         }
-        //Emit event to listeners
+        //Call callback for listeners
         this.emitPosition(symbol);
     };
 }

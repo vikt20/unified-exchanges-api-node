@@ -5,6 +5,7 @@
  * All exchanges must implement this interface.
  */
 
+import { IStreamManager } from './IStreamManager.js';
 import type {
     FormattedResponse,
     StaticDepth,
@@ -31,6 +32,7 @@ import type {
     OrderInput,
 } from './types.js';
 
+import { AbstractExchangeBase } from './AbstractExchangeBase.js';
 /**
  * Unified Exchange Client Interface
  * 
@@ -40,7 +42,7 @@ import type {
  * Note: `getExchangeInfo()` returns `unknown` because exchange info structure 
  * varies significantly between exchanges.
  */
-export interface IExchangeClient {
+export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
     // ━━ Connection Management ━━
     closeListenKey(): Promise<FormattedResponse<unknown>>;
 

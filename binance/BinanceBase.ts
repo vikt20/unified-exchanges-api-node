@@ -235,7 +235,7 @@ export default class BinanceBase extends AbstractExchangeBase {
         }
     }
 
-    protected async signedRequest(type: Type, method: 'POST' | 'GET' | 'DELETE' | 'PUT', endpoint: string, params: any = {}): Promise<FormattedResponse<any>> {
+    public async signedRequest(type: Type, method: 'POST' | 'GET' | 'DELETE' | 'PUT', endpoint: string, params: any = {}): Promise<FormattedResponse<any>> {
         try {
             // const timestamp = Date.now();
             const timestamp = Date.now() - this.timeOffset;

@@ -84,6 +84,20 @@ class AbstractExchangeBase {
             return this.handleRequestError(error);
         }
     }
+    async signedRequest(marketType, method, endpoint, params = {}) {
+        try {
+            const baseUrl = this.getBaseUrl(marketType);
+            const response = await this._AXIOS_INSTANCE.request({
+                method,
+                url: `${baseUrl}${endpoint}`,
+                params
+            });
+            return this.formattedResponse({ data: response.data });
+        }
+        catch (error) {
+            return this.handleRequestError(error);
+        }
+    }
     /**
      * Handle request errors and format response
      */

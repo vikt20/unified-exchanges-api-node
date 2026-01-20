@@ -106,7 +106,7 @@ export default class BybitBase extends AbstractExchangeBase {
     }
 
     // Override signedRequest because Bybit V5 signature is different from Binance
-    protected async signedRequest(
+    public async signedRequest(
         _marketType: string, // Unused for Bybit unified
         method: 'POST' | 'GET',
         endpoint: string,

@@ -4,7 +4,9 @@
  * Extracted from IBinanceClass - Binance is the reference implementation.
  * All exchanges must implement this interface.
  */
+import { IStreamManager } from './IStreamManager.js';
 import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData, PositionData, PositionRiskData, ExtractedInfo, OrderData, OrderRequestResponse, GetOpenOrdersBySymbolParams, GetAggTradesParams, AggTradesData, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, KlineData, OrderInput } from './types.js';
+import { AbstractExchangeBase } from './AbstractExchangeBase.js';
 /**
  * Unified Exchange Client Interface
  *
@@ -14,7 +16,7 @@ import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData,
  * Note: `getExchangeInfo()` returns `unknown` because exchange info structure
  * varies significantly between exchanges.
  */
-export interface IExchangeClient {
+export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
     closeListenKey(): Promise<FormattedResponse<unknown>>;
     /** Returns unified exchange info with symbol details and filters. */
     getExchangeInfo(): Promise<FormattedResponse<{

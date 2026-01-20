@@ -102,7 +102,26 @@ export abstract class AbstractExchangeBase {
     /**
      * Make an unauthenticated public API request
      */
-    protected async publicRequest<T>(
+    public async publicRequest<T>(
+        marketType: string,
+        method: string,
+        endpoint: string,
+        params: Record<string, any> = {}
+    ): Promise<FormattedResponse<T>> {
+        try {
+            const baseUrl = this.getBaseUrl(marketType);
+            const response: AxiosResponse<T> = await this._AXIOS_INSTANCE.request({
+                method,
+                url: `${baseUrl}${endpoint}`,
+                params
+            });
+            return this.formattedResponse({ data: response.data });
+        } catch (error: any) {
+            return this.handleRequestError(error);
+        }
+    }
+
+    public async signedRequest<T>(
         marketType: string,
         method: string,
         endpoint: string,

@@ -1,12 +1,13 @@
-
-import { IUserDataManager, IUserDataState } from "../core/IUserDataManager.js";
+import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import BybitFutures from "./BybitFutures.js";
 import { UserData } from "../binance/BinanceStreams.js";
 import { PositionData, OrderData } from "../core/types.js";
-import { EventEmitter } from 'events';
 
 /**
  * BybitUserData - Implementation of IUserDataManager for Bybit
+ * 
+ * Manages local user data state (positions, orders) specifically for Bybit Futures.
+ * Uses instance-based callbacks for communication with UI/Bot components.
  */
 export default class BybitUserData extends BybitFutures implements IUserDataManager {
 
@@ -14,26 +15,70 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
         super(apiKey, apiSecret);
     }
 
-    public static Emitter: EventEmitter = new EventEmitter();
-
-    // Outbound Events
-    public static POSITION_EVENT = 'position';
-    public static ORDER_EVENT = 'order';
-
-    // Inbound Events
-    public static TRIGGER_POSITION_EVENT = 'triggerPosition';
-    public static TRIGGER_ORDER_EVENT = 'triggerOrder';
-
+    /**
+     * Local "Single Source of Truth" for user data.
+     * Continuously updated by the WebSocket stream.
+     */
     userData: IUserDataState = {
         positions: [],
         orders: []
     }
 
-    async init(): Promise<unknown> {
-        // Setup Event Listeners
-        BybitUserData.Emitter.on(BybitUserData.TRIGGER_POSITION_EVENT, this.emitPosition);
-        BybitUserData.Emitter.on(BybitUserData.TRIGGER_ORDER_EVENT, this.emitOrders);
+    /**
+     * Private storage for multiple position update callbacks
+     */
+    private positionCallbacks = new Set<PositionUpdateCallback>();
 
+    /**
+     * Private storage for multiple order update callbacks
+     */
+    private orderCallbacks = new Set<OrderUpdateCallback>();
+
+    /**
+     * Register a callback to receive position updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onPositionUpdate(callback: PositionUpdateCallback): Unsubscribe {
+        this.positionCallbacks.add(callback);
+
+        return () => {
+            this.positionCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * Register a callback to receive order updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onOrderUpdate(callback: OrderUpdateCallback): Unsubscribe {
+        this.orderCallbacks.add(callback);
+
+        return () => {
+            this.orderCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * Manually trigger position update callback for a specific symbol
+     */
+    triggerPositionUpdate(symbol: string): void {
+        const position = this.userData.positions.find(p => p.symbol === symbol);
+        for (const cb of this.positionCallbacks) {
+            cb(symbol, position);
+        }
+    }
+
+    /**
+     * Manually trigger order update callback for a specific symbol
+     */
+    triggerOrderUpdate(symbol: string): void {
+        const orders = this.userData.orders.filter(order => order.symbol === symbol);
+        for (const cb of this.orderCallbacks) {
+            cb(symbol, orders);
+        }
+    }
+
+    async init(): Promise<unknown> {
         // Connect Stream and fetch Snapshots
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData),
@@ -42,14 +87,30 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
         ]);
     }
 
-    emitPosition = (symbol: string) => {
-        const pos = this.userData.positions.find(p => p.symbol === symbol);
-        BybitUserData.Emitter.emit(BybitUserData.POSITION_EVENT, symbol, pos);
+    public destroy(): void {
+        this.closeAllSockets();
+        this.positionCallbacks.clear();
+        this.orderCallbacks.clear();
     }
 
-    emitOrders = (symbol: string) => {
+    /**
+     * Internal method to emit position update via callbacks
+     */
+    private emitPosition = (symbol: string) => {
+        const position = this.userData.positions.find(p => p.symbol === symbol);
+        for (const cb of this.positionCallbacks) {
+            cb(symbol, position);
+        }
+    }
+
+    /**
+     * Internal method to emit order update via callbacks
+     */
+    private emitOrders = (symbol: string) => {
         const orders = this.userData.orders.filter(o => o.symbol === symbol);
-        BybitUserData.Emitter.emit(BybitUserData.ORDER_EVENT, symbol, orders);
+        for (const cb of this.orderCallbacks) {
+            cb(symbol, orders);
+        }
     }
 
     handleUserData = (data: UserData) => {
@@ -102,7 +163,7 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
             this.userData.positions[idx] = data;
         }
 
-        // Emit update
+        // Call callback for listeners
         this.emitPosition(symbol);
     }
 
@@ -126,6 +187,8 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
             }
         }
 
+        // Call callback for listeners
         this.emitOrders(symbol);
     }
 }
+

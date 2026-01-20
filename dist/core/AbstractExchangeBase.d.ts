@@ -66,7 +66,8 @@ export declare abstract class AbstractExchangeBase {
     /**
      * Make an unauthenticated public API request
      */
-    protected publicRequest<T>(marketType: string, method: string, endpoint: string, params?: Record<string, any>): Promise<FormattedResponse<T>>;
+    publicRequest<T>(marketType: string, method: string, endpoint: string, params?: Record<string, any>): Promise<FormattedResponse<T>>;
+    signedRequest<T>(marketType: string, method: string, endpoint: string, params?: Record<string, any>): Promise<FormattedResponse<T>>;
     /**
      * Handle request errors and format response
      */

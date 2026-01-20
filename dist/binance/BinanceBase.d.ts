@@ -97,7 +97,7 @@ export default class BinanceBase extends AbstractExchangeBase {
     setTimeOffset(): Promise<void>;
     getServerTime(): Promise<number>;
     publicRequest(type: Type, method: string, endpoint: string, params?: any): Promise<FormattedResponse<any>>;
-    protected signedRequest(type: Type, method: 'POST' | 'GET' | 'DELETE' | 'PUT', endpoint: string, params?: any): Promise<FormattedResponse<any>>;
+    signedRequest(type: Type, method: 'POST' | 'GET' | 'DELETE' | 'PUT', endpoint: string, params?: any): Promise<FormattedResponse<any>>;
     formattedResponse(object: {
         data?: any;
         errors?: string;

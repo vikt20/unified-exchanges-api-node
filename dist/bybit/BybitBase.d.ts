@@ -20,7 +20,7 @@ export default class BybitBase extends AbstractExchangeBase {
         errors?: string;
     }): FormattedResponse<T>;
     publicRequest<T>(marketType: string, method: string, endpoint: string, params?: Record<string, any>): Promise<FormattedResponse<T>>;
-    protected signedRequest(_marketType: string, // Unused for Bybit unified
+    signedRequest(_marketType: string, // Unused for Bybit unified
     method: 'POST' | 'GET', endpoint: string, params?: any): Promise<FormattedResponse<any>>;
 }
 //# sourceMappingURL=BybitBase.d.ts.map
