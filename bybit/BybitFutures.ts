@@ -1,5 +1,5 @@
-import BybitStreams from "./BybitStreams";
-import { IExchangeClient } from "../core/IExchangeClient";
+import BybitStreams from "./BybitStreams.js";
+import { IExchangeClient } from "../core/IExchangeClient.js";
 import {
     FormattedResponse,
     ExchangeInfoData,
@@ -29,8 +29,8 @@ import {
     TimeInForce,
     PositionDirection,
     ExtractedInfo
-} from "../core/types";
-import { convertBybitKline, convertBybitOrder, convertBybitPosition, convertExchangeInfo } from "./converters";
+} from "../core/types.js";
+import { convertBybitKline, convertBybitOrder, convertBybitPosition, convertExchangeInfo } from "./converters.js";
 
 export default class BybitFutures extends BybitStreams implements IExchangeClient {
 
@@ -286,8 +286,12 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
             if (workingType === 'MARK_PRICE') payload.triggerBy = 'MarkPrice';
             else if (workingType === 'CONTRACT_PRICE') payload.triggerBy = 'LastPrice';
 
+            payload.tpslMode = 'Full';
+
             if (triggerDirection) {
                 payload.triggerDirection = triggerDirection;
+
+
             } else {
                 // Auto-detect trigger direction if not provided
                 const prices = await this.getTickerPrice(symbol);
@@ -420,7 +424,69 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
     }
 
     async trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
-        return this.formattedResponse({ errors: "Trailing Stop Order not fully supported in Bybit V5 wrapper yet" });
+        // Bybit V5 uses /v5/position/trading-stop to set a trailing stop on an existing position.
+        // Unlike Binance's TRAILING_STOP_MARKET order type, this is a position-level operation.
+        // callbackRate (percentage) must be converted to an absolute price distance (trailingStop).
+
+        // Determine the trailing stop distance from callbackRate
+        let trailingStopDistance: number;
+
+        if (params.activatePrice) {
+            // If an activation price is provided, calculate trailing distance from it
+            trailingStopDistance = params.activatePrice * (params.callbackRate / 100);
+        } else {
+            // Fetch current price to calculate the absolute trailing stop distance
+            const prices = await this.getTickerPrice(params.symbol);
+            if (!prices) {
+                return this.formattedResponse({ errors: "Failed to fetch current price for trailing stop calculation" });
+            }
+            trailingStopDistance = prices.lastPrice * (params.callbackRate / 100);
+        }
+
+        // positionIdx: 0 = one-way mode, 1 = hedge-mode Buy side (Long), 2 = hedge-mode Sell side (Short)
+        // When closing a LONG position, the side is SELL → positionIdx 1 (long side)
+        // When closing a SHORT position, the side is BUY → positionIdx 2 (short side)
+        const positionIdx = params.side === 'SELL' ? 1 : 2;
+
+        const payload: any = {
+            category: 'linear',
+            symbol: params.symbol,
+            trailingStop: trailingStopDistance.toString(),
+            positionIdx: positionIdx
+        };
+
+        if (params.activatePrice) {
+            payload.activePrice = params.activatePrice.toString();
+        }
+
+        const res = await this.signedRequest('linear', 'POST', '/v5/position/trading-stop', payload);
+
+        if (res.success) {
+            // Bybit returns an empty result on success, so we construct a synthetic response
+            const data: OrderRequestResponse = {
+                orderId: 0, // No orderId for trailing stop position setting
+                symbol: params.symbol,
+                status: 'NEW',
+                clientOrderId: `trailing-${Date.now()}`,
+                price: '0',
+                avgPrice: '0',
+                origQty: params.quantity.toString(),
+                executedQty: '0',
+                cumQuote: '0',
+                timeInForce: 'GTC',
+                type: 'TRAILING_STOP_MARKET',
+                reduceOnly: true,
+                closePosition: false,
+                side: params.side,
+                positionSide: 'BOTH',
+                stopPrice: params.activatePrice?.toString(),
+                workingType: 'CONTRACT_PRICE',
+                priceProtect: false,
+                origType: 'TRAILING_STOP_MARKET'
+            };
+            return this.formattedResponse({ data });
+        }
+        return this.formattedResponse({ errors: res.errors });
     }
 
     async getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>> {

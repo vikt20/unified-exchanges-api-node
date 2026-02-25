@@ -1,27 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertObjectIntoUrlEncoded = convertObjectIntoUrlEncoded;
-exports.extractInfo = extractInfo;
-exports.convertDepthData = convertDepthData;
-exports.convertKlineData = convertKlineData;
-exports.convertUserData = convertUserData;
-exports.convertAccountDataWebSocketRaw = convertAccountDataWebSocketRaw;
-exports.convertOrderDataWebSocket = convertOrderDataWebSocket;
-exports.convertAlgoOrderDataWebSocket = convertAlgoOrderDataWebSocket;
-exports.convertOrderDataRequestResponse = convertOrderDataRequestResponse;
-exports.convertPositionDataByRequest = convertPositionDataByRequest;
-exports.convertPositionRiskDataByRequest = convertPositionRiskDataByRequest;
-exports.convertPositionRiskToPositionData = convertPositionRiskToPositionData;
-exports.convertBookTickerData = convertBookTickerData;
-exports.convertKlinesDataByRequest = convertKlinesDataByRequest;
-exports.convertTradeDataWebSocket = convertTradeDataWebSocket;
-exports.convertAggTradesDataByRequest = convertAggTradesDataByRequest;
-exports.convertAlgoOrderByRequest = convertAlgoOrderByRequest;
-exports.convertFundingData = convertFundingData;
-function convertObjectIntoUrlEncoded(obj) {
+export function convertObjectIntoUrlEncoded(obj) {
     return Object.keys(obj).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k])).join('&');
 }
-function extractInfo(data) {
+export function extractInfo(data) {
     let info = {};
     for (let obj of data) {
         if (obj.status !== "TRADING")
@@ -54,7 +34,7 @@ function extractInfo(data) {
     }
     return info;
 }
-function convertDepthData(inputData) {
+export function convertDepthData(inputData) {
     const { s: symbol, a, b } = inputData.data;
     return {
         symbol,
@@ -62,7 +42,7 @@ function convertDepthData(inputData) {
         bids: b
     };
 }
-function convertKlineData(inputData) {
+export function convertKlineData(inputData) {
     const { s: symbol, k } = inputData.data;
     return {
         symbol,
@@ -75,7 +55,7 @@ function convertKlineData(inputData) {
         trades: Number(k.n)
     };
 }
-function convertUserData(rawData) {
+export function convertUserData(rawData) {
     let { e, o, a } = rawData;
     // console.log(rawData)
     if (e === "ACCOUNT_UPDATE") {
@@ -91,7 +71,7 @@ function convertUserData(rawData) {
         return { event: e, accountData: undefined, orderData: undefined };
     }
 }
-function convertAccountDataWebSocketRaw(rawAccountData) {
+export function convertAccountDataWebSocketRaw(rawAccountData) {
     let { B: balancesRaw, P: positionsRaw } = rawAccountData;
     let balances = balancesRaw.map(balances => {
         let { a: asset, wb: balance, cw: crossWalletBalance, bc: balanceChange } = balances;
@@ -111,7 +91,7 @@ function convertAccountDataWebSocketRaw(rawAccountData) {
     return { balances, positions };
 }
 ;
-function convertOrderDataWebSocket(rawData) {
+export function convertOrderDataWebSocket(rawData) {
     let { s: symbol, c: clientOrderId, 
     // special client order id:
     // starts with "autoclose-": liquidation order
@@ -159,7 +139,7 @@ function convertOrderDataWebSocket(rawData) {
         isAlgoOrder: false
     };
 }
-function convertAlgoOrderDataWebSocket(rawData) {
+export function convertAlgoOrderDataWebSocket(rawData) {
     // console.log(`convertAlgoOrderDataWebSocket:`, rawData)
     let { caid: clientAlgoId, aid: algoId, at: algoType, o: orderType, s: symbol, S: side, ps: positionSide, f: timeInForce, q: quantity, X: algoStatus, ai: actualOrderId, ap: avgPrice, aq: executedQty, act: actualOrderType, tp: triggerPrice, p: price, V: stpMode, wt: workingType, pm: priceMatch, cp: closePosition, pP: priceProtect, R: reduceOnly, tt: triggerTime, gtd: goodTillDate, rm: rejectReason } = rawData;
     const res = {
@@ -198,7 +178,7 @@ function convertAlgoOrderDataWebSocket(rawData) {
     // console.log(res)
     return res;
 }
-function convertOrderDataRequestResponse(rawData) {
+export function convertOrderDataRequestResponse(rawData) {
     let { symbol, clientOrderId, side, type, timeInForce, origQty, price, avgPrice, stopPrice, status, orderId, executedQty, cumQuote, time, updateTime, reduceOnly, closePosition, positionSide, workingType, origType, priceMatch, selfTradePreventionMode, goodTillDate } = rawData;
     return {
         symbol,
@@ -232,7 +212,7 @@ function convertOrderDataRequestResponse(rawData) {
         isAlgoOrder: false
     };
 }
-function convertPositionDataByRequest(rawPositionData) {
+export function convertPositionDataByRequest(rawPositionData) {
     let { symbol, positionAmt, entryPrice, markPrice, unRealizedProfit, liquidationPrice, leverage, marginType, isolatedMargin, isAutoAddMargin, maxNotionalValue, positionSide } = rawPositionData;
     return {
         symbol,
@@ -243,7 +223,7 @@ function convertPositionDataByRequest(rawPositionData) {
         unrealizedPnL: parseFloat(unRealizedProfit),
     };
 }
-function convertPositionRiskDataByRequest(rawPositionData) {
+export function convertPositionRiskDataByRequest(rawPositionData) {
     return {
         symbol: rawPositionData.symbol,
         positionAmount: parseFloat(rawPositionData.positionAmt),
@@ -261,7 +241,7 @@ function convertPositionRiskDataByRequest(rawPositionData) {
         updateTime: rawPositionData.updateTime,
     };
 }
-function convertPositionRiskToPositionData(positionRisk) {
+export function convertPositionRiskToPositionData(positionRisk) {
     return {
         symbol: positionRisk.symbol,
         positionAmount: positionRisk.positionAmount,
@@ -271,11 +251,11 @@ function convertPositionRiskToPositionData(positionRisk) {
         unrealizedPnL: positionRisk.unrealizedPnL,
     };
 }
-function convertBookTickerData(rawData) {
+export function convertBookTickerData(rawData) {
     let { s: symbol, b: bestBid, B: bestBidQty, a: bestAsk, A: bestAskQty } = rawData.data;
     return { symbol, bestBid: parseFloat(bestBid), bestBidQty: parseFloat(bestBidQty), bestAsk: parseFloat(bestAsk), bestAskQty: parseFloat(bestAskQty) };
 }
-function convertKlinesDataByRequest(rawData, symbol) {
+export function convertKlinesDataByRequest(rawData, symbol) {
     return rawData.map(data => ({
         symbol, // Replace with actual symbol value
         time: data[0],
@@ -287,11 +267,11 @@ function convertKlinesDataByRequest(rawData, symbol) {
         trades: data[8] // Assuming number of trades is at index 8
     }));
 }
-function convertTradeDataWebSocket(rawData) {
+export function convertTradeDataWebSocket(rawData) {
     let { s: symbol, p: price, q: quantity, a: sellerOrderId, T: tradeTime, m: isBuyerMaker } = rawData.data;
     return { symbol, price: parseFloat(price), quantity: parseFloat(quantity), tradeTime, orderType: isBuyerMaker ? "SELL" : "BUY" };
 }
-function convertAggTradesDataByRequest(rawData, symbol) {
+export function convertAggTradesDataByRequest(rawData, symbol) {
     return rawData.map(data => ({
         symbol,
         id: data.a,
@@ -301,7 +281,7 @@ function convertAggTradesDataByRequest(rawData, symbol) {
         isBuyer: data.m
     }));
 }
-function convertAlgoOrderByRequest(rawData) {
+export function convertAlgoOrderByRequest(rawData) {
     let { algoId, clientAlgoId, orderType, symbol, side, positionSide, timeInForce, quantity, algoStatus, actualPrice, price, triggerPrice, workingType, closePosition, reduceOnly, createTime, updateTime } = rawData;
     return {
         symbol,
@@ -335,7 +315,7 @@ function convertAlgoOrderByRequest(rawData) {
         isAlgoOrder: true
     };
 }
-function convertFundingData(inputData) {
+export function convertFundingData(inputData) {
     const { s: symbol, r, T } = inputData.data;
     return {
         symbol,

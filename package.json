@@ -1,6 +1,6 @@
 {
   "name": "unified-exchanges-api-node",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Unified Crypto Exchanges API for Node.js",
   "homepage": "https://github.com/vikt20/unified-exchanges-api-node",
   "repository": {
@@ -13,7 +13,7 @@
   "keywords": [],
   "author": "Viktor Bokhan",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "main": "./dist/core/index.js",
   "types": "./dist/core/index.d.ts",
   "exports": {

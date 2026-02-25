@@ -1,11 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const BinanceStreams_js_1 = __importDefault(require("./BinanceStreams.js"));
-const converters_js_1 = require("./converters.js");
-class BinanceSpot extends BinanceStreams_js_1.default {
+import BinanceStreams from "./BinanceStreams.js";
+import { convertKlinesDataByRequest, convertOrderDataRequestResponse, extractInfo, convertAggTradesDataByRequest } from "./converters.js";
+export default class BinanceSpot extends BinanceStreams {
     constructor(apiKey, apiSecret, isTest = false) {
         super(apiKey, apiSecret, isTest);
     }
@@ -19,12 +14,12 @@ class BinanceSpot extends BinanceStreams_js_1.default {
         const request = await this.publicRequest('spot', 'GET', '/api/v3/klines', { symbol: params.symbol, interval: params.interval, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors)
             return this.formattedResponse({ errors: request.errors });
-        return this.formattedResponse({ data: (0, converters_js_1.convertKlinesDataByRequest)(request.data, params.symbol) });
+        return this.formattedResponse({ data: convertKlinesDataByRequest(request.data, params.symbol) });
     }
     async getExchangeInfo() {
         let request = await this.publicRequest('spot', 'GET', '/api/v1/exchangeInfo');
         if (request.success && request.data) {
-            return this.formattedResponse({ data: (0, converters_js_1.extractInfo)(request.data.symbols) });
+            return this.formattedResponse({ data: extractInfo(request.data.symbols) });
         }
         else {
             return this.formattedResponse({ errors: request.errors });
@@ -48,7 +43,7 @@ class BinanceSpot extends BinanceStreams_js_1.default {
     async getOpenOrders() {
         const request = await this.signedRequest('spot', 'GET', '/api/v3/openOrders');
         if (request.success && request.data !== undefined) {
-            return this.formattedResponse({ data: request.data.map(converters_js_1.convertOrderDataRequestResponse) });
+            return this.formattedResponse({ data: request.data.map(convertOrderDataRequestResponse) });
         }
         else {
             return this.formattedResponse({ errors: request.errors });
@@ -57,7 +52,7 @@ class BinanceSpot extends BinanceStreams_js_1.default {
     async getOpenOrdersBySymbol(params) {
         const request = await this.signedRequest('spot', 'GET', '/api/v3/openOrders', { symbol: params.symbol });
         if (request.success && request.data !== undefined) {
-            return this.formattedResponse({ data: request.data.map(converters_js_1.convertOrderDataRequestResponse) });
+            return this.formattedResponse({ data: request.data.map(convertOrderDataRequestResponse) });
         }
         else {
             return this.formattedResponse({ errors: request.errors });
@@ -146,11 +141,10 @@ class BinanceSpot extends BinanceStreams_js_1.default {
         const request = await this.publicRequest('spot', 'GET', '/api/v3/aggTrades', { symbol: params.symbol, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors)
             return this.formattedResponse({ errors: request.errors });
-        return this.formattedResponse({ data: (0, converters_js_1.convertAggTradesDataByRequest)(request.data, params.symbol) });
+        return this.formattedResponse({ data: convertAggTradesDataByRequest(request.data, params.symbol) });
     }
     async getLatestPnlBySymbol(symbol) {
         // Not applicable for spot trading - PnL tracking is futures-specific
         return this.formattedResponse({ errors: 'Not applicable for spot trading' });
     }
 }
-exports.default = BinanceSpot;

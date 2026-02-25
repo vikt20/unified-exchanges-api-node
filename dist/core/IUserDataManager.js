@@ -1,4 +1,3 @@
-"use strict";
 /**
  * IUserDataManager - Unified User Data Manager Interface
  *
@@ -31,4 +30,4 @@
  *    - Orders: Should be added on 'NEW' status and removed on 'FILLED', 'CANCELED', or 'EXPIRED'.
  *    - Positions: Should be updated or replaced in the local array whenever an account update occurs.
  */
-Object.defineProperty(exports, "__esModule", { value: true });
+export {};

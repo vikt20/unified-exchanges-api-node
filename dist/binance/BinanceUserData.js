@@ -1,16 +1,11 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const BinanceFutures_js_1 = __importDefault(require("./BinanceFutures.js"));
+import BinanceFutures from "./BinanceFutures.js";
 /**
  * BinanceUserData - Reference implementation of IUserDataManager
  *
  * Manages local user data state (positions, orders) specifically for Binance Futures.
  * Uses instance-based callbacks for communication with UI/Bot components.
  */
-class BinanceUserData extends BinanceFutures_js_1.default {
+export default class BinanceUserData extends BinanceFutures {
     constructor(apiKey, apiSecret) {
         super(apiKey, apiSecret);
     }
@@ -175,4 +170,3 @@ class BinanceUserData extends BinanceFutures_js_1.default {
         this.emitPosition(symbol);
     };
 }
-exports.default = BinanceUserData;

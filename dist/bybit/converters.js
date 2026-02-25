@@ -1,14 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertExchangeInfo = convertExchangeInfo;
-exports.convertObjectIntoUrlEncoded = convertObjectIntoUrlEncoded;
-exports.convertBybitFunding = convertBybitFunding;
-exports.mapBybitTriggerBy = mapBybitTriggerBy;
-exports.convertBybitKline = convertBybitKline;
-exports.mapBybitOrderType = mapBybitOrderType;
-exports.convertBybitOrder = convertBybitOrder;
-exports.convertBybitPosition = convertBybitPosition;
-function convertExchangeInfo(data) {
+export function convertExchangeInfo(data) {
     const info = {};
     if (data && Array.isArray(data.list)) {
         for (const item of data.list) {
@@ -30,7 +20,7 @@ function convertExchangeInfo(data) {
     }
     return info;
 }
-function convertObjectIntoUrlEncoded(obj) {
+export function convertObjectIntoUrlEncoded(obj) {
     return Object.keys(obj).map(k => {
         if (Array.isArray(obj[k])) {
             return encodeURIComponent(k) + '=' + encodeURIComponent(JSON.stringify(obj[k]));
@@ -38,7 +28,7 @@ function convertObjectIntoUrlEncoded(obj) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]);
     }).join('&');
 }
-function convertBybitFunding(item) {
+export function convertBybitFunding(item) {
     return {
         symbol: item.symbol,
         rate: parseFloat(item.fundingRate),
@@ -47,14 +37,14 @@ function convertBybitFunding(item) {
     };
 }
 // --- Helpers ---
-function mapBybitTriggerBy(triggerBy) {
+export function mapBybitTriggerBy(triggerBy) {
     if (triggerBy === 'MarkPrice')
         return 'MARK_PRICE';
     // Map LastPrice and IndexPrice (fallback) to CONTRACT_PRICE
     return 'CONTRACT_PRICE';
 }
 // --- Converters ---
-function convertBybitKline(item, symbol) {
+export function convertBybitKline(item, symbol) {
     // Bybit V5 kline: [startTime, open, high, low, close, volume, turnover]
     return {
         symbol,
@@ -67,7 +57,7 @@ function convertBybitKline(item, symbol) {
         trades: 0 // Bybit V5 kline doesn't provide trade count in the standard array
     };
 }
-function mapBybitOrderType(bybitOrder) {
+export function mapBybitOrderType(bybitOrder) {
     const isConditional = !!bybitOrder.triggerPrice && bybitOrder.closeOnTrigger === true;
     if (isConditional) {
         const isStopLoss = (bybitOrder.side === 'Sell' && bybitOrder.triggerDirection === 2) ||
@@ -94,7 +84,7 @@ function mapBybitOrderType(bybitOrder) {
         return 'MARKET';
     return bybitOrder.orderType;
 }
-function convertBybitOrder(item) {
+export function convertBybitOrder(item) {
     // Map Bybit status to unified OrderStatus
     let status = 'NEW';
     if (item.orderStatus === 'New')
@@ -143,7 +133,7 @@ function convertBybitOrder(item) {
         isAlgoOrder: false
     };
 }
-function convertBybitPosition(item) {
+export function convertBybitPosition(item) {
     const size = parseFloat(item.size);
     // positionIdx: 0=One-Way, 1=Buy side of Hedge, 2=Sell side of Hedge
     let direction = 'LONG';

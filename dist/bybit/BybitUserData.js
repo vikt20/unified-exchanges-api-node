@@ -1,16 +1,11 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const BybitFutures_js_1 = __importDefault(require("./BybitFutures.js"));
+import BybitFutures from "./BybitFutures.js";
 /**
  * BybitUserData - Implementation of IUserDataManager for Bybit
  *
  * Manages local user data state (positions, orders) specifically for Bybit Futures.
  * Uses instance-based callbacks for communication with UI/Bot components.
  */
-class BybitUserData extends BybitFutures_js_1.default {
+export default class BybitUserData extends BybitFutures {
     constructor(apiKey, apiSecret) {
         super(apiKey, apiSecret);
     }
@@ -174,4 +169,3 @@ class BybitUserData extends BybitFutures_js_1.default {
         this.emitOrders(symbol);
     };
 }
-exports.default = BybitUserData;

@@ -1,11 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const BybitStreams_1 = __importDefault(require("./BybitStreams"));
-const converters_1 = require("./converters");
-class BybitFutures extends BybitStreams_1.default {
+import BybitStreams from "./BybitStreams.js";
+import { convertBybitKline, convertBybitOrder, convertExchangeInfo } from "./converters.js";
+export default class BybitFutures extends BybitStreams {
     constructor(apiKey, apiSecret, isTest = false) {
         super(apiKey, apiSecret, isTest);
     }
@@ -15,7 +10,7 @@ class BybitFutures extends BybitStreams_1.default {
     async getExchangeInfo() {
         const res = await this.publicRequest('linear', 'GET', '/v5/market/instruments-info', { category: 'linear' });
         if (res.success && res.data) {
-            const info = (0, converters_1.convertExchangeInfo)(res.data);
+            const info = convertExchangeInfo(res.data);
             return this.formattedResponse({ data: info });
         }
         return this.formattedResponse({ errors: res.errors });
@@ -69,7 +64,7 @@ class BybitFutures extends BybitStreams_1.default {
         const res = await this.publicRequest('linear', 'GET', '/v5/market/kline', query);
         const data = res.data;
         if (res.success && data && data.list) {
-            const klines = data.list.map((item) => (0, converters_1.convertBybitKline)(item, params.symbol));
+            const klines = data.list.map((item) => convertBybitKline(item, params.symbol));
             klines.reverse();
             return this.formattedResponse({ data: klines });
         }
@@ -177,7 +172,7 @@ class BybitFutures extends BybitStreams_1.default {
         const res = await this.signedRequest('linear', 'GET', '/v5/order/realtime', query);
         const data = res.data;
         if (res.success && data && data.list) {
-            const orders = data.list.map(converters_1.convertBybitOrder);
+            const orders = data.list.map(convertBybitOrder);
             return this.formattedResponse({ data: orders });
         }
         return this.formattedResponse({ errors: res.errors });
@@ -224,6 +219,7 @@ class BybitFutures extends BybitStreams_1.default {
                 payload.triggerBy = 'MarkPrice';
             else if (workingType === 'CONTRACT_PRICE')
                 payload.triggerBy = 'LastPrice';
+            payload.tpslMode = 'Full';
             if (triggerDirection) {
                 payload.triggerDirection = triggerDirection;
             }
@@ -348,7 +344,63 @@ class BybitFutures extends BybitStreams_1.default {
         });
     }
     async trailingStopOrder(params) {
-        return this.formattedResponse({ errors: "Trailing Stop Order not fully supported in Bybit V5 wrapper yet" });
+        // Bybit V5 uses /v5/position/trading-stop to set a trailing stop on an existing position.
+        // Unlike Binance's TRAILING_STOP_MARKET order type, this is a position-level operation.
+        // callbackRate (percentage) must be converted to an absolute price distance (trailingStop).
+        // Determine the trailing stop distance from callbackRate
+        let trailingStopDistance;
+        if (params.activatePrice) {
+            // If an activation price is provided, calculate trailing distance from it
+            trailingStopDistance = params.activatePrice * (params.callbackRate / 100);
+        }
+        else {
+            // Fetch current price to calculate the absolute trailing stop distance
+            const prices = await this.getTickerPrice(params.symbol);
+            if (!prices) {
+                return this.formattedResponse({ errors: "Failed to fetch current price for trailing stop calculation" });
+            }
+            trailingStopDistance = prices.lastPrice * (params.callbackRate / 100);
+        }
+        // positionIdx: 0 = one-way mode, 1 = hedge-mode Buy side (Long), 2 = hedge-mode Sell side (Short)
+        // When closing a LONG position, the side is SELL → positionIdx 1 (long side)
+        // When closing a SHORT position, the side is BUY → positionIdx 2 (short side)
+        const positionIdx = params.side === 'SELL' ? 1 : 2;
+        const payload = {
+            category: 'linear',
+            symbol: params.symbol,
+            trailingStop: trailingStopDistance.toString(),
+            positionIdx: positionIdx
+        };
+        if (params.activatePrice) {
+            payload.activePrice = params.activatePrice.toString();
+        }
+        const res = await this.signedRequest('linear', 'POST', '/v5/position/trading-stop', payload);
+        if (res.success) {
+            // Bybit returns an empty result on success, so we construct a synthetic response
+            const data = {
+                orderId: 0, // No orderId for trailing stop position setting
+                symbol: params.symbol,
+                status: 'NEW',
+                clientOrderId: `trailing-${Date.now()}`,
+                price: '0',
+                avgPrice: '0',
+                origQty: params.quantity.toString(),
+                executedQty: '0',
+                cumQuote: '0',
+                timeInForce: 'GTC',
+                type: 'TRAILING_STOP_MARKET',
+                reduceOnly: true,
+                closePosition: false,
+                side: params.side,
+                positionSide: 'BOTH',
+                stopPrice: params.activatePrice?.toString(),
+                workingType: 'CONTRACT_PRICE',
+                priceProtect: false,
+                origType: 'TRAILING_STOP_MARKET'
+            };
+            return this.formattedResponse({ data });
+        }
+        return this.formattedResponse({ errors: res.errors });
     }
     async getLatestPnlBySymbol(symbol) {
         const res = await this.signedRequest('linear', 'GET', '/v5/execution/list', {
@@ -377,4 +429,3 @@ class BybitFutures extends BybitStreams_1.default {
         return null;
     }
 }
-exports.default = BybitFutures;

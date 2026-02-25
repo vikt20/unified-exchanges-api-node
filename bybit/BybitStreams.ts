@@ -6,6 +6,7 @@ import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.j
 import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, OrderWorkingType, OrderType } from "../core/types.js";
 import { convertBybitKline, BybitWsMessage, BybitOrderWsData, BybitPositionWsData, BybitWalletWsData, mapBybitTriggerBy, BybitDepthWsData, BybitKlineWsData, BybitBookTickerWsData, BybitTradeWsData, convertBybitFunding, BybitTickerWsData, mapBybitOrderType } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
+import crypto from 'crypto';
 
 // Extend BybitBase to get access to API keys and Base URLs
 export default class BybitStreams extends BybitBase implements IStreamManager {
@@ -158,7 +159,6 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
     }
 
     private generateHmacSignature(expires: number): string {
-        const crypto = require('crypto');
         return crypto.createHmac('sha256', this.apiSecret).update(`GET/realtime${expires}`).digest('hex');
     }
 

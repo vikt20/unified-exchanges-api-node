@@ -1,10 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const BinanceStreams_js_1 = __importDefault(require("./BinanceStreams.js"));
-const converters_js_1 = require("./converters.js");
+import BinanceStreams from './BinanceStreams.js';
+import { convertPositionRiskDataByRequest, convertPositionRiskToPositionData, convertOrderDataRequestResponse, extractInfo, convertKlinesDataByRequest, convertAggTradesDataByRequest, convertAlgoOrderByRequest } from './converters.js';
 /* export interface IBinanceClass {
     closeListenKey(): Promise<any>;
     getExchangeInfo(): Promise<FormattedResponse<ExchangeInfo>>;
@@ -31,7 +26,7 @@ const converters_js_1 = require("./converters.js");
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
     getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
 } */
-class BinanceFutures extends BinanceStreams_js_1.default {
+export default class BinanceFutures extends BinanceStreams {
     constructor(apiKey, apiSecret, isTest = false, pingServer = false) {
         super(apiKey, apiSecret, isTest, pingServer);
     }
@@ -41,7 +36,7 @@ class BinanceFutures extends BinanceStreams_js_1.default {
     async getExchangeInfo() {
         let request = await this.publicRequest('futures', 'GET', '/fapi/v1/exchangeInfo');
         if (request.success && request.data) {
-            return this.formattedResponse({ data: (0, converters_js_1.extractInfo)(request.data.symbols) });
+            return this.formattedResponse({ data: extractInfo(request.data.symbols) });
         }
         else {
             return this.formattedResponse({ errors: request.errors });
@@ -54,13 +49,13 @@ class BinanceFutures extends BinanceStreams_js_1.default {
         const request = await this.publicRequest('futures', 'GET', '/fapi/v1/klines', { symbol: params.symbol, interval: params.interval, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors)
             return this.formattedResponse({ errors: request.errors });
-        return this.formattedResponse({ data: (0, converters_js_1.convertKlinesDataByRequest)(request.data, params.symbol) });
+        return this.formattedResponse({ data: convertKlinesDataByRequest(request.data, params.symbol) });
     }
     async getAggTrades(params) {
         const request = await this.publicRequest('futures', 'GET', '/fapi/v1/aggTrades', { symbol: params.symbol, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors)
             return this.formattedResponse({ errors: request.errors });
-        return this.formattedResponse({ data: (0, converters_js_1.convertAggTradesDataByRequest)(request.data, params.symbol) });
+        return this.formattedResponse({ data: convertAggTradesDataByRequest(request.data, params.symbol) });
     }
     async getLongShortRatio(params) {
         const request = await this.publicRequest('futures', 'GET', '/futures/data/takerlongshortRatio', { symbol: params.symbol, limit: params.limit, period: params.period, startTime: params.startTime, endTime: params.endTime });
@@ -78,7 +73,7 @@ class BinanceFutures extends BinanceStreams_js_1.default {
         if (!request.data)
             return this.formattedResponse({ data: [] });
         return this.formattedResponse({
-            data: request.data.map(converters_js_1.convertPositionRiskDataByRequest)
+            data: request.data.map(convertPositionRiskDataByRequest)
         });
     }
     async getOpenPositions() {
@@ -88,7 +83,7 @@ class BinanceFutures extends BinanceStreams_js_1.default {
         // Filter positions with non-zero amounts and convert to PositionData
         const openPositions = request.data
             .filter(pos => pos.positionAmount !== 0)
-            .map(converters_js_1.convertPositionRiskToPositionData);
+            .map(convertPositionRiskToPositionData);
         return this.formattedResponse({ data: openPositions });
     }
     async getOpenPositionBySymbol(params) {
@@ -119,14 +114,14 @@ class BinanceFutures extends BinanceStreams_js_1.default {
         const errorMessages = [];
         // Regular orders
         if (regularRes.success && regularRes.data) {
-            orders.push(...regularRes.data.map(converters_js_1.convertOrderDataRequestResponse));
+            orders.push(...regularRes.data.map(convertOrderDataRequestResponse));
         }
         else if (regularRes.errors?.length) {
             errorMessages.push(regularRes.errors);
         }
         // Algo orders
         if (algoRes.success && algoRes.data) {
-            orders.push(...algoRes.data.map(converters_js_1.convertAlgoOrderByRequest));
+            orders.push(...algoRes.data.map(convertAlgoOrderByRequest));
         }
         else if (algoRes.errors?.length) {
             errorMessages.push(algoRes.errors);
@@ -371,4 +366,3 @@ class BinanceFutures extends BinanceStreams_js_1.default {
             return await this.signedRequest('futures', 'POST', '/fapi/v1/order', params);
     }
 }
-exports.default = BinanceFutures;

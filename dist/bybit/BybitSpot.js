@@ -1,11 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const BybitStreams_js_1 = __importDefault(require("./BybitStreams.js"));
-const converters_js_1 = require("./converters.js");
-class BybitSpot extends BybitStreams_js_1.default {
+import BybitStreams from "./BybitStreams.js";
+import { convertBybitKline, convertBybitOrder, convertExchangeInfo } from "./converters.js";
+export default class BybitSpot extends BybitStreams {
     constructor(apiKey, apiSecret, isTest) {
         super(apiKey, apiSecret, isTest);
     }
@@ -15,7 +10,7 @@ class BybitSpot extends BybitStreams_js_1.default {
     async getExchangeInfo() {
         const res = await this.publicRequest('spot', 'GET', '/v5/market/instruments-info', { category: 'spot' });
         if (res.success && res.data) {
-            const info = (0, converters_js_1.convertExchangeInfo)(res.data);
+            const info = convertExchangeInfo(res.data);
             return this.formattedResponse({ data: info });
         }
         return this.formattedResponse({ errors: res.errors });
@@ -69,7 +64,7 @@ class BybitSpot extends BybitStreams_js_1.default {
         const res = await this.publicRequest('spot', 'GET', '/v5/market/kline', query);
         const data = res.data;
         if (res.success && data && data.list) {
-            const klines = data.list.map((item) => (0, converters_js_1.convertBybitKline)(item, params.symbol));
+            const klines = data.list.map((item) => convertBybitKline(item, params.symbol));
             klines.reverse();
             return this.formattedResponse({ data: klines });
         }
@@ -128,7 +123,7 @@ class BybitSpot extends BybitStreams_js_1.default {
         const res = await this.signedRequest('spot', 'GET', '/v5/order/realtime', query);
         const data = res.data;
         if (res.success && data && data.list) {
-            const orders = data.list.map(converters_js_1.convertBybitOrder);
+            const orders = data.list.map(convertBybitOrder);
             return this.formattedResponse({ data: orders });
         }
         return this.formattedResponse({ errors: res.errors });
@@ -237,4 +232,3 @@ class BybitSpot extends BybitStreams_js_1.default {
         return this.formattedResponse({ errors: 'Not applicable for spot trading' });
     }
 }
-exports.default = BybitSpot;

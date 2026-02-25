@@ -1,4 +1,3 @@
-"use strict";
 /**
  * AbstractExchangeBase - Abstract Base Class for Exchange Clients
  *
@@ -11,14 +10,9 @@
  * Each exchange extends this and implements abstract methods
  * for exchange-specific URL patterns and authentication.
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.AbstractExchangeBase = void 0;
-const http_1 = __importDefault(require("http"));
-const https_1 = __importDefault(require("https"));
-const axios_1 = __importDefault(require("axios"));
+import http from 'http';
+import https from 'https';
+import axios from 'axios';
 /**
  * Abstract base class for exchange API clients.
  *
@@ -26,13 +20,13 @@ const axios_1 = __importDefault(require("axios"));
  * and response formatting. Exchange-specific implementations extend this
  * class and implement abstract methods for authentication and URL patterns.
  */
-class AbstractExchangeBase {
+export class AbstractExchangeBase {
     apiKey;
     apiSecret;
     isTest;
     // HTTP connection pooling for performance
-    _HTTP_AGENT = new http_1.default.Agent({ keepAlive: true, timeout: 3600000 });
-    _HTTPS_AGENT = new https_1.default.Agent({ keepAlive: true, timeout: 3600000 });
+    _HTTP_AGENT = new http.Agent({ keepAlive: true, timeout: 3600000 });
+    _HTTPS_AGENT = new https.Agent({ keepAlive: true, timeout: 3600000 });
     _AXIOS_INSTANCE;
     // Time synchronization
     timeOffset = 0;
@@ -43,7 +37,7 @@ class AbstractExchangeBase {
         this.apiKey = apiKey || '';
         this.apiSecret = apiSecret || '';
         this.isTest = isTest;
-        this._AXIOS_INSTANCE = axios_1.default.create({
+        this._AXIOS_INSTANCE = axios.create({
             httpAgent: this._HTTP_AGENT,
             httpsAgent: this._HTTPS_AGENT
         });
@@ -108,4 +102,3 @@ class AbstractExchangeBase {
         return this.formattedResponse({ errors: `Failed to make request: ${error.message}` });
     }
 }
-exports.AbstractExchangeBase = AbstractExchangeBase;

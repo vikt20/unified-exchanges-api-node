@@ -277,6 +277,7 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
         };
 
         const disconnect = () => {
+            console.log(`Disconnecting manually Websocket ${title}`)
             isActive = false;
             cleanup();
         };
@@ -336,11 +337,12 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
                 currentWs.on('close', (code: number, reason: string) => {
                     // Don't reconnect if manually disconnected
                     if (!isActive) {
+                        console.log(`WebSocket manually closed for ${title}`)
                         return;
                     }
 
                     // Reconnect after delay for any close event
-                    console.log(`${title} - WebSocket closed (code: ${code}), reconnecting in ${RECONNECT_DELAY}ms`);
+                    console.log(`${title} - WebSocket closed for ${title} - (code: ${code}), reconnecting in ${RECONNECT_DELAY}ms`);
                     reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
                 });
 
@@ -401,14 +403,14 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
         const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
 
-        return this.handleWebSocket(createWs, convertBookTickerData, callback, 'futuresBookTicketStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertBookTickerData, callback, 'futuresBookTickerStream()', statusCallback);
     }
 
     spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
         const createWs = () => new ws(this.getCombinedStreamUrl('spot') + streams.join('/'));
 
-        return this.handleWebSocket(createWs, convertBookTickerData, callback, 'spotBookTicketStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertBookTickerData, callback, 'spotBookTickerStream()', statusCallback);
     }
 
     async futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {

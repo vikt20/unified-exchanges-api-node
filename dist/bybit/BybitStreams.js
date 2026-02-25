@@ -1,13 +1,9 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const BybitBase_js_1 = __importDefault(require("./BybitBase.js"));
-const ws_1 = __importDefault(require("ws"));
-const converters_js_1 = require("./converters.js");
+import BybitBase from "./BybitBase.js";
+import ws from 'ws';
+import { mapBybitTriggerBy, convertBybitFunding, mapBybitOrderType } from "./converters.js";
+import crypto from 'crypto';
 // Extend BybitBase to get access to API keys and Base URLs
-class BybitStreams extends BybitBase_js_1.default {
+export default class BybitStreams extends BybitBase {
     subscriptions = [];
     constructor(apiKey, apiSecret, isTest = false) {
         super(apiKey, apiSecret, isTest);
@@ -48,7 +44,7 @@ class BybitStreams extends BybitBase_js_1.default {
                     return;
                 cleanup();
                 try {
-                    currentWs = new ws_1.default(url);
+                    currentWs = new ws(url);
                 }
                 catch (e) {
                     console.error(`${title} - Failed to create WebSocket`, e);
@@ -80,7 +76,7 @@ class BybitStreams extends BybitBase_js_1.default {
                         currentWs?.send(JSON.stringify(subParams));
                     }
                     pingInterval = setInterval(() => {
-                        if (currentWs?.readyState === ws_1.default.OPEN) {
+                        if (currentWs?.readyState === ws.OPEN) {
                             currentWs.send(JSON.stringify({ op: "ping" }));
                             statusCallback?.('PING');
                         }
@@ -133,7 +129,6 @@ class BybitStreams extends BybitBase_js_1.default {
         });
     }
     generateHmacSignature(expires) {
-        const crypto = require('crypto');
         return crypto.createHmac('sha256', this.apiSecret).update(`GET/realtime${expires}`).digest('hex');
     }
     // --- IStreamManager Implementation ---
@@ -300,7 +295,7 @@ class BybitStreams extends BybitBase_js_1.default {
                     symbol: o.symbol,
                     clientOrderId: o.orderLinkId || o.orderId,
                     side: o.side.toUpperCase(),
-                    orderType: (0, converters_js_1.mapBybitOrderType)(o),
+                    orderType: mapBybitOrderType(o),
                     timeInForce: (o.timeInForce === 'PostOnly' ? 'GTX' : o.timeInForce),
                     originalQuantity: parseFloat(o.qty),
                     originalPrice: parseFloat(o.price || '0'),
@@ -318,8 +313,8 @@ class BybitStreams extends BybitBase_js_1.default {
                     tradeId: 0,
                     isMakerSide: false,
                     isReduceOnly: o.reduceOnly,
-                    workingType: (0, converters_js_1.mapBybitTriggerBy)(o.triggerBy),
-                    originalOrderType: (0, converters_js_1.mapBybitOrderType)(o),
+                    workingType: mapBybitTriggerBy(o.triggerBy),
+                    originalOrderType: mapBybitOrderType(o),
                     positionSide: o.positionIdx === 1 ? 'LONG' : (o.positionIdx === 2 ? 'SHORT' : 'BOTH'),
                     closeAll: o.closeOnTrigger || false,
                     activationPrice: o.triggerPrice,
@@ -387,7 +382,7 @@ class BybitStreams extends BybitBase_js_1.default {
     parseFunding(msg) {
         const data = msg.data;
         if (data && data.fundingRate && data.nextFundingTime) {
-            return (0, converters_js_1.convertBybitFunding)(data);
+            return convertBybitFunding(data);
         }
         return undefined;
     }
@@ -396,4 +391,3 @@ class BybitStreams extends BybitBase_js_1.default {
         return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseFunding, 'fundingStream', statusCallback);
     }
 }
-exports.default = BybitStreams;
