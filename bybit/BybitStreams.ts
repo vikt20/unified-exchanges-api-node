@@ -300,15 +300,25 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
 
                 if (topic === 'position') {
                     const positions: PositionData[] = dataList.map((p: BybitPositionWsData) => {
-                        let dir: PositionDirection = 'LONG';
-                        if (p.side === 'Sell' || p.positionIdx === 2) dir = 'SHORT';
+                        console.log(p)
+                        const size = Number(p.size);
+                        const isInPosition = size > 0;
+
+                        let dir: PositionDirection | null = null;
+
+                        if (isInPosition) {
+                            if (p.positionIdx === 1) dir = 'LONG';
+                            else if (p.positionIdx === 2) dir = 'SHORT';
+                            else dir = p.side === 'Buy' ? 'LONG' : 'SHORT'; // one-way fallback
+                        }
+
                         return {
                             symbol: p.symbol,
-                            positionAmount: parseFloat(p.size),
-                            entryPrice: parseFloat(p.avgPrice || p.entryPrice || '0'),
+                            positionAmount: size,
+                            entryPrice: Number(p.avgPrice ?? p.entryPrice ?? 0),
                             positionDirection: dir,
-                            isInPosition: parseFloat(p.size) > 0,
-                            unrealizedPnL: parseFloat(p.unrealisedPnl || '0')
+                            isInPosition,
+                            unrealizedPnL: Number(p.unrealisedPnl ?? 0)
                         } as PositionData;
                     });
                     return {

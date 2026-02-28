@@ -26,6 +26,10 @@ export default class BybitUserData extends BybitFutures {
      */
     orderCallbacks = new Set();
     /**
+     * Private storage for multiple status update callbacks
+     */
+    statusCallbacks = new Set();
+    /**
      * Register a callback to receive position updates
      * @returns Unsubscribe function to remove this callback
      */
@@ -43,6 +47,16 @@ export default class BybitUserData extends BybitFutures {
         this.orderCallbacks.add(callback);
         return () => {
             this.orderCallbacks.delete(callback);
+        };
+    }
+    /**
+     * Register a callback to receive status updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onStatusUpdate(callback) {
+        this.statusCallbacks.add(callback);
+        return () => {
+            this.statusCallbacks.delete(callback);
         };
     }
     /**
@@ -66,7 +80,7 @@ export default class BybitUserData extends BybitFutures {
     async init() {
         // Connect Stream and fetch Snapshots
         return Promise.all([
-            this.futuresUserDataStream(this.handleUserData),
+            this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
             this.requestAllPositions()
         ]);
@@ -75,6 +89,7 @@ export default class BybitUserData extends BybitFutures {
         this.closeAllSockets();
         this.positionCallbacks.clear();
         this.orderCallbacks.clear();
+        this.statusCallbacks.clear();
     }
     /**
      * Internal method to emit position update via callbacks
@@ -110,6 +125,11 @@ export default class BybitUserData extends BybitFutures {
             default:
                 // console.log("Bybit Unhandled User Event", data.event);
                 break;
+        }
+    };
+    handleUserStatus = (status) => {
+        for (const cb of this.statusCallbacks) {
+            cb(status);
         }
     };
     async requestAllOrders() {

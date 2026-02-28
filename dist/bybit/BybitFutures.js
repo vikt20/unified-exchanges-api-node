@@ -369,7 +369,8 @@ export default class BybitFutures extends BybitStreams {
             category: 'linear',
             symbol: params.symbol,
             trailingStop: trailingStopDistance.toString(),
-            positionIdx: positionIdx
+            positionIdx: 0,
+            reduceOnly: true
         };
         if (params.activatePrice) {
             payload.activePrice = params.activatePrice.toString();
@@ -403,14 +404,13 @@ export default class BybitFutures extends BybitStreams {
         return this.formattedResponse({ errors: res.errors });
     }
     async getLatestPnlBySymbol(symbol) {
-        const res = await this.signedRequest('linear', 'GET', '/v5/execution/list', {
+        const res = await this.signedRequest('linear', 'GET', '/v5/position/closed-pnl', {
             category: 'linear',
-            symbol: symbol,
-            limit: 100
+            symbol,
+            limit: 1
         });
-        if (res.success && res.data && res.data.list) {
-            const total = res.data.list.reduce((acc, curr) => acc + parseFloat(curr.closedPnl || '0'), 0);
-            return this.formattedResponse({ data: total });
+        if (res.success && res.data?.list?.length) {
+            return this.formattedResponse({ data: parseFloat(res.data.list[0].closedPnl) });
         }
         return this.formattedResponse({ errors: res.errors });
     }

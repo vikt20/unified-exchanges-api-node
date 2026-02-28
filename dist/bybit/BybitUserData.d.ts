@@ -1,7 +1,7 @@
-import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
+import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import BybitFutures from "./BybitFutures.js";
 import { UserData } from "../binance/BinanceStreams.js";
-import { PositionData, OrderData } from "../core/types.js";
+import { PositionData, OrderData, SocketStatus } from "../core/types.js";
 /**
  * BybitUserData - Implementation of IUserDataManager for Bybit
  *
@@ -24,6 +24,10 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
      */
     private orderCallbacks;
     /**
+     * Private storage for multiple status update callbacks
+     */
+    private statusCallbacks;
+    /**
      * Register a callback to receive position updates
      * @returns Unsubscribe function to remove this callback
      */
@@ -33,6 +37,11 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
      * @returns Unsubscribe function to remove this callback
      */
     onOrderUpdate(callback: OrderUpdateCallback): Unsubscribe;
+    /**
+     * Register a callback to receive status updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onStatusUpdate(callback: StatusUpdateCallback): Unsubscribe;
     /**
      * Manually trigger position update callback for a specific symbol
      */
@@ -52,6 +61,7 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
      */
     private emitOrders;
     handleUserData: (data: UserData) => void;
+    handleUserStatus: (status: SocketStatus) => void;
     requestAllOrders(): Promise<void>;
     requestAllPositions(): Promise<void>;
     setPosition: (data: PositionData) => Promise<void>;

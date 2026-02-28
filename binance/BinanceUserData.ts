@@ -1,7 +1,8 @@
-import { IUserDataManager, PositionUpdateCallback, OrderUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
+import { IUserDataManager, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import { OrderData, PositionData } from "./BinanceBase.js";
 import BinanceFutures from "./BinanceFutures.js";
 import { UserData as WebSocketUserData } from "./BinanceStreams.js";
+import { SocketStatus } from "../core/types.js";
 
 export type CustomUserData = {
     positions: PositionData[],
@@ -39,6 +40,11 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
     private orderCallbacks = new Set<OrderUpdateCallback>();
 
     /**
+     * Private storage for multiple status update callbacks
+     */
+    private statusCallbacks = new Set<StatusUpdateCallback>();
+
+    /**
      * Register a callback to receive position updates
      * @returns Unsubscribe function to remove this callback
      */
@@ -59,6 +65,18 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
 
         return () => {
             this.orderCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * Register a callback to receive status updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onStatusUpdate(callback: StatusUpdateCallback): Unsubscribe {
+        this.statusCallbacks.add(callback);
+
+        return () => {
+            this.statusCallbacks.delete(callback);
         };
     }
 
@@ -84,7 +102,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
 
     async init() {
         return Promise.all([
-            this.futuresUserDataStream(this.handleUserData),
+            this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
             this.requestAllPositions()
         ])
@@ -96,6 +114,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
         // Clear all registered callbacks
         this.positionCallbacks.clear();
         this.orderCallbacks.clear();
+        this.statusCallbacks.clear();
     }
 
     /**
@@ -136,6 +155,12 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
                 break;
         }
         // console.log(userData);
+    }
+
+    handleUserStatus = (status: SocketStatus) => {
+        for (const cb of this.statusCallbacks) {
+            cb(status);
+        }
     }
 
     async requestAllOrders(): Promise<void> {

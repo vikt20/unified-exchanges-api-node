@@ -26,6 +26,10 @@ export default class BinanceUserData extends BinanceFutures {
      */
     orderCallbacks = new Set();
     /**
+     * Private storage for multiple status update callbacks
+     */
+    statusCallbacks = new Set();
+    /**
      * Register a callback to receive position updates
      * @returns Unsubscribe function to remove this callback
      */
@@ -43,6 +47,16 @@ export default class BinanceUserData extends BinanceFutures {
         this.orderCallbacks.add(callback);
         return () => {
             this.orderCallbacks.delete(callback);
+        };
+    }
+    /**
+     * Register a callback to receive status updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onStatusUpdate(callback) {
+        this.statusCallbacks.add(callback);
+        return () => {
+            this.statusCallbacks.delete(callback);
         };
     }
     /**
@@ -65,7 +79,7 @@ export default class BinanceUserData extends BinanceFutures {
     }
     async init() {
         return Promise.all([
-            this.futuresUserDataStream(this.handleUserData),
+            this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
             this.requestAllPositions()
         ]);
@@ -76,6 +90,7 @@ export default class BinanceUserData extends BinanceFutures {
         // Clear all registered callbacks
         this.positionCallbacks.clear();
         this.orderCallbacks.clear();
+        this.statusCallbacks.clear();
     }
     /**
      * Internal method to emit position update via callbacks
@@ -114,6 +129,11 @@ export default class BinanceUserData extends BinanceFutures {
                 break;
         }
         // console.log(userData);
+    };
+    handleUserStatus = (status) => {
+        for (const cb of this.statusCallbacks) {
+            cb(status);
+        }
     };
     async requestAllOrders() {
         const request = await this.getOpenOrders();

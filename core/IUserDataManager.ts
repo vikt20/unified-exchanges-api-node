@@ -32,7 +32,7 @@
  */
 
 import { IExchangeClient } from './IExchangeClient.js';
-import type { OrderData, PositionData } from './types.js';
+import type { OrderData, PositionData, SocketStatus } from './types.js';
 
 /**
  * User data state structure
@@ -58,6 +58,12 @@ export type Unsubscribe = () => void;
  * @param position - The updated position data, or undefined if no position exists
  */
 export type PositionUpdateCallback = (symbol: string, position: PositionData | undefined) => void;
+
+/**
+ * Callback function type for status updates
+ * @param status - The updated socket status
+ */
+export type StatusUpdateCallback = (status: SocketStatus) => void;
 
 /**
  * Callback function type for order updates
@@ -142,6 +148,15 @@ export interface IUserDataManager extends IExchangeClient {
      * ```
      */
     onOrderUpdate(callback: OrderUpdateCallback): Unsubscribe;
+
+    /**
+     * Register a callback to receive status updates.
+     * This callback will be invoked whenever socket status changes.
+     * 
+     * @param callback - Function to call with status updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onStatusUpdate(callback: StatusUpdateCallback): Unsubscribe;
 
     /**
      * Manually trigger a position update callback for a specific symbol.

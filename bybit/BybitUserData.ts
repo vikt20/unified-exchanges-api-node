@@ -1,7 +1,7 @@
-import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
+import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import BybitFutures from "./BybitFutures.js";
 import { UserData } from "../binance/BinanceStreams.js";
-import { PositionData, OrderData } from "../core/types.js";
+import { PositionData, OrderData, SocketStatus } from "../core/types.js";
 
 /**
  * BybitUserData - Implementation of IUserDataManager for Bybit
@@ -35,6 +35,11 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
     private orderCallbacks = new Set<OrderUpdateCallback>();
 
     /**
+     * Private storage for multiple status update callbacks
+     */
+    private statusCallbacks = new Set<StatusUpdateCallback>();
+
+    /**
      * Register a callback to receive position updates
      * @returns Unsubscribe function to remove this callback
      */
@@ -55,6 +60,18 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
 
         return () => {
             this.orderCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * Register a callback to receive status updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onStatusUpdate(callback: StatusUpdateCallback): Unsubscribe {
+        this.statusCallbacks.add(callback);
+
+        return () => {
+            this.statusCallbacks.delete(callback);
         };
     }
 
@@ -81,7 +98,7 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
     async init(): Promise<unknown> {
         // Connect Stream and fetch Snapshots
         return Promise.all([
-            this.futuresUserDataStream(this.handleUserData),
+            this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
             this.requestAllPositions()
         ]);
@@ -91,6 +108,7 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
         this.closeAllSockets();
         this.positionCallbacks.clear();
         this.orderCallbacks.clear();
+        this.statusCallbacks.clear();
     }
 
     /**
@@ -129,6 +147,12 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
             default:
                 // console.log("Bybit Unhandled User Event", data.event);
                 break;
+        }
+    }
+
+    handleUserStatus = (status: SocketStatus) => {
+        for (const cb of this.statusCallbacks) {
+            cb(status);
         }
     }
 

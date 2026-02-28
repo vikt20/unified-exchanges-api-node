@@ -1,7 +1,8 @@
-import { IUserDataManager, PositionUpdateCallback, OrderUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
+import { IUserDataManager, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import { OrderData, PositionData } from "./BinanceBase.js";
 import BinanceFutures from "./BinanceFutures.js";
 import { UserData as WebSocketUserData } from "./BinanceStreams.js";
+import { SocketStatus } from "../core/types.js";
 export type CustomUserData = {
     positions: PositionData[];
     orders: OrderData[];
@@ -28,6 +29,10 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      */
     private orderCallbacks;
     /**
+     * Private storage for multiple status update callbacks
+     */
+    private statusCallbacks;
+    /**
      * Register a callback to receive position updates
      * @returns Unsubscribe function to remove this callback
      */
@@ -37,6 +42,11 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      * @returns Unsubscribe function to remove this callback
      */
     onOrderUpdate(callback: OrderUpdateCallback): Unsubscribe;
+    /**
+     * Register a callback to receive status updates
+     * @returns Unsubscribe function to remove this callback
+     */
+    onStatusUpdate(callback: StatusUpdateCallback): Unsubscribe;
     /**
      * Manually trigger position update callback for a specific symbol
      */
@@ -56,6 +66,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      */
     private emitOrders;
     handleUserData: (data: WebSocketUserData) => void;
+    handleUserStatus: (status: SocketStatus) => void;
     requestAllOrders(): Promise<void>;
     requestAllPositions(): Promise<void>;
     setOrders: (data: OrderData) => Promise<void>;
