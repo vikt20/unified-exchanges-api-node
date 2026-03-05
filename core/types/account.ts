@@ -14,6 +14,7 @@ export interface PositionData {
     positionDirection: PositionDirection;
     isInPosition: boolean;
     unrealizedPnL: number;
+    raw_data?: any
 }
 
 // ━━ Position Risk Data (Full Position Detail) ━━

@@ -318,7 +318,8 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
                             entryPrice: Number(p.avgPrice ?? p.entryPrice ?? 0),
                             positionDirection: dir,
                             isInPosition,
-                            unrealizedPnL: Number(p.unrealisedPnl ?? 0)
+                            unrealizedPnL: Number(p.unrealisedPnl ?? 0),
+                            raw_data: p
                         } as PositionData;
                     });
                     return {

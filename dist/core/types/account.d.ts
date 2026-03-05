@@ -11,6 +11,7 @@ export interface PositionData {
     positionDirection: PositionDirection;
     isInPosition: boolean;
     unrealizedPnL: number;
+    raw_data?: any;
 }
 export interface PositionRiskData {
     symbol: string;
