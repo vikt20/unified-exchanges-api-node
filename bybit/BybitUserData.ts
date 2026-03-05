@@ -177,18 +177,21 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
 
     setPosition = async (data: PositionData): Promise<void> => {
         const symbol = data.symbol;
-        const idx = this.userData.positions.findIndex(p => p.symbol === symbol && p.positionDirection === data.positionDirection);
-        // Note: Bybit allows Hedge mode (Two positions per symbol).
-        // Identifier should be Symbol + Direction.
 
-        if (idx === -1) {
+        const position = this.userData.positions.find(p => p.symbol === symbol);
+
+        if (typeof position === 'undefined') {
             this.userData.positions.push(data);
         } else {
-            this.userData.positions[idx] = data;
+            this.userData.positions = this.userData.positions.map(p => {
+                if (p.symbol === symbol) {
+                    return data
+                }
+                return p
+            })
         }
-
-        // Call callback for listeners
-        this.emitPosition(symbol);
+        //Call callback for listeners
+        this.emitPosition(symbol)
     }
 
     setOrders = async (data: OrderData): Promise<void> => {
