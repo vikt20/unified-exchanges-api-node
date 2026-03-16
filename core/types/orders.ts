@@ -69,7 +69,7 @@ export interface OrderRequestResponse {
     stopPrice?: string;
     workingType: OrderWorkingType;
     priceProtect?: boolean;
-    origType: OrderType;
+    origType?: OrderType;
     priceMatch?: string;
     selfTradePreventionMode?: string;
     goodTillDate?: number;

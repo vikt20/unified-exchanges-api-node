@@ -30,8 +30,9 @@ async function main(config: TestConfig) {
     const selectedExchanges = config.exchanges.map(e => e.toLowerCase());
     const runBinance = selectedExchanges.includes('all') || selectedExchanges.includes('binance');
     const runBybit = selectedExchanges.includes('all') || selectedExchanges.includes('bybit');
+    const runOkx = selectedExchanges.includes('all') || selectedExchanges.includes('okx');
 
-    console.log(`\n[Test Runner] Configuration: Exchanges=[${runBinance ? 'BINANCE' : ''} ${runBybit ? 'BYBIT' : ''}] | Targets=[${config.target.spot ? 'SPOT' : ''} ${config.target.futures ? 'FUTURES' : ''}] | Modes=[${config.mode.public ? 'PUBLIC' : ''} ${config.mode.authenticated ? 'AUTH' : ''}]`);
+    console.log(`\n[Test Runner] Configuration: Exchanges=[${runBinance ? 'BINANCE' : ''} ${runBybit ? 'BYBIT' : ''} ${runOkx ? 'OKX' : ''}] | Targets=[${config.target.spot ? 'SPOT' : ''} ${config.target.futures ? 'FUTURES' : ''}] | Modes=[${config.mode.public ? 'PUBLIC' : ''} ${config.mode.authenticated ? 'AUTH' : ''}]`);
 
     // ─────────────────────────────────────────────────────────────────
     // FUTURES EXCHANGES
@@ -68,6 +69,30 @@ async function main(config: TestConfig) {
                 console.log('[SKIP] Bybit Futures Testnet: Credentials not found (BYBIT_TESTNET_API_KEY)');
             }
         }
+
+        // OKX Futures (Testnet / Simulated)
+        if (runOkx) {
+            if (process.env.OKX_TESTNET_API_KEY && process.env.OKX_TESTNET_API_SECRET) {
+                exchangeConfigs.push({
+                    type: 'okx_futures',
+                    name: 'OKX Futures (TESTNET)',
+                    apiKey: process.env.OKX_TESTNET_API_KEY,
+                    apiSecret: process.env.OKX_TESTNET_API_SECRET,
+                    apiPassphrase: process.env.OKX_TESTNET_PASSPHRASE,
+                    isTest: true,
+                    testSymbol: 'BTC-USDT-SWAP'
+                });
+            } else if (config.mode.public) {
+                exchangeConfigs.push({
+                    type: 'okx_futures',
+                    name: 'OKX Futures (TESTNET - PUBLIC ONLY)',
+                    isTest: true,
+                    testSymbol: 'BTC-USDT-SWAP'
+                });
+            } else {
+                console.log('[SKIP] OKX Futures Testnet: Credentials not found (OKX_TESTNET_API_KEY)');
+            }
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -101,6 +126,32 @@ async function main(config: TestConfig) {
                     isTest: true,
                     testSymbol: 'BTCUSDT'
                 });
+            } else {
+                console.log('[SKIP] Bybit Spot Testnet: Credentials not found (BYBIT_TESTNET_API_KEY)');
+            }
+        }
+
+        // OKX Spot (Testnet / Simulated)
+        if (runOkx) {
+            if (process.env.OKX_TESTNET_API_KEY && process.env.OKX_TESTNET_API_SECRET) {
+                exchangeConfigs.push({
+                    type: 'okx_spot',
+                    name: 'OKX Spot (TESTNET)',
+                    apiKey: process.env.OKX_TESTNET_API_KEY,
+                    apiSecret: process.env.OKX_TESTNET_API_SECRET,
+                    apiPassphrase: process.env.OKX_TESTNET_PASSPHRASE,
+                    isTest: true,
+                    testSymbol: 'BTC-USDT'
+                });
+            } else if (config.mode.public) {
+                exchangeConfigs.push({
+                    type: 'okx_spot',
+                    name: 'OKX Spot (TESTNET - PUBLIC ONLY)',
+                    isTest: true,
+                    testSymbol: 'BTC-USDT'
+                });
+            } else {
+                console.log('[SKIP] OKX Spot Testnet: Credentials not found (OKX_TESTNET_API_KEY)');
             }
         }
     }
@@ -125,16 +176,15 @@ async function main(config: TestConfig) {
 // ─────────────────────────────────────────────────────────────────
 const RUN_CONFIG: TestConfig = {
     exchanges: [
-        'binance',
-        'bybit'
-    ], // Options: 'binance', 'bybit', or ['all']
+        'okx'
+    ], // Options: 'binance', 'bybit', 'okx' or ['all']
     target: {
         spot: false,      // Set to true to test Spot
         futures: true,    // Set to true to test Futures
     },
     mode: {
         public: true,     // Set to true to test Public Data
-        authenticated: true // Set to true to test Order Flow/Private Data
+        authenticated: false // Set to true to test Order Flow/Private Data (Set to true when you have added OKX keys to .env)
     }
 };
 

@@ -28,6 +28,7 @@
     "dist"
   ],
   "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
     "@types/node": "^25.0.3",
     "@types/ws": "^8.18.1",
     "typescript": "^5.9.3"

@@ -55,7 +55,7 @@ export default class BybitFutures extends BybitStreams {
             category: 'linear',
             symbol: params.symbol,
             interval: interval,
-            limit: params.limit || 200
+            limit: params.limit || 1000
         };
         if (params.startTime)
             query.start = params.startTime;

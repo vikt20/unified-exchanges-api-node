@@ -5,14 +5,17 @@ import BinanceFutures from '../binance/BinanceFutures.js';
 import BinanceSpot from '../binance/BinanceSpot.js';
 import BybitFutures from '../bybit/BybitFutures.js';
 import BybitSpot from '../bybit/BybitSpot.js';
+import OkxFutures from '../okx/OkxFutures.js';
+import OkxSpot from '../okx/OkxSpot.js';
 
-export type ExchangeType = 'binance_futures' | 'binance_spot' | 'bybit_futures' | 'bybit_spot';
+export type ExchangeType = 'binance_futures' | 'binance_spot' | 'bybit_futures' | 'bybit_spot' | 'okx_futures' | 'okx_spot';
 
 export interface ExchangeConfig {
     type: ExchangeType;
     name?: string;
     apiKey?: string;
     apiSecret?: string;
+    apiPassphrase?: string;
     isTest?: boolean;
     testSymbol?: string;
 }
@@ -54,7 +57,7 @@ export class UniversalTester {
      * Factory method to instantiate specific exchange clients.
      */
     private createClient(config: ExchangeConfig): IExchangeClient {
-        const { type, apiKey, apiSecret, isTest } = config;
+        const { type, apiKey, apiSecret, apiPassphrase, isTest } = config;
         switch (type) {
             case 'binance_futures':
                 return new BinanceFutures(apiKey, apiSecret, isTest);
@@ -64,6 +67,10 @@ export class UniversalTester {
                 return new BybitFutures(apiKey, apiSecret, isTest);
             case 'bybit_spot':
                 return new BybitSpot(apiKey, apiSecret, isTest);
+            case 'okx_futures':
+                return new OkxFutures(apiKey, apiSecret, apiPassphrase, isTest);
+            case 'okx_spot':
+                return new OkxSpot(apiKey, apiSecret, apiPassphrase, isTest);
             default:
                 throw new Error(`Unsupported exchange type: ${type}`);
         }

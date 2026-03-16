@@ -282,7 +282,7 @@ export function convertOrderDataRequestResponse(rawData: OrderRequestResponse): 
         isMakerSide: false,
         isReduceOnly: reduceOnly,
         workingType,
-        originalOrderType: origType,
+        originalOrderType: (origType || type) as OrderType,
         positionSide,
         closeAll: closePosition,
         activationPrice: '',

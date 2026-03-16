@@ -137,7 +137,7 @@ export default class BybitBase extends AbstractExchangeBase {
         }
         catch (error) {
             if (error.response?.data) {
-                return this.formattedResponse({ data: error.response.data });
+                return this.formattedResponse({ errors: error.response.data });
             }
             return this.handleRequestError(error);
         }

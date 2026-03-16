@@ -10,8 +10,12 @@ import BybitStreams from '../bybit/BybitStreams.js';
 import BybitUserData from '../bybit/BybitUserData.js';
 import BybitBase from '../bybit/BybitBase.js';
 import { ExchangeList } from './types.js';
+import OkxSpot from '../okx/OkxSpot.js';
+import OkxFutures from '../okx/OkxFutures.js';
+import OkxStreams from '../okx/OkxStreams.js';
+import OkxBase from '../okx/OkxBase.js';
 export declare class ExchangeFactory {
-    static create(exchangeId: ExchangeList, apiKey?: string, apiSecret?: string): IUnifiedExchange;
+    static create(exchangeId: ExchangeList, apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTestnet?: boolean): IUnifiedExchange;
 }
-export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData };
+export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams };
 //# sourceMappingURL=ExchangeConnection.d.ts.map

@@ -5,6 +5,8 @@ import * as crypto from 'crypto';
 import { FormattedResponse } from '../core/types.js';
 import { convertObjectIntoUrlEncoded } from './converters.js';
 
+
+
 export default class BybitBase extends AbstractExchangeBase {
     public static BASE_URL_MAINNET = 'https://api.bybit.com';
     public static BASE_URL_TESTNET = 'https://api-testnet.bybit.com';
@@ -163,7 +165,7 @@ export default class BybitBase extends AbstractExchangeBase {
 
         } catch (error: any) {
             if (error.response?.data) {
-                return this.formattedResponse({ data: error.response.data });
+                return this.formattedResponse({ errors: error.response.data });
             }
             return this.handleRequestError(error);
         }

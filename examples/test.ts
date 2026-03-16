@@ -55,4 +55,13 @@ const api = ExchangeFactory.create('BYBIT', process.env.BYBIT_API_KEY, process.e
 //     callbackRate: 0.2,
 // }).then(console.log);
 
-api.futures.getLatestPnlBySymbol("ENSOUSDT").then(console.log);
+// api.futures.getLatestPnlBySymbol("ENSOUSDT").then(console.log);
+api.futures.getOpenPositions().then(console.log);
+// await api.userData?.init();
+
+// api.userData?.onPositionUpdate((data) => {
+//     console.log(data);
+// })
+
+// api.userData?.triggerPositionUpdate("ENSOUSDT");
+

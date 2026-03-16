@@ -1,14 +1,14 @@
-import BybitStreams from "./BybitStreams.js";
-import { convertBybitKline, convertBybitOrder, convertExchangeInfo } from "./converters.js";
-export default class BybitSpot extends BybitStreams {
-    constructor(apiKey, apiSecret, isTest) {
-        super(apiKey, apiSecret, isTest);
+import OkxStreams from "./OkxStreams.js";
+import { convertExchangeInfo, convertOkxKline, convertOkxOrder } from "./converters.js";
+export default class OkxSpot extends OkxStreams {
+    constructor(apiKey, apiSecret, apiPassphrase, isTest) {
+        super(apiKey, apiSecret, apiPassphrase, isTest);
     }
     async closeListenKey() {
-        return this.formattedResponse({ data: "Not applicable for Bybit V5" });
+        return this.formattedResponse({ data: "Not applicable for OKX V5" });
     }
     async getExchangeInfo() {
-        const res = await this.publicRequest('spot', 'GET', '/v5/market/instruments-info', { category: 'spot' });
+        const res = await this.publicRequest('public', 'GET', '/api/v5/public/instruments', { instType: 'SPOT' });
         if (res.success && res.data) {
             const info = convertExchangeInfo(res.data);
             return this.formattedResponse({ data: info });
@@ -16,75 +16,55 @@ export default class BybitSpot extends BybitStreams {
         return this.formattedResponse({ errors: res.errors });
     }
     async getStaticDepth(params) {
-        const res = await this.publicRequest('spot', 'GET', '/v5/market/orderbook', {
-            category: 'spot',
-            symbol: params.symbol,
-            limit: params.limit || 1000
+        const res = await this.publicRequest('public', 'GET', '/api/v5/market/books', {
+            instId: params.symbol,
+            sz: params.limit || 400
         });
-        if (res.success && res.data) {
-            const data = res.data;
-            const { s, b, a, u } = data;
+        if (res.success && res.data && Array.isArray(res.data) && res.data[0]) {
+            const data = res.data[0];
             return this.formattedResponse({
                 data: {
-                    symbol: s,
-                    bids: b,
-                    asks: a,
-                    lastUpdateId: parseInt(u || '0')
+                    symbol: params.symbol,
+                    bids: data.bids.map((b) => [b[0], b[1]]),
+                    asks: data.asks.map((a) => [a[0], a[1]]),
+                    lastUpdateId: parseInt(data.ts || '0')
                 }
             });
         }
         return this.formattedResponse({ errors: res.errors });
     }
     async getKlines(params) {
-        let interval = params.interval;
-        if (interval === '1m')
-            interval = '1';
-        if (interval === '5m')
-            interval = '5';
-        if (interval === '15m')
-            interval = '15';
-        if (interval === '30m')
-            interval = '30';
-        if (interval === '1h')
-            interval = '60';
-        if (interval === '4h')
-            interval = '240';
-        if (interval === '1d')
-            interval = 'D';
+        let bar = this.normalizeOkxInterval(params.interval);
         const query = {
-            category: 'spot',
-            symbol: params.symbol,
-            interval: interval,
+            instId: params.symbol,
+            bar: bar,
             limit: params.limit || 1000
         };
         if (params.startTime)
-            query.start = params.startTime;
+            query.before = params.startTime;
         if (params.endTime)
-            query.end = params.endTime;
-        const res = await this.publicRequest('spot', 'GET', '/v5/market/kline', query);
-        const data = res.data;
-        if (res.success && data && data.list) {
-            const klines = data.list.map((item) => convertBybitKline(item, params.symbol));
+            query.after = params.endTime;
+        const res = await this.publicRequest('public', 'GET', '/api/v5/market/candles', query);
+        if (res.success && res.data && Array.isArray(res.data)) {
+            const klines = res.data.map((item) => convertOkxKline(item, params.symbol));
             klines.reverse();
             return this.formattedResponse({ data: klines });
         }
         return this.formattedResponse({ errors: res.errors });
     }
     async getAggTrades(params) {
-        const res = await this.publicRequest('spot', 'GET', '/v5/market/recent-trade', {
-            category: 'spot',
-            symbol: params.symbol,
-            limit: params.limit || 60
+        const res = await this.publicRequest('public', 'GET', '/api/v5/market/trades', {
+            instId: params.symbol,
+            limit: params.limit || 100
         });
-        const data = res.data;
-        if (res.success && data && data.list) {
-            const trades = data.list.map((t) => ({
+        if (res.success && res.data && Array.isArray(res.data)) {
+            const trades = res.data.map((t) => ({
                 symbol: params.symbol,
-                id: 0,
-                price: parseFloat(t.price),
-                quantity: parseFloat(t.size),
-                time: parseInt(t.time),
-                isBuyer: t.side === 'Buy'
+                id: parseInt(t.tradeId),
+                price: parseFloat(t.px),
+                quantity: parseFloat(t.sz),
+                time: parseInt(t.ts),
+                isBuyer: t.side === 'buy'
             }));
             return this.formattedResponse({ data: trades });
         }
@@ -92,16 +72,14 @@ export default class BybitSpot extends BybitStreams {
     }
     // --- Private Methods ---
     async getBalance() {
-        const res = await this.signedRequest('spot', 'GET', '/v5/account/wallet-balance', { accountType: 'UNIFIED' });
-        const data = res.data;
-        if (res.success && data && data.list && data.list[0]) {
-            const wallet = data.list[0];
-            const coins = wallet.coin || [];
-            const balances = coins.map((c) => ({
-                asset: c.coin,
-                balance: c.walletBalance,
-                crossWalletBalance: c.walletBalance,
-                balanceChange: 0
+        const res = await this.signedRequest('private', 'GET', '/api/v5/account/balance');
+        if (res.success && res.data && Array.isArray(res.data) && res.data[0] && res.data[0].details) {
+            const details = res.data[0].details;
+            const balances = details.map((c) => ({
+                asset: c.ccy,
+                balance: c.availBal || c.eq,
+                crossWalletBalance: c.eq,
+                balanceChange: '0'
             }));
             return this.formattedResponse({ data: balances });
         }
@@ -117,13 +95,12 @@ export default class BybitSpot extends BybitStreams {
         return this.formattedResponse({ errors: 'Not applicable for spot trading' });
     }
     async getOpenOrders(symbol) {
-        const query = { category: 'spot', limit: 50 };
+        const query = { instType: 'SPOT' };
         if (symbol)
-            query.symbol = symbol;
-        const res = await this.signedRequest('spot', 'GET', '/v5/order/realtime', query);
-        const data = res.data;
-        if (res.success && data && data.list) {
-            const orders = data.list.map(convertBybitOrder);
+            query.instId = symbol;
+        const res = await this.signedRequest('private', 'GET', '/api/v5/trade/orders-pending', query);
+        if (res.success && res.data && Array.isArray(res.data)) {
+            const orders = res.data.map(convertOkxOrder);
             return this.formattedResponse({ data: orders });
         }
         return this.formattedResponse({ errors: res.errors });
@@ -132,39 +109,49 @@ export default class BybitSpot extends BybitStreams {
         return this.getOpenOrders(params.symbol);
     }
     async cancelAllOpenOrders(params) {
-        return await this.signedRequest('spot', 'POST', '/v5/order/cancel-all', {
-            category: 'spot',
-            symbol: params.symbol
-        });
+        const pendingRes = await this.signedRequest('private', 'GET', '/api/v5/trade/orders-pending', { instId: params.symbol, instType: 'SPOT' });
+        if (pendingRes.success && pendingRes.data && pendingRes.data.length > 0) {
+            const cancelPayloads = pendingRes.data.map((order) => ({
+                instId: params.symbol,
+                ordId: order.ordId
+            }));
+            const chunks = [];
+            for (let i = 0; i < cancelPayloads.length; i += 13) {
+                chunks.push(cancelPayloads.slice(i, i + 13));
+            }
+            for (const chunk of chunks) {
+                await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-batch-orders', chunk);
+            }
+        }
+        return this.formattedResponse({ data: "Success" });
     }
     async cancelOrderById(params) {
         const payload = {
-            category: 'spot',
-            symbol: params.symbol,
+            instId: params.symbol,
         };
         if (params.clientOrderId)
-            payload.orderLinkId = params.clientOrderId;
-        return await this.signedRequest('spot', 'POST', '/v5/order/cancel', payload);
+            payload.clOrdId = params.clientOrderId;
+        return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
     }
     // --- Order Execution ---
     async customOrder(orderInput) {
-        const { symbol, side, type, quantity, price, timeInForce } = orderInput;
+        const { symbol, side, type, quantity, price } = orderInput;
         const payload = {
-            category: 'spot',
-            symbol,
-            side: side === 'BUY' ? 'Buy' : 'Sell',
-            orderType: type === 'MARKET' ? 'Market' : 'Limit',
-            qty: quantity?.toString(),
-            timeInForce: timeInForce || 'GTC',
+            instId: symbol,
+            tdMode: 'cash',
+            side: side.toLowerCase(),
+            ordType: type === 'MARKET' ? 'market' : 'limit',
+            sz: quantity?.toString(),
         };
         if (price)
-            payload.price = price.toString();
-        const res = await this.signedRequest('spot', 'POST', '/v5/order/create', payload);
-        if (res.success && res.data) {
+            payload.px = price.toString();
+        const res = await this.signedRequest('private', 'POST', '/api/v5/trade/order', payload);
+        if (res.success && res.data && Array.isArray(res.data) && res.data[0]) {
+            const orderRes = res.data[0];
             return this.formattedResponse({
                 data: {
-                    orderId: res.data.orderId,
-                    clientOrderId: res.data.orderLinkId,
+                    orderId: orderRes.ordId,
+                    clientOrderId: orderRes.clOrdId,
                     symbol,
                     status: 'NEW',
                     price: price?.toString() || '0',

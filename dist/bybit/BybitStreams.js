@@ -186,6 +186,16 @@ export default class BybitStreams extends BybitBase {
             bestAskQty: parseFloat(data.ask1Size)
         };
     }
+    parseBookTickerSpot(msg) {
+        const data = msg.data;
+        return {
+            symbol: data.s,
+            bestBid: parseFloat(data.b[0][0]),
+            bestBidQty: parseFloat(data.b[0][1]),
+            bestAsk: parseFloat(data.a[0][0]),
+            bestAskQty: parseFloat(data.a[0][1])
+        };
+    }
     parseTrade(msg) {
         if (Array.isArray(msg.data)) {
             const trade = msg.data[0];
@@ -367,7 +377,7 @@ export default class BybitStreams extends BybitBase {
     // --- Spot Streams (Public) ---
     // Bybit V5 Spot Public topics use same structure as Linear
     spotDepthStream(symbols, callback, statusCallback, levels) {
-        const topics = symbols.map(s => `orderbook.${levels || 50}.${s}`);
+        const topics = symbols.map(s => `orderbook.${levels || 200}.${s}`);
         return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseDepth, 'spotDepthStream', statusCallback);
     }
     spotCandleStickStream(symbols, interval, callback, statusCallback) {
@@ -382,8 +392,8 @@ export default class BybitStreams extends BybitBase {
         return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseKline, 'spotCandleStickStream', statusCallback);
     }
     spotBookTickerStream(symbols, callback, statusCallback) {
-        const topics = symbols.map(s => `tickers.${s}`);
-        return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseBookTicker, 'spotBookTickerStream', statusCallback);
+        const topics = symbols.map(s => `orderbook.1.${s}`);
+        return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseBookTickerSpot, 'spotBookTickerStream', statusCallback);
     }
     spotTradeStream(symbols, callback, statusCallback) {
         const topics = symbols.map(s => `publicTrade.${s}`);

@@ -224,6 +224,17 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
         } as BookTickerData;
     }
 
+    private parseBookTickerSpot(msg: BybitWsMessage): BookTickerData | undefined {
+        const data = msg.data as BybitDepthWsData;
+        return {
+            symbol: data.s,
+            bestBid: parseFloat(data.b[0][0]),
+            bestBidQty: parseFloat(data.b[0][1]),
+            bestAsk: parseFloat(data.a[0][0]),
+            bestAskQty: parseFloat(data.a[0][1])
+        } as BookTickerData;
+    }
+
     private parseTrade(msg: BybitWsMessage): TradeData | undefined {
         if (Array.isArray(msg.data)) {
             const trade = msg.data[0] as BybitTradeWsData;
@@ -432,7 +443,7 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
     // Bybit V5 Spot Public topics use same structure as Linear
 
     public spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void, levels?: number): Promise<HandleWebSocket> {
-        const topics = symbols.map(s => `orderbook.${levels || 50}.${s}`);
+        const topics = symbols.map(s => `orderbook.${levels || 200}.${s}`);
         return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseDepth, 'spotDepthStream', statusCallback);
     }
 
@@ -447,8 +458,8 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
     }
 
     public spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        const topics = symbols.map(s => `tickers.${s}`);
-        return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseBookTicker, 'spotBookTickerStream', statusCallback);
+        const topics = symbols.map(s => `orderbook.1.${s}`);
+        return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseBookTickerSpot, 'spotBookTickerStream', statusCallback);
     }
 
     public spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {

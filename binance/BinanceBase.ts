@@ -1,12 +1,11 @@
 
-import http from 'http';
-import https from 'https';
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import * as crypto from 'crypto';
 import { convertObjectIntoUrlEncoded } from './converters.js';
 
+
 // ━━ Import Unified Types from Core ━━
-export {
+export type {
     FormattedResponse,
     ExtractedInfo,
     MarketType,
