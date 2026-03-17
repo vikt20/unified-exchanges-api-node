@@ -295,6 +295,10 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
     }
 
     async cancelOrderById(params: CancelOrderByIdParams): Promise<FormattedResponse<unknown>> {
+        if (!params.clientOrderId) {
+            return this.formattedResponse({ errors: 'order ID is required' });
+        }
+
         const payload: any = {
             instId: params.symbol,
         };
@@ -304,13 +308,9 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
             return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-algos', algoPayload);
         }
 
-        if (params.clientOrderId) payload.ordId = params.clientOrderId;
+        payload.ordId = params.clientOrderId;
 
-        const normalRes = await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
-        if (normalRes.success) return normalRes;
-
-        const algoFallback = [{ instId: params.symbol, algoId: params.clientOrderId }];
-        return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-algos', algoFallback);
+        return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
     }
 
     // --- Order Execution ---
@@ -524,6 +524,7 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
         const payload: any = {
             instId: params.symbol,
             tdMode: 'cross',
+            reduceOnly: true,
             side: params.side.toLowerCase(),
             ordType: 'move_order_stop',
             sz: contractSize?.toString(),

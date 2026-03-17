@@ -5,9 +5,9 @@ dotenv.config({
     path: '../.env'
 });
 
-console.log(process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
+// console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET);
 
-const api = ExchangeFactory.create('BYBIT', process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
+const api = ExchangeFactory.create('OKX', process.env.OKX_TESTNET_API_KEY, process.env.OKX_TESTNET_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, true);
 
 // async function getFuturesSymbols(): Promise<Set<string>> {
 //     const exchangeInfo = await api.futures.getExchangeInfo();
@@ -46,17 +46,26 @@ const api = ExchangeFactory.create('BYBIT', process.env.BYBIT_API_KEY, process.e
 // api.futures.futuresCandleStickStream(["BTCUSDT"], "1m", (data) => {
 //     console.log(data);
 // })
+await setTimeout(() => {
+    // api.futures.trailingStopOrder({
+    //     symbol: "SOL-USDT-SWAP",
+    //     side: "SELL",
+    //     quantity: 1.1,
+    //     activatePrice: 94.5,
+    //     callbackRate: 0.3,
+    // }).then(console.log);
 
-// api.futures.trailingStopOrder({
-//     symbol: "ENSOUSDT",
-//     side: "SELL",
-//     quantity: 6.3,
-//     activatePrice: 1.585,
-//     callbackRate: 0.2,
-// }).then(console.log);
+    api.futures.cancelOrderById({
+        symbol: "SOL-USDT-SWAP",
+        clientOrderId: "3397690630473154560",
+    }).then(console.log);
+}, 2000)
+
+
+
 
 // api.futures.getLatestPnlBySymbol("ENSOUSDT").then(console.log);
-api.futures.getOpenPositions().then(console.log);
+// api.futures.getOpenPositions().then(console.log);
 // await api.userData?.init();
 
 // api.userData?.onPositionUpdate((data) => {

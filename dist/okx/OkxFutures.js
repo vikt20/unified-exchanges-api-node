@@ -214,6 +214,9 @@ export default class OkxFutures extends OkxStreams {
         return this.formattedResponse({ data: results });
     }
     async cancelOrderById(params) {
+        if (!params.clientOrderId) {
+            return this.formattedResponse({ errors: 'order ID is required' });
+        }
         const payload = {
             instId: params.symbol,
         };
@@ -221,13 +224,8 @@ export default class OkxFutures extends OkxStreams {
             const algoPayload = [{ instId: params.symbol, algoId: params.clientOrderId }];
             return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-algos', algoPayload);
         }
-        if (params.clientOrderId)
-            payload.ordId = params.clientOrderId;
-        const normalRes = await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
-        if (normalRes.success)
-            return normalRes;
-        const algoFallback = [{ instId: params.symbol, algoId: params.clientOrderId }];
-        return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-algos', algoFallback);
+        payload.ordId = params.clientOrderId;
+        return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
     }
     // --- Order Execution ---
     async customOrder(orderInput) {
@@ -415,6 +413,7 @@ export default class OkxFutures extends OkxStreams {
         const payload = {
             instId: params.symbol,
             tdMode: 'cross',
+            reduceOnly: true,
             side: params.side.toLowerCase(),
             ordType: 'move_order_stop',
             sz: contractSize?.toString(),
