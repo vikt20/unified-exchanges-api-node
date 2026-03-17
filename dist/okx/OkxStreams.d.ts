@@ -11,6 +11,8 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
     protected handleWebSocket(url: string, args: any[], callback: Function, parser: Function, title: string, statusCallback?: (status: SocketStatus) => void, auth?: boolean): Promise<HandleWebSocket>;
     closeAllSockets(): void;
     closeById(id: string): void;
+    private convertOrderContractsToAssetSize;
+    private convertPositionContractsToAssetSize;
     private parseDepth;
     private parseKline;
     private parseBookTicker;

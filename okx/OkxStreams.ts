@@ -199,6 +199,28 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
     }
 
     // --- Parsers ---
+    private convertOrderContractsToAssetSize(order: OrderData): OrderData {
+        const symbol = order.symbol;
+        const originalQuantity = this.convertContractsToAssetSize(symbol, order.originalQuantity);
+        const orderLastFilledQuantity = this.convertContractsToAssetSize(symbol, order.orderLastFilledQuantity);
+        const orderFilledAccumulatedQuantity = this.convertContractsToAssetSize(symbol, order.orderFilledAccumulatedQuantity);
+
+        return {
+            ...order,
+            originalQuantity: originalQuantity ?? order.originalQuantity,
+            orderLastFilledQuantity: orderLastFilledQuantity ?? order.orderLastFilledQuantity,
+            orderFilledAccumulatedQuantity: orderFilledAccumulatedQuantity ?? order.orderFilledAccumulatedQuantity
+        };
+    }
+
+    private convertPositionContractsToAssetSize(position: PositionData): PositionData {
+        const symbol = position.symbol;
+        const positionAmount = this.convertContractsToAssetSize(symbol, position.positionAmount);
+        return {
+            ...position,
+            positionAmount: positionAmount ?? position.positionAmount
+        };
+    }
 
     private parseDepth(msg: OkxWsMessage): DepthData | undefined {
         if (!msg.data || msg.data.length === 0) return undefined;
@@ -326,7 +348,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
                         for (const order of msg.data) {
                             return {
                                 event: 'ORDER_TRADE_UPDATE',
-                                orderData: convertOkxOrder(order),
+                                orderData: this.convertOrderContractsToAssetSize(convertOkxOrder(order)),
                                 accountData: undefined
                             } as UserData;
                         }
@@ -372,7 +394,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
 
                 if (channel === 'positions') {
                     if (msg.data && Array.isArray(msg.data)) {
-                        const positions = msg.data.map(convertOkxPosition);
+                        const positions = msg.data.map(convertOkxPosition).map(p => this.convertPositionContractsToAssetSize(p));
                         return {
                             event: 'ACCOUNT_UPDATE',
                             accountData: { balances: undefined, positions: positions },
@@ -386,7 +408,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
                         for (const order of msg.data) {
                             return {
                                 event: 'ORDER_TRADE_UPDATE',
-                                orderData: convertOkxOrder(order),
+                                orderData: this.convertOrderContractsToAssetSize(convertOkxOrder(order)),
                                 accountData: undefined
                             } as UserData; // returning first mapped order due to format (OKX sends updates array)
                         }

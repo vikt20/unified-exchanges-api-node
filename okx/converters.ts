@@ -50,15 +50,105 @@ export function convertOkxKline(item: string[], symbol: string): KlineData {
     };
 }
 
-export function mapOkxOrderType(ordType: string): OrderType {
-    if (ordType === 'market') return 'MARKET';
-    if (ordType === 'limit') return 'LIMIT';
-    if (ordType === 'conditional') return 'STOP';
-    if (ordType === 'trigger') return 'STOP_MARKET';
-    return 'LIMIT'; // Default
+export type OkxOrdType =
+    | 'market'
+    | 'limit'
+    | 'conditional'
+    | 'trigger'
+    | 'move_order_stop'
+    | 'oco'
+    | 'post_only'
+    | 'foc'
+    | 'ioc'
+    | 'optimal_limit_ioc';
+
+export type OkxSide = 'buy' | 'sell';
+export type OkxTriggerPxType = 'last' | 'mark' | 'index';
+
+export interface OkxOrderItem {
+    instId: string;
+    ordId: string;
+    algoId: string;
+    clOrdId: string;
+    algoClOrdId: string;
+    ordType: OkxOrdType;
+    side: OkxSide;
+    state: string;
+    actualOrder: string;
+    posSide: 'long' | 'short' | 'net';
+    sz: string;
+    px: string;
+    avgPx: string;
+    triggerPx?: string;
+    orderPx?: string;
+    slTriggerPx?: string;
+    tpTriggerPx?: string;
+    slOrdPx?: string;
+    tpOrdPx?: string;
+    triggerPxType?: OkxTriggerPxType;
+    slTriggerPxType?: OkxTriggerPxType;
+    tpTriggerPxType?: OkxTriggerPxType;
+    fillSz?: string;
+    accFillSz?: string;
+    fillPx?: string;
+    feeCcy?: string;
+    fee?: string;
+    uTime?: string;
+    cTime?: string;
+    execType?: string;
+    reduceOnly?: boolean | 'true' | 'false';
+    closeFraction?: string;
+    pnl?: string;
 }
 
-export function convertOkxOrder(item: any): OrderData {
+const okxHasValue = (value?: string): boolean =>
+    value !== undefined && value !== '' && value !== '0';
+
+const okxIsMarketPx = (value?: string): boolean => value === '-1';
+
+const mapOkxWorkingType = (pxType?: OkxTriggerPxType): OrderWorkingType => {
+    if (pxType === 'mark') return 'MARK_PRICE';
+    return 'CONTRACT_PRICE';
+};
+
+export function mapOkxOrderType(item: OkxOrderItem): OrderType {
+    if (item.ordType === 'move_order_stop') return 'TRAILING_STOP_MARKET';
+
+    const hasStopLoss = okxHasValue(item.slTriggerPx);
+    const hasTakeProfit = okxHasValue(item.tpTriggerPx);
+
+    if (hasStopLoss) {
+        return okxIsMarketPx(item.slOrdPx) ? 'STOP_MARKET' : 'STOP_LOSS_LIMIT';
+    }
+
+    if (hasTakeProfit) {
+        return okxIsMarketPx(item.tpOrdPx) ? 'TAKE_PROFIT_MARKET' : 'TAKE_PROFIT_LIMIT';
+    }
+
+    const hasTrigger = okxHasValue(item.triggerPx);
+    if (hasTrigger) {
+        return okxIsMarketPx(item.orderPx) ? 'STOP_MARKET' : 'STOP';
+    }
+
+    if (item.ordType === 'market') return 'MARKET';
+    if (item.ordType === 'limit') return 'LIMIT';
+    if (item.ordType === 'conditional') return okxIsMarketPx(item.orderPx) ? 'STOP_MARKET' : 'STOP';
+    if (item.ordType === 'trigger') return okxIsMarketPx(item.orderPx) ? 'STOP_MARKET' : 'STOP';
+
+    return 'LIMIT';
+}
+
+const mapOkxStopPrice = (item: OkxOrderItem, orderType: OrderType): string | undefined => {
+    if (orderType === 'TAKE_PROFIT_MARKET' || orderType === 'TAKE_PROFIT_LIMIT') {
+        return item.tpTriggerPx || item.triggerPx;
+    }
+    if (orderType === 'STOP_MARKET' || orderType === 'STOP_LOSS_LIMIT' || orderType === 'STOP') {
+        return item.slTriggerPx || item.triggerPx;
+    }
+    return item.triggerPx || item.slTriggerPx || item.tpTriggerPx;
+};
+
+export function convertOkxOrder(item: OkxOrderItem): OrderData {
     let status: OrderStatus = 'NEW';
     const state = item.state;
     if (state === 'live') status = 'NEW';
@@ -80,16 +170,20 @@ export function convertOkxOrder(item: any): OrderData {
     if (item.posSide === 'long') positionSide = "LONG";
     else if (item.posSide === 'short') positionSide = "SHORT";
 
+    const orderType = mapOkxOrderType(item);
+    const stopPriceRaw = mapOkxStopPrice(item, orderType);
+    const workingType = mapOkxWorkingType(item.slTriggerPxType || item.tpTriggerPxType || item.triggerPxType);
+
     return {
         symbol: item.instId,
-        clientOrderId: item.clOrdId || item.algoClOrdId || item.ordId || item.algoId,
+        clientOrderId: item.algoId || item.ordId || item.algoClOrdId || item.clOrdId,
         side: side,
-        orderType: mapOkxOrderType(item.ordType),
+        orderType: orderType,
         timeInForce: 'GTC', // Mapping may be required
         originalQuantity: parseFloat(item.sz || '0'),
         originalPrice: parseFloat(item.px || '0'),
         averagePrice: parseFloat(item.avgPx || '0'),
-        stopPrice: parseFloat(item.triggerPx || item.slTriggerPx || item.tpTriggerPx || '0'),
+        stopPrice: parseFloat(stopPriceRaw || '0'),
         executionType: status,
         orderStatus: status,
         orderId: item.ordId || item.algoId,
@@ -98,18 +192,18 @@ export function convertOkxOrder(item: any): OrderData {
         lastFilledPrice: parseFloat(item.fillPx || '0'),
         commissionAsset: item.feeCcy || '',
         commission: parseFloat(item.fee || '0').toString(),
-        orderTradeTime: parseInt(item.uTime || item.cTime),
+        orderTradeTime: parseInt(item.uTime || item.cTime || '0'),
         tradeId: 0,
         isMakerSide: item.execType === 'M',
-        isReduceOnly: item.reduceOnly === 'true',
-        workingType: 'CONTRACT_PRICE', // Default
-        originalOrderType: mapOkxOrderType(item.ordType),
+        isReduceOnly: item.reduceOnly === true || item.reduceOnly === 'true',
+        workingType: workingType,
+        originalOrderType: orderType,
         positionSide: positionSide,
         closeAll: item.closeFraction === '1',
-        activationPrice: item.triggerPx,
+        activationPrice: item.triggerPx || '0',
         callbackRate: '',
         realizedProfit: item.pnl || '0',
-        isAlgoOrder: !!item.algoId
+        isAlgoOrder: !!item.algoId || item.ordType === 'conditional' || item.ordType === 'trigger'
     };
 }
 

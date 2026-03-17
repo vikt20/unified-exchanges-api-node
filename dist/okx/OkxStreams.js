@@ -169,6 +169,26 @@ export default class OkxStreams extends OkxBase {
         }
     }
     // --- Parsers ---
+    convertOrderContractsToAssetSize(order) {
+        const symbol = order.symbol;
+        const originalQuantity = this.convertContractsToAssetSize(symbol, order.originalQuantity);
+        const orderLastFilledQuantity = this.convertContractsToAssetSize(symbol, order.orderLastFilledQuantity);
+        const orderFilledAccumulatedQuantity = this.convertContractsToAssetSize(symbol, order.orderFilledAccumulatedQuantity);
+        return {
+            ...order,
+            originalQuantity: originalQuantity ?? order.originalQuantity,
+            orderLastFilledQuantity: orderLastFilledQuantity ?? order.orderLastFilledQuantity,
+            orderFilledAccumulatedQuantity: orderFilledAccumulatedQuantity ?? order.orderFilledAccumulatedQuantity
+        };
+    }
+    convertPositionContractsToAssetSize(position) {
+        const symbol = position.symbol;
+        const positionAmount = this.convertContractsToAssetSize(symbol, position.positionAmount);
+        return {
+            ...position,
+            positionAmount: positionAmount ?? position.positionAmount
+        };
+    }
     parseDepth(msg) {
         if (!msg.data || msg.data.length === 0)
             return undefined;
@@ -285,7 +305,7 @@ export default class OkxStreams extends OkxBase {
                     for (const order of msg.data) {
                         return {
                             event: 'ORDER_TRADE_UPDATE',
-                            orderData: convertOkxOrder(order),
+                            orderData: this.convertOrderContractsToAssetSize(convertOkxOrder(order)),
                             accountData: undefined
                         };
                     }
@@ -320,7 +340,7 @@ export default class OkxStreams extends OkxBase {
             }
             if (channel === 'positions') {
                 if (msg.data && Array.isArray(msg.data)) {
-                    const positions = msg.data.map(convertOkxPosition);
+                    const positions = msg.data.map(convertOkxPosition).map(p => this.convertPositionContractsToAssetSize(p));
                     return {
                         event: 'ACCOUNT_UPDATE',
                         accountData: { balances: undefined, positions: positions },
@@ -333,7 +353,7 @@ export default class OkxStreams extends OkxBase {
                     for (const order of msg.data) {
                         return {
                             event: 'ORDER_TRADE_UPDATE',
-                            orderData: convertOkxOrder(order),
+                            orderData: this.convertOrderContractsToAssetSize(convertOkxOrder(order)),
                             accountData: undefined
                         }; // returning first mapped order due to format (OKX sends updates array)
                     }

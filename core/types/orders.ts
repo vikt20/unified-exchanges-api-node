@@ -33,8 +33,8 @@ export interface OrderData {
     lastFilledPrice: number;
     commissionAsset: string;
     commission?: string;
-    orderTradeTime: number;
-    tradeId: number;
+    orderTradeTime?: number;
+    tradeId?: number;
     bidsNotional?: string;
     askNotional?: string;
     isMakerSide: boolean;

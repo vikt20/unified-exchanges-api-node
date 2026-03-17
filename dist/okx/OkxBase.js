@@ -12,9 +12,14 @@ export default class OkxBase extends AbstractExchangeBase {
     static WS_PRIVATE_DEMO = 'wss://wspap.okx.com:8443/ws/v5/private?brokerId=9999';
     static WS_BUSINESS_DEMO = 'wss://wspap.okx.com:8443/ws/v5/business?brokerId=9999';
     apiPassphrase;
+    ctValBySymbol = new Map();
+    instrumentsLoadPromise;
+    instrumentsReady = false;
+    instrumentsLoadError;
     constructor(apiKey, apiSecret, apiPassphrase, isTest = false) {
         super(apiKey, apiSecret, isTest);
         this.apiPassphrase = apiPassphrase || '';
+        void this.ensureInstrumentMetadataLoaded();
     }
     getBaseUrl(_marketType) {
         return OkxBase.BASE_URL; // OKX uses same base URL for everything
@@ -50,6 +55,56 @@ export default class OkxBase extends AbstractExchangeBase {
         }
         return Date.now();
     }
+    async ensureInstrumentMetadataLoaded() {
+        if (this.instrumentsLoadPromise)
+            return this.instrumentsLoadPromise;
+        this.instrumentsLoadPromise = (async () => {
+            const res = await this.publicRequest('public', 'GET', '/api/v5/public/instruments', { instType: 'SWAP' });
+            if (res.success && res.data && Array.isArray(res.data)) {
+                for (const item of res.data) {
+                    const symbol = item.instId;
+                    const ctVal = parseFloat(item.ctVal || '0');
+                    if (symbol && Number.isFinite(ctVal) && ctVal > 0) {
+                        this.ctValBySymbol.set(symbol, ctVal);
+                    }
+                }
+                this.instrumentsReady = true;
+                this.instrumentsLoadError = undefined;
+                return;
+            }
+            this.instrumentsReady = false;
+            this.instrumentsLoadError = res.errors || 'Unknown error while loading instruments';
+            console.warn('OKX instruments metadata load failed:', this.instrumentsLoadError);
+        })();
+        return this.instrumentsLoadPromise;
+    }
+    assertInstrumentsReady() {
+        if (this.instrumentsLoadError) {
+            throw new Error(`OKX instruments metadata unavailable: ${this.instrumentsLoadError}`);
+        }
+        if (!this.instrumentsReady) {
+            throw new Error('OKX instruments metadata not loaded yet. Orders are disabled until ready.');
+        }
+    }
+    getCtVal(symbol) {
+        return this.ctValBySymbol.get(symbol);
+    }
+    convertAssetSizeToContracts(symbol, assetSize) {
+        if (assetSize === undefined)
+            return undefined;
+        const ctVal = this.getCtVal(symbol);
+        if (!ctVal || !Number.isFinite(ctVal))
+            return assetSize;
+        return assetSize / ctVal;
+    }
+    convertContractsToAssetSize(symbol, contracts) {
+        if (contracts === undefined)
+            return undefined;
+        const ctVal = this.getCtVal(symbol);
+        if (!ctVal || !Number.isFinite(ctVal))
+            return contracts;
+        return contracts * ctVal;
+    }
     generateSignature(parameters) {
         // This is implemented in signedRequest directly because OKX needs method, path, etc.
         return '';
@@ -59,7 +114,7 @@ export default class OkxBase extends AbstractExchangeBase {
             return {
                 success: false,
                 data: undefined,
-                errors: `${object.data.data[0]?.sMsg}`
+                errors: `${object.data.data[0]?.sMsg || object.data.msg}`
             };
         }
         const data = object.data?.data ? object.data.data : object.data;
@@ -131,11 +186,11 @@ export default class OkxBase extends AbstractExchangeBase {
                 config.data = body; // Already stringified
             }
             const response = await this._AXIOS_INSTANCE.request(config);
-            console.log(`Request:`, JSON.stringify(response.data, null, 2));
+            console.log(`Request:`, endpoint, response.status);
             return this.formattedResponse({ data: response.data });
         }
         catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+            console.log(`Error: ${endpoint}`, error.response.status);
             if (error.response?.data) {
                 return this.formattedResponse({ errors: error.response.data.msg });
             }

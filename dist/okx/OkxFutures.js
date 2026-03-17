@@ -98,9 +98,11 @@ export default class OkxFutures extends OkxStreams {
                 else if (p.posSide === "short") {
                     dir = "SHORT";
                 }
+                const positionContracts = Math.abs(parseFloat(p.pos));
+                const positionAmount = this.convertContractsToAssetSize(p.instId, positionContracts) ?? positionContracts;
                 return {
                     symbol: p.instId,
-                    positionAmount: Math.abs(parseFloat(p.pos)),
+                    positionAmount: positionAmount,
                     entryPrice: parseFloat(p.avgPx),
                     markPrice: parseFloat(p.markPx),
                     unrealizedPnL: parseFloat(p.upl),
@@ -120,6 +122,7 @@ export default class OkxFutures extends OkxStreams {
         return this.formattedResponse({ errors: res.errors });
     }
     async getOpenPositions() {
+        this.assertInstrumentsReady();
         const riskRes = await this.getPositionRisk();
         if (riskRes.success && riskRes.data) {
             const positions = riskRes.data
@@ -147,6 +150,7 @@ export default class OkxFutures extends OkxStreams {
         return this.formattedResponse({ errors: res.errors });
     }
     async getOpenOrders(symbol) {
+        this.assertInstrumentsReady();
         const query = { instType: 'SWAP' };
         if (symbol)
             query.instId = symbol;
@@ -158,7 +162,12 @@ export default class OkxFutures extends OkxStreams {
         if (resAlgo.success && resAlgo.data)
             merged = merged.concat(resAlgo.data);
         if (resNormal.success || resAlgo.success) {
-            const orders = merged.map(convertOkxOrder);
+            const orders = merged.map(convertOkxOrder).map(o => ({
+                ...o,
+                originalQuantity: this.convertContractsToAssetSize(o.symbol, o.originalQuantity) ?? o.originalQuantity,
+                orderLastFilledQuantity: this.convertContractsToAssetSize(o.symbol, o.orderLastFilledQuantity) ?? o.orderLastFilledQuantity,
+                orderFilledAccumulatedQuantity: this.convertContractsToAssetSize(o.symbol, o.orderFilledAccumulatedQuantity) ?? o.orderFilledAccumulatedQuantity
+            }));
             return this.formattedResponse({ data: orders });
         }
         return this.formattedResponse({ errors: resNormal.errors });
@@ -167,39 +176,64 @@ export default class OkxFutures extends OkxStreams {
         return this.getOpenOrders(params.symbol);
     }
     async cancelAllOpenOrders(params) {
-        // OKX requires cancelling up to 13 unexecuted orders in a batch, or we just rely on passing no ordId to cancel all?
-        // Wait, OKX doesn't have a simple "Cancel All" endpoint for a symbol. 
-        // We have to fetch all pending orders, map their IDs, and cancel in chunks.
-        const pendingRes = await this.signedRequest('private', 'GET', '/api/v5/trade/orders-pending', { instId: params.symbol });
-        if (pendingRes.success && pendingRes.data && pendingRes.data.length > 0) {
-            const cancelPayloads = pendingRes.data.map((order) => ({
-                instId: params.symbol,
-                ordId: order.ordId
-            }));
-            // Max 13 per request for batch
-            const chunks = [];
-            for (let i = 0; i < cancelPayloads.length; i += 13) {
-                chunks.push(cancelPayloads.slice(i, i + 13));
-            }
-            for (const chunk of chunks) {
-                await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-batch-orders', chunk);
-            }
+        const [pendingRes, algoRes] = await Promise.all([
+            this.signedRequest('private', 'GET', '/api/v5/trade/orders-pending', { instId: params.symbol }),
+            this.signedRequest('private', 'GET', '/api/v5/trade/orders-algo-pending', { instId: params.symbol, instType: 'SWAP' })
+        ]);
+        if ((!pendingRes.success || !pendingRes.data?.length) && (!algoRes.success || !algoRes.data?.length)) {
+            return this.formattedResponse({ data: [] });
         }
-        return this.formattedResponse({ data: "Success" });
+        const cancelPayloads = (pendingRes.data || []).map((order) => ({
+            instId: params.symbol,
+            ordId: order.ordId
+        }));
+        const algoCancelPayloads = (algoRes.data || []).map((order) => ({
+            instId: params.symbol,
+            algoId: order.algoId
+        }));
+        const chunkSize = 20;
+        const chunks = [];
+        const algoChunks = [];
+        for (let i = 0; i < cancelPayloads.length; i += chunkSize) {
+            chunks.push(cancelPayloads.slice(i, i + chunkSize));
+        }
+        for (let i = 0; i < algoCancelPayloads.length; i += chunkSize) {
+            algoChunks.push(algoCancelPayloads.slice(i, i + chunkSize));
+        }
+        const results = [];
+        for (const chunk of chunks) {
+            const res = await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-batch-orders', chunk);
+            if (res.success)
+                results.push(...res.data);
+        }
+        for (const chunk of algoChunks) {
+            const res = await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-algos', chunk);
+            if (res.success)
+                results.push(...res.data);
+        }
+        return this.formattedResponse({ data: results });
     }
     async cancelOrderById(params) {
         const payload = {
             instId: params.symbol,
         };
+        if (params.isAlgoOrder) {
+            const algoPayload = [{ instId: params.symbol, algoId: params.clientOrderId }];
+            return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-algos', algoPayload);
+        }
         if (params.clientOrderId)
             payload.ordId = params.clientOrderId;
-        // Note: algo orders use a different endpoint /api/v5/trade/cancel-algos
-        // Standard orders:
-        return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
+        const normalRes = await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
+        if (normalRes.success)
+            return normalRes;
+        const algoFallback = [{ instId: params.symbol, algoId: params.clientOrderId }];
+        return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-algos', algoFallback);
     }
     // --- Order Execution ---
     async customOrder(orderInput) {
         const { symbol, side, type, quantity, price, triggerPrice, reduceOnly = false, workingType = 'CONTRACT_PRICE' } = orderInput;
+        this.assertInstrumentsReady();
+        const contractSize = this.convertAssetSizeToContracts(symbol, quantity);
         // const clOrdId = `okx-${Date.now().toString(36)}${Math.floor(Math.random() * 10000).toString(36)}`;
         const clOrdId = undefined;
         let endpoint = '/api/v5/trade/order';
@@ -207,7 +241,7 @@ export default class OkxFutures extends OkxStreams {
             instId: symbol,
             tdMode: 'cross', // Simplification: assuming cross mode for single-currency accounts
             side: side.toLowerCase(),
-            sz: quantity?.toString()
+            sz: contractSize?.toString()
         };
         payload.reduceOnly = reduceOnly;
         if (type.includes('MARKET')) {
@@ -228,14 +262,32 @@ export default class OkxFutures extends OkxStreams {
             let triggerPxType = 'last';
             if (workingType === 'MARK_PRICE')
                 triggerPxType = 'mark';
-            // Conditional algo orders require triggerPx/orderPx (not slTriggerPx/slOrdPx)
-            payload.triggerPx = triggerPrice.toString();
-            payload.triggerPxType = triggerPxType;
-            if (type.includes('MARKET')) {
-                payload.orderPx = '-1'; // market
+            const isTakeProfit = type.includes('TAKE_PROFIT');
+            const isStop = type.includes('STOP') || type.includes('STOP_LOSS');
+            const isExitOrder = reduceOnly || orderInput.closePosition === true;
+            if (isExitOrder && (isTakeProfit || isStop)) {
+                payload.reduceOnly = true;
+                if (isTakeProfit) {
+                    payload.tpTriggerPx = triggerPrice.toString();
+                    payload.tpTriggerPxType = triggerPxType;
+                    payload.tpOrdPx = '-1'; // market
+                }
+                else {
+                    payload.slTriggerPx = triggerPrice.toString();
+                    payload.slTriggerPxType = triggerPxType;
+                    payload.slOrdPx = '-1'; // market
+                }
             }
             else {
-                if (price) {
+                // For STOP orders (trigger market entry)
+                // trigger algo orders require triggerPx/orderPx for entry triggers
+                payload.ordType = 'trigger';
+                payload.triggerPx = triggerPrice.toString();
+                payload.triggerPxType = triggerPxType;
+                if (type.includes('STOP')) {
+                    payload.orderPx = '-1'; // market
+                }
+                else if (price) {
                     payload.orderPx = price.toString();
                 }
             }
@@ -244,9 +296,12 @@ export default class OkxFutures extends OkxStreams {
             payload.clOrdId = clOrdId;
         }
         const res = await this.signedRequest('private', 'POST', endpoint, payload);
-        console.log(res);
+        console.log(`Raw order response:`, res);
         if (res.success && res.data && Array.isArray(res.data) && res.data[0]) {
             const orderRes = res.data[0];
+            const normalizedType = triggerPrice && !reduceOnly && orderInput.closePosition !== true && type === 'MARKET'
+                ? 'STOP_MARKET'
+                : type;
             const data = {
                 orderId: orderRes.ordId || orderRes.algoId,
                 symbol: symbol,
@@ -258,7 +313,7 @@ export default class OkxFutures extends OkxStreams {
                 executedQty: '0',
                 cumQuote: '0',
                 timeInForce: 'GTC',
-                type: type,
+                type: normalizedType,
                 reduceOnly: reduceOnly,
                 closePosition: false,
                 side: side,
@@ -266,7 +321,7 @@ export default class OkxFutures extends OkxStreams {
                 stopPrice: triggerPrice?.toString(),
                 workingType: workingType,
                 priceProtect: false,
-                origType: type
+                origType: normalizedType
             };
             return this.formattedResponse({ data });
         }
@@ -318,14 +373,15 @@ export default class OkxFutures extends OkxStreams {
             quantity: params.quantity,
             price: params.price,
             triggerPrice: params.price,
-            closePosition: true
+            closePosition: true,
+            reduceOnly: true
         });
     }
     async stopMarketOrder(params) {
         return this.customOrder({
             symbol: params.symbol,
             side: params.side,
-            type: 'MARKET',
+            type: 'STOP',
             quantity: params.quantity,
             triggerPrice: params.price
         });
@@ -341,22 +397,27 @@ export default class OkxFutures extends OkxStreams {
         });
     }
     async reducePosition(params) {
-        const side = params.positionDirection === 'LONG' ? 'SELL' : 'BUY';
-        return this.customOrder({
-            symbol: params.symbol,
-            side: side,
-            type: 'MARKET',
-            quantity: params.quantity,
-            reduceOnly: true
-        });
+        const payload = {
+            instId: params.symbol,
+            mgnMode: 'cross',
+            posSide: 'net', //params.positionDirection.toLowerCase()
+            ccy: 'USDT', //ccy 	String 	Conditional 	Margin currency, required in the case of closing cross MARGIN position for Futures mode.
+        };
+        const request = await this.signedRequest('private', 'POST', '/api/v5/trade/close-position', payload);
+        if (request.success) {
+            return this.formattedResponse({ data: request.data });
+        }
+        return this.formattedResponse({ errors: request.errors });
     }
     async trailingStopOrder(params) {
+        this.assertInstrumentsReady();
+        const contractSize = this.convertAssetSizeToContracts(params.symbol, params.quantity);
         const payload = {
             instId: params.symbol,
             tdMode: 'cross',
             side: params.side.toLowerCase(),
             ordType: 'move_order_stop',
-            sz: params.quantity.toString(),
+            sz: contractSize?.toString(),
             callbackRatio: (params.callbackRate / 100).toString()
         };
         if (params.activatePrice) {

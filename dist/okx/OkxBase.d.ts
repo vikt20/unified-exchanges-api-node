@@ -10,11 +10,20 @@ export default class OkxBase extends AbstractExchangeBase {
     static WS_PRIVATE_DEMO: string;
     static WS_BUSINESS_DEMO: string;
     protected apiPassphrase?: string;
+    protected ctValBySymbol: Map<string, number>;
+    private instrumentsLoadPromise?;
+    private instrumentsReady;
+    private instrumentsLoadError?;
     constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean);
     protected getBaseUrl(_marketType: string): string;
     getStreamUrl(channelType: 'public' | 'private' | 'business'): string;
     setTimeOffset(): Promise<void>;
     getServerTime(): Promise<number>;
+    protected ensureInstrumentMetadataLoaded(): Promise<void>;
+    protected assertInstrumentsReady(): void;
+    protected getCtVal(symbol: string): number | undefined;
+    protected convertAssetSizeToContracts(symbol: string, assetSize?: number): number | undefined;
+    protected convertContractsToAssetSize(symbol: string, contracts?: number): number | undefined;
     protected generateSignature(parameters: string): string;
     protected formattedResponse<T>(object: {
         data?: any;
