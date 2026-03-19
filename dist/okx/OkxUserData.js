@@ -1,13 +1,13 @@
-import BinanceFutures from "./BinanceFutures.js";
+import OkxFutures from "./OkxFutures.js";
 /**
- * BinanceUserData - Reference implementation of IUserDataManager
+ * OkxUserData - Implementation of IUserDataManager for Okx
  *
- * Manages local user data state (positions, orders) specifically for Binance Futures.
+ * Manages local user data state (positions, orders) specifically for Okx Futures.
  * Uses instance-based callbacks for communication with UI/Bot components.
  */
-export default class BinanceUserData extends BinanceFutures {
-    constructor(apiKey, apiSecret) {
-        super(apiKey, apiSecret);
+export default class OkxUserData extends OkxFutures {
+    constructor(apiKey, apiSecret, apiPassphrase) {
+        super(apiKey, apiSecret, apiPassphrase);
     }
     /**
      * Local "Single Source of Truth" for user data.
@@ -78,6 +78,7 @@ export default class BinanceUserData extends BinanceFutures {
         }
     }
     async init() {
+        // Connect Stream and fetch Snapshots
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
@@ -85,9 +86,7 @@ export default class BinanceUserData extends BinanceFutures {
         ]);
     }
     destroy() {
-        this.closeListenKey();
         this.closeAllSockets();
-        // Clear all registered callbacks
         this.positionCallbacks.clear();
         this.orderCallbacks.clear();
         this.statusCallbacks.clear();
@@ -105,30 +104,28 @@ export default class BinanceUserData extends BinanceFutures {
      * Internal method to emit order update via callbacks
      */
     emitOrders = (symbol) => {
-        const orders = this.userData.orders.filter(order => order.symbol === symbol);
+        const orders = this.userData.orders.filter(o => o.symbol === symbol);
         for (const cb of this.orderCallbacks) {
             cb(symbol, orders);
         }
     };
     handleUserData = (data) => {
+        // handle incoming ws events
         switch (data.event) {
             case "ACCOUNT_UPDATE":
-                if (data.accountData)
-                    data.accountData.positions?.forEach(this.setPosition);
+                if (data.accountData && data.accountData.positions) {
+                    data.accountData.positions.forEach(this.setPosition);
+                }
                 break;
             case "ORDER_TRADE_UPDATE":
-                // console.log(data.orderData)
-                if (data.orderData)
+                if (data.orderData) {
                     data.orderData.forEach(this.setOrders);
-                break;
-            case "listenKeyExpired":
-                throw new Error("listenKeyExpired");
+                }
                 break;
             default:
-                // console.log(`No event found: `, data)
+                // console.log("Okx Unhandled User Event", data.event);
                 break;
         }
-        // console.log(userData);
     };
     handleUserStatus = (status) => {
         for (const cb of this.statusCallbacks) {
@@ -136,42 +133,24 @@ export default class BinanceUserData extends BinanceFutures {
         }
     };
     async requestAllOrders() {
-        const request = await this.getOpenOrders();
-        if (!request.success || !request.data) {
-            throw new Error(`getOpenOrders() - ${request.errors}`);
+        // Fetch snapshot
+        const res = await this.getOpenOrders(); // defined in OkxFutures
+        if (res.success && res.data) {
+            this.userData.orders = res.data;
         }
-        this.userData.orders = request.data;
+        else {
+            console.error("OkxUserData: Failed to fetch open orders", res.errors);
+        }
     }
     async requestAllPositions() {
-        const request = await this.getOpenPositions();
-        if (!request.success || !request.data) {
-            throw new Error(`getOpenPositions() - ${request.errors}`);
+        const res = await this.getOpenPositions(); // defined in OkxFutures
+        if (res.success && res.data) {
+            this.userData.positions = res.data;
         }
-        this.userData.positions = request.data;
+        else {
+            console.error("OkxUserData: Failed to fetch open positions", res.errors);
+        }
     }
-    setOrders = async (data) => {
-        const symbol = data.symbol;
-        // console.log(data);
-        if (data.orderType === "MARKET")
-            return;
-        switch (data.orderStatus) {
-            case "CANCELED":
-            case "FILLED":
-            case "REJECTED":
-            case "EXPIRED":
-            case "FINISHED":
-                // case "TRIGGERED":
-                this.userData.orders = this.userData.orders.filter(order => order.clientOrderId !== data.clientOrderId);
-                break;
-            case "NEW":
-                this.userData.orders.push(data);
-                break;
-            default:
-                return;
-        }
-        //Call callback for listeners
-        this.emitOrders(symbol);
-    };
     setPosition = async (data) => {
         const symbol = data.symbol;
         const position = this.userData.positions.find(p => p.symbol === symbol);
@@ -188,5 +167,28 @@ export default class BinanceUserData extends BinanceFutures {
         }
         //Call callback for listeners
         this.emitPosition(symbol);
+    };
+    setOrders = async (data) => {
+        const symbol = data.symbol;
+        // Logic similar to BinanceUserData
+        if (data.orderType === 'MARKET')
+            return; // usually don't track market orders in open orders list
+        const status = data.orderStatus;
+        if (['FILLED', 'CANCELED', 'REJECTED', 'EXPIRED'].includes(status)) {
+            // Remove
+            this.userData.orders = this.userData.orders.filter(o => o.clientOrderId !== data.clientOrderId);
+        }
+        else if (status === 'NEW' || status === 'PARTIALLY_FILLED') {
+            // Add or Update
+            const idx = this.userData.orders.findIndex(o => o.clientOrderId === data.clientOrderId);
+            if (idx === -1) {
+                this.userData.orders.push(data);
+            }
+            else {
+                this.userData.orders[idx] = data;
+            }
+        }
+        // Call callback for listeners
+        this.emitOrders(symbol);
     };
 }

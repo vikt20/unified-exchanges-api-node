@@ -11,7 +11,7 @@ export function convertExchangeInfo(data) {
                 minPrice: parseFloat(item.tickSz || '0'),
                 maxPrice: 0, // OKX does not specify max price explicitly in typical API response
                 tickSize: parseFloat(item.tickSz || '0'),
-                stepSize: parseFloat(item.lotSz || '0'),
+                stepSize: parseFloat(item.lotSz || '0') * parseFloat(item.ctVal || '0'),
                 minQty: parseFloat(item.minSz || '0'),
                 maxQty: 0,
                 minNotional: 0,

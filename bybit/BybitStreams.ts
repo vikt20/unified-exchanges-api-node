@@ -311,7 +311,6 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
 
                 if (topic === 'position') {
                     const positions: PositionData[] = dataList.map((p: BybitPositionWsData) => {
-                        console.log(p)
                         const size = Number(p.size);
                         const isInPosition = size > 0;
 
@@ -341,66 +340,70 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
                 }
 
                 if (topic === 'order') {
+                    const convertedOrders: OrderData[] = [];
                     // console.log(`RAW BYBIT ORDER:`, dataList[0]);
-                    const o = dataList[0] as BybitOrderWsData;
 
-                    // Handle Bybit's special case: order may show as "Filled" but actually was cancelled
-                    // Bybit v5 API: "You may receive two orderStatus=Filled messages when the cancel request
-                    // is accepted but the order is executed at the same time. Generally, one message contains
-                    // orderStatus=Filled, rejectReason=EC_NoError, and another message contains
-                    // orderStatus=Filled, cancelType=CancelByUser, rejectReason=EC_OrigClOrdIDDoesNotExist.
-                    // The first message tells you the order is executed, and the second message tells you
-                    // the followed cancel request is rejected due to order is executed."
-                    let orderStatus: string = o.orderStatus;
+                    for (const o of dataList) {
 
-                    // If order status is "Filled" but cancelType indicates cancellation, treat it as CANCELED
-                    if (o.orderStatus === 'Filled' && o.cancelType && o.cancelType !== 'UNKNOWN') {
-                        // Check if this is actually a cancellation (not an execution)
-                        // CancelType can be: CancelByUser, CancelByReduceOnly, CancelByPrepareLiq, CancelAllBeforeLiq, etc.
-                        // If rejectReason is EC_OrigClOrdIDDoesNotExist or similar, and cancelType is set,
-                        // this is the cancellation message, not the execution
-                        if (o.rejectReason && o.rejectReason !== 'EC_NoError') {
-                            orderStatus = 'CANCELED'; // Map to Bybit's "Cancelled" which we'll convert to "CANCELED"
+                        // Handle Bybit's special case: order may show as "Filled" but actually was cancelled
+                        // Bybit v5 API: "You may receive two orderStatus=Filled messages when the cancel request
+                        // is accepted but the order is executed at the same time. Generally, one message contains
+                        // orderStatus=Filled, rejectReason=EC_NoError, and another message contains
+                        // orderStatus=Filled, cancelType=CancelByUser, rejectReason=EC_OrigClOrdIDDoesNotExist.
+                        // The first message tells you the order is executed, and the second message tells you
+                        // the followed cancel request is rejected due to order is executed."
+                        let orderStatus: string = o.orderStatus;
+
+                        // If order status is "Filled" but cancelType indicates cancellation, treat it as CANCELED
+                        if (o.orderStatus === 'Filled' && o.cancelType && o.cancelType !== 'UNKNOWN') {
+                            // Check if this is actually a cancellation (not an execution)
+                            // CancelType can be: CancelByUser, CancelByReduceOnly, CancelByPrepareLiq, CancelAllBeforeLiq, etc.
+                            // If rejectReason is EC_OrigClOrdIDDoesNotExist or similar, and cancelType is set,
+                            // this is the cancellation message, not the execution
+                            if (o.rejectReason && o.rejectReason !== 'EC_NoError') {
+                                orderStatus = 'CANCELED'; // Map to Bybit's "Cancelled" which we'll convert to "CANCELED"
+                            }
                         }
+
+                        // Map Bybit order statuses to unified format (Binance standard)
+                        const unifiedOrderStatus: OrderStatus = this.mapBybitOrderStatus(orderStatus);
+
+                        const orderData: OrderData = {
+                            symbol: o.symbol,
+                            clientOrderId: o.orderLinkId || o.orderId,
+                            side: o.side.toUpperCase() as 'BUY' | 'SELL',
+                            orderType: mapBybitOrderType(o) as OrderType,
+                            timeInForce: (o.timeInForce === 'PostOnly' ? 'GTX' : o.timeInForce) as TimeInForce,
+                            originalQuantity: parseFloat(o.qty),
+                            originalPrice: parseFloat(o.price || '0'),
+                            averagePrice: parseFloat(o.avgPrice || '0'),
+                            stopPrice: parseFloat(o.triggerPrice || '0'),
+                            executionType: unifiedOrderStatus,
+                            orderStatus: unifiedOrderStatus,
+                            orderId: o.orderId,
+                            orderLastFilledQuantity: parseFloat(o.lastExecQty || '0'),
+                            orderFilledAccumulatedQuantity: parseFloat(o.cumExecQty || '0'),
+                            lastFilledPrice: parseFloat(o.avgPrice || '0'),
+                            commissionAsset: '',
+                            commission: o.cumExecFee || '0',
+                            orderTradeTime: parseInt(o.updatedTime),
+                            tradeId: 0,
+                            isMakerSide: false,
+                            isReduceOnly: o.reduceOnly,
+                            workingType: mapBybitTriggerBy(o.triggerBy),
+                            originalOrderType: mapBybitOrderType(o) as OrderType,
+                            positionSide: o.positionIdx === 1 ? 'LONG' : (o.positionIdx === 2 ? 'SHORT' : 'BOTH'),
+                            closeAll: o.closeOnTrigger || false,
+                            activationPrice: o.triggerPrice,
+                            callbackRate: '',
+                            realizedProfit: '',
+                            isAlgoOrder: false
+                        };
+                        convertedOrders.push(orderData);
                     }
-
-                    // Map Bybit order statuses to unified format (Binance standard)
-                    const unifiedOrderStatus: OrderStatus = this.mapBybitOrderStatus(orderStatus);
-
-                    const orderData: OrderData = {
-                        symbol: o.symbol,
-                        clientOrderId: o.orderLinkId || o.orderId,
-                        side: o.side.toUpperCase() as 'BUY' | 'SELL',
-                        orderType: mapBybitOrderType(o) as OrderType,
-                        timeInForce: (o.timeInForce === 'PostOnly' ? 'GTX' : o.timeInForce) as TimeInForce,
-                        originalQuantity: parseFloat(o.qty),
-                        originalPrice: parseFloat(o.price || '0'),
-                        averagePrice: parseFloat(o.avgPrice || '0'),
-                        stopPrice: parseFloat(o.triggerPrice || '0'),
-                        executionType: unifiedOrderStatus,
-                        orderStatus: unifiedOrderStatus,
-                        orderId: o.orderId,
-                        orderLastFilledQuantity: parseFloat(o.lastExecQty || '0'),
-                        orderFilledAccumulatedQuantity: parseFloat(o.cumExecQty || '0'),
-                        lastFilledPrice: parseFloat(o.avgPrice || '0'),
-                        commissionAsset: '',
-                        commission: o.cumExecFee || '0',
-                        orderTradeTime: parseInt(o.updatedTime),
-                        tradeId: 0,
-                        isMakerSide: false,
-                        isReduceOnly: o.reduceOnly,
-                        workingType: mapBybitTriggerBy(o.triggerBy),
-                        originalOrderType: mapBybitOrderType(o) as OrderType,
-                        positionSide: o.positionIdx === 1 ? 'LONG' : (o.positionIdx === 2 ? 'SHORT' : 'BOTH'),
-                        closeAll: o.closeOnTrigger || false,
-                        activationPrice: o.triggerPrice,
-                        callbackRate: '',
-                        realizedProfit: '',
-                        isAlgoOrder: false
-                    };
                     return {
                         event: 'ORDER_TRADE_UPDATE',
-                        orderData: orderData,
+                        orderData: convertedOrders,
                         accountData: undefined
                     } as UserData;
                 }

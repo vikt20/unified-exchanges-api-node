@@ -6,6 +6,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
     protected subscriptions: {
         id: string;
         disconnect: Function;
+        title: string;
     }[];
     constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean);
     protected handleWebSocket(url: string, args: any[], callback: Function, parser: Function, title: string, statusCallback?: (status: SocketStatus) => void, auth?: boolean): Promise<HandleWebSocket>;

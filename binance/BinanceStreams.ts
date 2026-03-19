@@ -3,7 +3,7 @@ import { IStreamManager } from "../core/IStreamManager.js";
 import BinanceBase, { AccountData, OrderData, OrderType, TimeInForce, OrderStatus, OrderWorkingType, PositionDirection, Type } from "./BinanceBase.js";
 import { convertTradeDataWebSocket, convertDepthData, convertKlineData, convertUserData, convertBookTickerData, convertFundingData, FundingDataWebSocket } from "./converters.js";
 import ws from 'ws';
-
+import { UserData } from "../core/types/streams.js"
 
 export type UserDataWebSocket = {
     e: UserData['event'],
@@ -153,11 +153,7 @@ export type DepthDataWebSocket = {
 };
 
 
-export type UserData = {
-    event: "ACCOUNT_UPDATE" | "ORDER_TRADE_UPDATE" | "ALGO_UPDATE" | "listenKeyExpired",
-    accountData: AccountData | undefined
-    orderData: OrderData | undefined
-}
+
 export type DepthData = {
     symbol: string,
     asks: Array<[string, string]>,

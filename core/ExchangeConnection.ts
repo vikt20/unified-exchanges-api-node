@@ -17,6 +17,7 @@ import OkxSpot from '../okx/OkxSpot.js';
 import OkxFutures from '../okx/OkxFutures.js';
 import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
+import OkxUserData from '../okx/OkxUserData.js';
 
 export class ExchangeFactory {
     static create(exchangeId: ExchangeList, apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTestnet: boolean = false): IUnifiedExchange {
@@ -50,6 +51,9 @@ export class ExchangeFactory {
                     futures: new OkxFutures(apiKey, apiSecret, apiPassphrase, isTestnet),
                     streams: new OkxStreams(apiKey, apiSecret, apiPassphrase, isTestnet),
                 };
+                if (apiKey && apiSecret && apiPassphrase) {
+                    connectionOkx.userData = new OkxUserData(apiKey, apiSecret, apiPassphrase);
+                }
                 // UserData is not implemented independently, it is handled via streams
                 return connectionOkx;
 

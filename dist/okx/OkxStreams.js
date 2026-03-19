@@ -34,7 +34,7 @@ export default class OkxStreams extends OkxBase {
             isActive = false;
             cleanup();
         };
-        this.subscriptions.push({ id, disconnect });
+        this.subscriptions.push({ id, disconnect, title });
         return new Promise((resolve, reject) => {
             let isInitialConnection = true;
             const connect = () => {
@@ -302,19 +302,21 @@ export default class OkxStreams extends OkxBase {
             const channel = msg.arg?.channel;
             if (channel === 'orders-algo') {
                 if (msg.data && Array.isArray(msg.data)) {
+                    const orders = [];
                     for (const order of msg.data) {
-                        return {
-                            event: 'ORDER_TRADE_UPDATE',
-                            orderData: this.convertOrderContractsToAssetSize(convertOkxOrder(order)),
-                            accountData: undefined
-                        };
+                        orders.push(this.convertOrderContractsToAssetSize(convertOkxOrder(order)));
                     }
+                    return {
+                        event: 'ORDER_TRADE_UPDATE',
+                        orderData: orders,
+                        accountData: undefined
+                    };
                 }
             }
             return undefined;
         }, 'futuresUserDataStream-business', statusCallback, true);
         // Open the main private WebSocket for account/positions/orders
-        return this.handleWebSocket(this.getStreamUrl('private'), privateArgs, callback, (msg) => {
+        this.handleWebSocket(this.getStreamUrl('private'), privateArgs, callback, (msg) => {
             const channel = msg.arg?.channel;
             if (channel === 'account') {
                 const balances = [];
@@ -350,17 +352,30 @@ export default class OkxStreams extends OkxBase {
             }
             if (channel === 'orders') {
                 if (msg.data && Array.isArray(msg.data)) {
+                    const orders = [];
                     for (const order of msg.data) {
-                        return {
-                            event: 'ORDER_TRADE_UPDATE',
-                            orderData: this.convertOrderContractsToAssetSize(convertOkxOrder(order)),
-                            accountData: undefined
-                        }; // returning first mapped order due to format (OKX sends updates array)
+                        orders.push(this.convertOrderContractsToAssetSize(convertOkxOrder(order)));
                     }
+                    return {
+                        event: 'ORDER_TRADE_UPDATE',
+                        orderData: orders,
+                        accountData: undefined
+                    };
                 }
             }
             return undefined;
         }, 'futuresUserDataStream', statusCallback, true);
+        const CombinedHandleWebSocketResponse = {
+            disconnect: () => {
+                this.subscriptions.forEach(sub => {
+                    if (sub.title === 'futuresUserDataStream-business' || sub.title === 'futuresUserDataStream') {
+                        sub.disconnect();
+                    }
+                });
+            },
+            id: 'futuresUserDataStream',
+        };
+        return CombinedHandleWebSocketResponse;
     }
     // --- Spot Streams ---
     spotDepthStream(symbols, callback, statusCallback, levels = 5) {

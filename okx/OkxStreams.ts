@@ -9,7 +9,7 @@ import crypto from 'crypto';
 
 export default class OkxStreams extends OkxBase implements IStreamManager {
 
-    protected subscriptions: { id: string, disconnect: Function }[] = [];
+    protected subscriptions: { id: string, disconnect: Function, title: string }[] = [];
 
     constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false) {
         super(apiKey, apiSecret, apiPassphrase, isTest);
@@ -54,7 +54,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
             cleanup();
         };
 
-        this.subscriptions.push({ id, disconnect });
+        this.subscriptions.push({ id, disconnect, title });
 
         return new Promise((resolve, reject) => {
             let isInitialConnection = true;
@@ -336,6 +336,8 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
             { channel: 'orders-algo', instType: 'SWAP' }
         ];
 
+
+
         // Open the business WebSocket for orders-algo (runs in background)
         this.handleWebSocket(
             this.getStreamUrl('business'),
@@ -345,13 +347,15 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
                 const channel = msg.arg?.channel;
                 if (channel === 'orders-algo') {
                     if (msg.data && Array.isArray(msg.data)) {
+                        const orders: OrderData[] = [];
                         for (const order of msg.data) {
-                            return {
-                                event: 'ORDER_TRADE_UPDATE',
-                                orderData: this.convertOrderContractsToAssetSize(convertOkxOrder(order)),
-                                accountData: undefined
-                            } as UserData;
+                            orders.push(this.convertOrderContractsToAssetSize(convertOkxOrder(order)));
                         }
+                        return {
+                            event: 'ORDER_TRADE_UPDATE',
+                            orderData: orders,
+                            accountData: undefined
+                        } as UserData;
                     }
                 }
                 return undefined;
@@ -362,7 +366,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
         );
 
         // Open the main private WebSocket for account/positions/orders
-        return this.handleWebSocket(
+        this.handleWebSocket(
             this.getStreamUrl('private'),
             privateArgs,
             callback,
@@ -405,13 +409,15 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
 
                 if (channel === 'orders') {
                     if (msg.data && Array.isArray(msg.data)) {
+                        const orders: OrderData[] = [];
                         for (const order of msg.data) {
-                            return {
-                                event: 'ORDER_TRADE_UPDATE',
-                                orderData: this.convertOrderContractsToAssetSize(convertOkxOrder(order)),
-                                accountData: undefined
-                            } as UserData; // returning first mapped order due to format (OKX sends updates array)
+                            orders.push(this.convertOrderContractsToAssetSize(convertOkxOrder(order)));
                         }
+                        return {
+                            event: 'ORDER_TRADE_UPDATE',
+                            orderData: orders,
+                            accountData: undefined
+                        } as UserData;
                     }
                 }
 
@@ -421,6 +427,19 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
             statusCallback,
             true
         );
+
+        const CombinedHandleWebSocketResponse: HandleWebSocket = {
+            disconnect: () => {
+                this.subscriptions.forEach(sub => {
+                    if (sub.title === 'futuresUserDataStream-business' || sub.title === 'futuresUserDataStream') {
+                        sub.disconnect();
+                    }
+                });
+            },
+            id: 'futuresUserDataStream',
+        }
+
+        return CombinedHandleWebSocketResponse;
     }
 
     // --- Spot Streams ---

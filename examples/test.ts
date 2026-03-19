@@ -46,20 +46,22 @@ const api = ExchangeFactory.create('OKX', process.env.OKX_TESTNET_API_KEY, proce
 // api.futures.futuresCandleStickStream(["BTCUSDT"], "1m", (data) => {
 //     console.log(data);
 // })
-await setTimeout(() => {
-    // api.futures.trailingStopOrder({
-    //     symbol: "SOL-USDT-SWAP",
-    //     side: "SELL",
-    //     quantity: 1.1,
-    //     activatePrice: 94.5,
-    //     callbackRate: 0.3,
-    // }).then(console.log);
+// await setTimeout(() => {
+//     // api.futures.trailingStopOrder({
+//     //     symbol: "SOL-USDT-SWAP",
+//     //     side: "SELL",
+//     //     quantity: 1.1,
+//     //     activatePrice: 94.5,
+//     //     callbackRate: 0.3,
+//     // }).then(console.log);
 
-    api.futures.cancelOrderById({
-        symbol: "SOL-USDT-SWAP",
-        clientOrderId: "3397690630473154560",
-    }).then(console.log);
-}, 2000)
+//     api.futures.cancelOrderById({
+//         symbol: "SOL-USDT-SWAP",
+//         clientOrderId: "3397690630473154560",
+//     }).then(console.log);
+// }, 2000)
+
+api.spot.getStaticDepth({ symbol: "ADA-USDT", limit: 400 }).then(console.log);
 
 
 

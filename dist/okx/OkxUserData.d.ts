@@ -1,14 +1,14 @@
 import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
-import BybitFutures from "./BybitFutures.js";
+import OkxFutures from "./OkxFutures.js";
 import { PositionData, OrderData, SocketStatus, UserData } from "../core/types.js";
 /**
- * BybitUserData - Implementation of IUserDataManager for Bybit
+ * OkxUserData - Implementation of IUserDataManager for Okx
  *
- * Manages local user data state (positions, orders) specifically for Bybit Futures.
+ * Manages local user data state (positions, orders) specifically for Okx Futures.
  * Uses instance-based callbacks for communication with UI/Bot components.
  */
-export default class BybitUserData extends BybitFutures implements IUserDataManager {
-    constructor(apiKey: string, apiSecret: string);
+export default class OkxUserData extends OkxFutures implements IUserDataManager {
+    constructor(apiKey: string, apiSecret: string, apiPassphrase: string);
     /**
      * Local "Single Source of Truth" for user data.
      * Continuously updated by the WebSocket stream.
@@ -66,4 +66,4 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
     setPosition: (data: PositionData) => Promise<void>;
     setOrders: (data: OrderData) => Promise<void>;
 }
-//# sourceMappingURL=BybitUserData.d.ts.map
+//# sourceMappingURL=OkxUserData.d.ts.map

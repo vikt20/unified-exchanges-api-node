@@ -168,7 +168,7 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
     }
 
     async getOpenPositions(): Promise<FormattedResponse<AccountData['positions']>> {
-        this.assertInstrumentsReady();
+        await this.assertInstrumentsReady();
         const riskRes = await this.getPositionRisk();
         if (riskRes.success && riskRes.data) {
             const positions: PositionData[] = riskRes.data
@@ -197,19 +197,19 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
     }
 
     async getOpenOrders(symbol?: string): Promise<FormattedResponse<OrderData[]>> {
-        this.assertInstrumentsReady();
+        await this.assertInstrumentsReady();
 
         const query: any = { instType: 'SWAP' };
         if (symbol) query.instId = symbol;
 
         const resNormal = await this.signedRequest('private', 'GET', '/api/v5/trade/orders-pending', query);
-        const resAlgo = await this.signedRequest('private', 'GET', '/api/v5/trade/orders-algo-pending', query);
+        const resAlgo = await this.signedRequest('private', 'GET', '/api/v5/trade/orders-algo-pending', { query, ...{ ordType: 'conditional' } });
 
         let merged: any[] = [];
         if (resNormal.success && resNormal.data) merged = merged.concat(resNormal.data);
         if (resAlgo.success && resAlgo.data) merged = merged.concat(resAlgo.data);
 
-        if (resNormal.success || resAlgo.success) {
+        if (resNormal.success && resAlgo.success) {
             const orders = merged.map(convertOkxOrder).map(o => ({
                 ...o,
                 originalQuantity: this.convertContractsToAssetSize(o.symbol, o.originalQuantity) ?? o.originalQuantity,
@@ -218,7 +218,8 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
             }));
             return this.formattedResponse({ data: orders });
         }
-        return this.formattedResponse({ errors: resNormal.errors });
+        const allErrors = `${resNormal.errors ? 'Orders normal: ' + resNormal.errors : ''} ${resAlgo.errors ? 'Orders algo: ' + resAlgo.errors : ''}`;
+        return this.formattedResponse({ errors: allErrors });
     }
 
     async getOpenOrdersBySymbol(params: GetOpenOrdersBySymbolParams): Promise<FormattedResponse<OrderData[]>> {

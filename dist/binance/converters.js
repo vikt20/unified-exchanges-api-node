@@ -62,10 +62,10 @@ export function convertUserData(rawData) {
         return { event: e, orderData: undefined, accountData: convertAccountDataWebSocketRaw(a) };
     }
     else if (e === "ORDER_TRADE_UPDATE") {
-        return { event: e, accountData: undefined, orderData: convertOrderDataWebSocket(o) };
+        return { event: e, accountData: undefined, orderData: [convertOrderDataWebSocket(o)] };
     }
     else if (e === "ALGO_UPDATE") {
-        return { event: "ORDER_TRADE_UPDATE", accountData: undefined, orderData: convertAlgoOrderDataWebSocket(o) };
+        return { event: "ORDER_TRADE_UPDATE", accountData: undefined, orderData: [convertAlgoOrderDataWebSocket(o)] };
     }
     else {
         return { event: e, accountData: undefined, orderData: undefined };

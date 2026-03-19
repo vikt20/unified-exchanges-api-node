@@ -1,8 +1,7 @@
 import { IUserDataManager, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import { OrderData, PositionData } from "./BinanceBase.js";
 import BinanceFutures from "./BinanceFutures.js";
-import { UserData as WebSocketUserData } from "./BinanceStreams.js";
-import { SocketStatus } from "../core/types.js";
+import { SocketStatus, UserData } from "../core/types.js";
 
 export type CustomUserData = {
     positions: PositionData[],
@@ -137,7 +136,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
         }
     }
 
-    handleUserData = (data: WebSocketUserData) => {
+    handleUserData = (data: UserData) => {
 
         switch (data.event) {
             case "ACCOUNT_UPDATE":
@@ -145,7 +144,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
                 break;
             case "ORDER_TRADE_UPDATE":
                 // console.log(data.orderData)
-                if (data.orderData) this.setOrders(data.orderData);
+                if (data.orderData) data.orderData.forEach(this.setOrders);
                 break;
             case "listenKeyExpired":
                 throw new Error("listenKeyExpired");

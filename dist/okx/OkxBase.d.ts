@@ -20,7 +20,7 @@ export default class OkxBase extends AbstractExchangeBase {
     setTimeOffset(): Promise<void>;
     getServerTime(): Promise<number>;
     protected ensureInstrumentMetadataLoaded(): Promise<void>;
-    protected assertInstrumentsReady(): void;
+    protected assertInstrumentsReady(): Promise<void>;
     protected getCtVal(symbol: string): number | undefined;
     protected convertAssetSizeToContracts(symbol: string, assetSize?: number): number | undefined;
     protected convertContractsToAssetSize(symbol: string, contracts?: number): number | undefined;

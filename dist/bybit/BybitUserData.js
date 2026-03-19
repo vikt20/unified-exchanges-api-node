@@ -119,7 +119,7 @@ export default class BybitUserData extends BybitFutures {
                 break;
             case "ORDER_TRADE_UPDATE":
                 if (data.orderData) {
-                    this.setOrders(data.orderData);
+                    data.orderData.forEach(this.setOrders);
                 }
                 break;
             default:

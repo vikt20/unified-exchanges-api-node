@@ -1,17 +1,17 @@
 import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
-import BybitFutures from "./BybitFutures.js";
+import OkxFutures from "./OkxFutures.js";
 import { PositionData, OrderData, SocketStatus, UserData } from "../core/types.js";
 
 /**
- * BybitUserData - Implementation of IUserDataManager for Bybit
+ * OkxUserData - Implementation of IUserDataManager for Okx
  * 
- * Manages local user data state (positions, orders) specifically for Bybit Futures.
+ * Manages local user data state (positions, orders) specifically for Okx Futures.
  * Uses instance-based callbacks for communication with UI/Bot components.
  */
-export default class BybitUserData extends BybitFutures implements IUserDataManager {
+export default class OkxUserData extends OkxFutures implements IUserDataManager {
 
-    constructor(apiKey: string, apiSecret: string) {
-        super(apiKey, apiSecret);
+    constructor(apiKey: string, apiSecret: string, apiPassphrase: string) {
+        super(apiKey, apiSecret, apiPassphrase);
     }
 
     /**
@@ -144,7 +144,7 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
                 }
                 break;
             default:
-                // console.log("Bybit Unhandled User Event", data.event);
+                // console.log("Okx Unhandled User Event", data.event);
                 break;
         }
     }
@@ -157,20 +157,20 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
 
     async requestAllOrders(): Promise<void> {
         // Fetch snapshot
-        const res = await this.getOpenOrders(); // defined in BybitFutures
+        const res = await this.getOpenOrders(); // defined in OkxFutures
         if (res.success && res.data) {
             this.userData.orders = res.data;
         } else {
-            console.error("BybitUserData: Failed to fetch open orders", res.errors);
+            console.error("OkxUserData: Failed to fetch open orders", res.errors);
         }
     }
 
     async requestAllPositions(): Promise<void> {
-        const res = await this.getOpenPositions(); // defined in BybitFutures
+        const res = await this.getOpenPositions(); // defined in OkxFutures
         if (res.success && res.data) {
             this.userData.positions = res.data;
         } else {
-            console.error("BybitUserData: Failed to fetch open positions", res.errors);
+            console.error("OkxUserData: Failed to fetch open positions", res.errors);
         }
     }
 

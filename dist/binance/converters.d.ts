@@ -1,6 +1,7 @@
 import { ExchangeInfo, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, PositionData, AggTradesData, AlgoOrderResponse } from './BinanceBase.js';
-import { TradeData, TradeDataWebSocket, DepthData, KlineData, UserData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData, AlgoOrderDataWebSocket } from './BinanceStreams.js';
+import { TradeData, TradeDataWebSocket, DepthData, KlineData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData, AlgoOrderDataWebSocket } from './BinanceStreams.js';
 import { AggTradesDataByRequest, KlineDataByRequest, PositionDataByRequest } from './BinanceFutures.js';
+import { UserData } from '../core/types.js';
 export declare function convertObjectIntoUrlEncoded(obj: any): string;
 export declare function extractInfo(data: ExchangeInfo['symbols']): {
     [key: string]: ExtractedInfo;

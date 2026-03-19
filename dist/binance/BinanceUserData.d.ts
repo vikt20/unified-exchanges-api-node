@@ -1,8 +1,7 @@
 import { IUserDataManager, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import { OrderData, PositionData } from "./BinanceBase.js";
 import BinanceFutures from "./BinanceFutures.js";
-import { UserData as WebSocketUserData } from "./BinanceStreams.js";
-import { SocketStatus } from "../core/types.js";
+import { SocketStatus, UserData } from "../core/types.js";
 export type CustomUserData = {
     positions: PositionData[];
     orders: OrderData[];
@@ -65,7 +64,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      * Internal method to emit order update via callbacks
      */
     private emitOrders;
-    handleUserData: (data: WebSocketUserData) => void;
+    handleUserData: (data: UserData) => void;
     handleUserStatus: (status: SocketStatus) => void;
     requestAllOrders(): Promise<void>;
     requestAllPositions(): Promise<void>;

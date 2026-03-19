@@ -56,6 +56,9 @@ export default class OkxBase extends AbstractExchangeBase {
         return Date.now();
     }
     async ensureInstrumentMetadataLoaded() {
+        if (!this.apiKey || !this.apiSecret || !this.apiPassphrase) {
+            return;
+        }
         if (this.instrumentsLoadPromise)
             return this.instrumentsLoadPromise;
         this.instrumentsLoadPromise = (async () => {
@@ -78,12 +81,12 @@ export default class OkxBase extends AbstractExchangeBase {
         })();
         return this.instrumentsLoadPromise;
     }
-    assertInstrumentsReady() {
+    async assertInstrumentsReady() {
         if (this.instrumentsLoadError) {
             throw new Error(`OKX instruments metadata unavailable: ${this.instrumentsLoadError}`);
         }
         if (!this.instrumentsReady) {
-            throw new Error('OKX instruments metadata not loaded yet. Orders are disabled until ready.');
+            await this.ensureInstrumentMetadataLoaded();
         }
     }
     getCtVal(symbol) {

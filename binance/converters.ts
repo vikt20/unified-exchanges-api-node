@@ -1,6 +1,7 @@
 import { ExchangeInfo, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, PositionData, PositionDirection, AggTradesData, AlgoOrderResponse, OrderSide, OrderType, TimeInForce, OrderStatus, OrderWorkingType, PositionSide } from './BinanceBase.js';
-import { TradeData, TradeDataWebSocket, DepthData, KlineData, UserData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData, AlgoOrderDataWebSocket } from './BinanceStreams.js';
+import { TradeData, TradeDataWebSocket, DepthData, KlineData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData, AlgoOrderDataWebSocket } from './BinanceStreams.js';
 import { AggTradesDataByRequest, KlineDataByRequest, PositionDataByRequest } from './BinanceFutures.js';
+import { UserData } from '../core/types.js';
 
 export function convertObjectIntoUrlEncoded(obj: any) {
     return Object.keys(obj).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k])).join('&');
@@ -68,9 +69,9 @@ export function convertUserData(rawData: UserDataWebSocket): UserData {
     if (e === "ACCOUNT_UPDATE") {
         return { event: e, orderData: undefined, accountData: convertAccountDataWebSocketRaw(a!) };
     } else if (e === "ORDER_TRADE_UPDATE") {
-        return { event: e, accountData: undefined, orderData: convertOrderDataWebSocket(o as OrderDataWebSocket) };
+        return { event: e, accountData: undefined, orderData: [convertOrderDataWebSocket(o as OrderDataWebSocket)] };
     } else if (e === "ALGO_UPDATE") {
-        return { event: "ORDER_TRADE_UPDATE", accountData: undefined, orderData: convertAlgoOrderDataWebSocket(o as AlgoOrderDataWebSocket) };
+        return { event: "ORDER_TRADE_UPDATE", accountData: undefined, orderData: [convertAlgoOrderDataWebSocket(o as AlgoOrderDataWebSocket)] };
     } else {
         return { event: e, accountData: undefined, orderData: undefined };
     }
