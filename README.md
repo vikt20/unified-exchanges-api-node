@@ -1,6 +1,6 @@
 # Unified Exchanges API for Node.js
 
-A powerful, unified interface for interacting with major cryptocurrency exchanges (Binance, Bybit). This package simplifies the process of connecting to exchanges, fetching market data, managing real-time streams, and executing orders across both Spot and Futures markets.
+A powerful, unified interface for interacting with major cryptocurrency exchanges (Binance, Bybit, OKX). This package simplifies the process of connecting to exchanges, fetching market data, managing real-time streams, and executing orders across Futures markets.
 
 ## Table of Contents
 
@@ -165,7 +165,7 @@ import { ExchangeFactory, BinanceUserData, BybitUserData } from 'unified-exchang
 const binance = ExchangeFactory.create('binance', 'KEY', 'SECRET');
 
 if (binance.userData) {
-    // 1. Initialize (Start Stream + Fetch Snapshot)
+    // 1. Initialize (Start Stream)
     await binance.userData.init();
 
     // 2. Subscribe to Static Events

@@ -200,6 +200,22 @@ export default class OkxStreams extends OkxBase {
             bids: data.bids.map((b) => [b[0], b[1]])
         };
     }
+    parseDepthFutures(msg) {
+        if (!msg.data || msg.data.length === 0)
+            return undefined;
+        const data = msg.data[0];
+        const symbol = msg.arg?.instId || '';
+        const convertSize = (sizeStr) => {
+            const size = parseFloat(sizeStr);
+            const converted = this.convertContractsToAssetSize(symbol, size);
+            return (converted ?? size).toString();
+        };
+        return {
+            symbol: symbol,
+            asks: data.asks.map((a) => [a[0], convertSize(a[1])]),
+            bids: data.bids.map((b) => [b[0], convertSize(b[1])])
+        };
+    }
     parseKline(msg) {
         if (!msg.data || msg.data.length === 0)
             return undefined;
@@ -223,6 +239,24 @@ export default class OkxStreams extends OkxBase {
         }
         return undefined;
     }
+    parseBookTickerFutures(msg) {
+        if (!msg.data || msg.data.length === 0)
+            return undefined;
+        const data = msg.data[0];
+        const symbol = msg.arg?.instId || '';
+        if (data.bids?.[0] && data.asks?.[0]) {
+            const bidQty = parseFloat(data.bids[0][1]);
+            const askQty = parseFloat(data.asks[0][1]);
+            return {
+                symbol: symbol,
+                bestBid: parseFloat(data.bids[0][0]),
+                bestBidQty: this.convertContractsToAssetSize(symbol, bidQty) ?? bidQty,
+                bestAsk: parseFloat(data.asks[0][0]),
+                bestAskQty: this.convertContractsToAssetSize(symbol, askQty) ?? askQty
+            };
+        }
+        return undefined;
+    }
     parseTrade(msg) {
         if (!msg.data || msg.data.length === 0)
             return undefined;
@@ -232,6 +266,21 @@ export default class OkxStreams extends OkxBase {
             symbol: symbol,
             price: parseFloat(trade.px),
             quantity: parseFloat(trade.sz),
+            tradeTime: parseInt(trade.ts),
+            orderType: trade.side.toUpperCase()
+        };
+    }
+    parseTradeFutures(msg) {
+        if (!msg.data || msg.data.length === 0)
+            return undefined;
+        const trade = msg.data[0];
+        const symbol = msg.arg?.instId || '';
+        const size = parseFloat(trade.sz);
+        const quantity = this.convertContractsToAssetSize(symbol, size) ?? size;
+        return {
+            symbol: symbol,
+            price: parseFloat(trade.px),
+            quantity: quantity,
             tradeTime: parseInt(trade.ts),
             orderType: trade.side.toUpperCase()
         };
@@ -250,14 +299,15 @@ export default class OkxStreams extends OkxBase {
     }
     // --- Futures Streams (SWAP) ---
     // Use "books" for depth (or books5/books50-l2-tbt)
-    futuresDepthStream(symbols, callback, statusCallback, levels = 5) {
+    async futuresDepthStream(symbols, callback, statusCallback, levels = 0) {
+        await this.ensureInstrumentMetadataLoaded();
         let channel = 'books';
         if (levels === 5)
             channel = 'books5';
         else if (levels === 50)
             channel = 'books50-l2-tbt';
         const args = symbols.map(s => ({ channel, instId: s }));
-        return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseDepth, 'futuresDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseDepthFutures.bind(this), 'futuresDepthStream', statusCallback);
     }
     // OKX candle intervals: 1m,3m,5m,15m,30m,1H,2H,4H,6H,12H,1D,2D,3D,5D,1W,1M,3M,6M,1Y
     // Incoming intervals from the app follow Binance convention (lowercase h/d/w/m/y for hours+)
@@ -277,16 +327,19 @@ export default class OkxStreams extends OkxBase {
         const args = symbols.map(s => ({ channel, instId: s }));
         return this.handleWebSocket(this.getStreamUrl('business'), args, callback, this.parseKline, 'futuresCandleStickStream', statusCallback);
     }
-    futuresBookTickerStream(symbols, callback, statusCallback) {
+    async futuresBookTickerStream(symbols, callback, statusCallback) {
+        await this.ensureInstrumentMetadataLoaded();
         // We use bbo-tbt for fast best bid/ask
         const args = symbols.map(s => ({ channel: 'bbo-tbt', instId: s }));
-        return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseBookTicker, 'futuresBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseBookTickerFutures.bind(this), 'futuresBookTickerStream', statusCallback);
     }
-    futuresTradeStream(symbols, callback, statusCallback) {
+    async futuresTradeStream(symbols, callback, statusCallback) {
+        await this.ensureInstrumentMetadataLoaded();
         const args = symbols.map(s => ({ channel: 'trades', instId: s }));
-        return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseTrade, 'futuresTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseTradeFutures.bind(this), 'futuresTradeStream', statusCallback);
     }
     async futuresUserDataStream(callback, statusCallback) {
+        await this.ensureInstrumentMetadataLoaded();
         // Private channels (account, positions, orders) go on /private
         const privateArgs = [
             { channel: 'account' },
@@ -326,7 +379,7 @@ export default class OkxStreams extends OkxBase {
                             for (const d of acc.details) {
                                 balances.push({
                                     asset: d.ccy,
-                                    balance: d.eq,
+                                    balance: d.cashBal,
                                     crossWalletBalance: d.eq,
                                     balanceChange: '0'
                                 });
@@ -378,7 +431,7 @@ export default class OkxStreams extends OkxBase {
         return CombinedHandleWebSocketResponse;
     }
     // --- Spot Streams ---
-    spotDepthStream(symbols, callback, statusCallback, levels = 5) {
+    spotDepthStream(symbols, callback, statusCallback, levels = 0) {
         let channel = 'books';
         if (levels === 5)
             channel = 'books5';

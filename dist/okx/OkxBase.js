@@ -56,9 +56,9 @@ export default class OkxBase extends AbstractExchangeBase {
         return Date.now();
     }
     async ensureInstrumentMetadataLoaded() {
-        if (!this.apiKey || !this.apiSecret || !this.apiPassphrase) {
-            return;
-        }
+        // if (!this.apiKey || !this.apiSecret || !this.apiPassphrase) {
+        //     return;
+        // }
         if (this.instrumentsLoadPromise)
             return this.instrumentsLoadPromise;
         this.instrumentsLoadPromise = (async () => {

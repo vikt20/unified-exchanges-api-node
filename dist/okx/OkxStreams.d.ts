@@ -15,9 +15,12 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
     private convertOrderContractsToAssetSize;
     private convertPositionContractsToAssetSize;
     private parseDepth;
+    private parseDepthFutures;
     private parseKline;
     private parseBookTicker;
+    private parseBookTickerFutures;
     private parseTrade;
+    private parseTradeFutures;
     private parseFunding;
     futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void, levels?: number): Promise<HandleWebSocket>;
     normalizeOkxInterval(interval: string): string;

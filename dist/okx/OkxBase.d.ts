@@ -12,7 +12,7 @@ export default class OkxBase extends AbstractExchangeBase {
     protected apiPassphrase?: string;
     protected ctValBySymbol: Map<string, number>;
     private instrumentsLoadPromise?;
-    private instrumentsReady;
+    instrumentsReady: boolean;
     private instrumentsLoadError?;
     constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean);
     protected getBaseUrl(_marketType: string): string;

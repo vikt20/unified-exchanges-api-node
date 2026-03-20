@@ -7,7 +7,7 @@ dotenv.config({
 
 // console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET);
 
-const api = ExchangeFactory.create('OKX', process.env.OKX_TESTNET_API_KEY, process.env.OKX_TESTNET_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, true);
+const api = ExchangeFactory.create('OKX', process.env.OKX_TESTNET_API_KEY, process.env.OKX_TESTNET_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE);
 
 // async function getFuturesSymbols(): Promise<Set<string>> {
 //     const exchangeInfo = await api.futures.getExchangeInfo();
@@ -61,7 +61,11 @@ const api = ExchangeFactory.create('OKX', process.env.OKX_TESTNET_API_KEY, proce
 //     }).then(console.log);
 // }, 2000)
 
-api.spot.getStaticDepth({ symbol: "ADA-USDT", limit: 400 }).then(console.log);
+// api.spot.getStaticDepth({ symbol: "ADA-USDT", limit: 400 }).then(console.log);
+
+api.streams.futuresDepthStream(["APR-USDT-SWAP"], (data) => {
+    console.log(data);
+}, status => console.log(status))
 
 
 

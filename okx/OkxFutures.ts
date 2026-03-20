@@ -47,6 +47,7 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
     }
 
     async getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>> {
+        await this.ensureInstrumentMetadataLoaded();
         const res = await this.publicRequest('public', 'GET', '/api/v5/market/books', {
             instId: params.symbol,
             sz: params.limit || 400
@@ -54,11 +55,16 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
 
         if (res.success && res.data && Array.isArray(res.data) && res.data[0]) {
             const data = res.data[0] as any;
+            const convertSize = (sizeStr: string) => {
+                const size = parseFloat(sizeStr);
+                const converted = this.convertContractsToAssetSize(params.symbol, size);
+                return (converted ?? size).toString();
+            };
             return this.formattedResponse({
                 data: {
                     symbol: params.symbol,
-                    bids: data.bids.map((b: string[]) => [b[0], b[1]]),
-                    asks: data.asks.map((a: string[]) => [a[0], a[1]]),
+                    bids: data.bids.map((b: string[]) => [b[0], convertSize(b[1])]),
+                    asks: data.asks.map((a: string[]) => [a[0], convertSize(a[1])]),
                     lastUpdateId: parseInt(data.ts || '0')
                 } as StaticDepth
             });
@@ -91,20 +97,25 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
     }
 
     async getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>> {
+        await this.ensureInstrumentMetadataLoaded();
         const res = await this.publicRequest('public', 'GET', '/api/v5/market/trades', {
             instId: params.symbol,
             limit: params.limit || 100
         });
 
         if (res.success && res.data && Array.isArray(res.data)) {
-            const trades: AggTradesData[] = res.data.map((t: any) => ({
-                symbol: params.symbol,
-                id: parseInt(t.tradeId),
-                price: parseFloat(t.px),
-                quantity: parseFloat(t.sz),
-                time: parseInt(t.ts),
-                isBuyer: t.side === 'buy'
-            }));
+            const trades: AggTradesData[] = res.data.map((t: any) => {
+                const size = parseFloat(t.sz);
+                const quantity = this.convertContractsToAssetSize(params.symbol, size) ?? size;
+                return {
+                    symbol: params.symbol,
+                    id: parseInt(t.tradeId),
+                    price: parseFloat(t.px),
+                    quantity: quantity,
+                    time: parseInt(t.ts),
+                    isBuyer: t.side === 'buy'
+                };
+            });
             return this.formattedResponse({ data: trades });
         }
         return this.formattedResponse({ errors: res.errors });

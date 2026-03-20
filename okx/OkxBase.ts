@@ -20,7 +20,7 @@ export default class OkxBase extends AbstractExchangeBase {
     protected apiPassphrase?: string;
     protected ctValBySymbol: Map<string, number> = new Map();
     private instrumentsLoadPromise?: Promise<void>;
-    private instrumentsReady: boolean = false;
+    public instrumentsReady: boolean = false;
     private instrumentsLoadError?: string;
 
     constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false) {
@@ -63,9 +63,9 @@ export default class OkxBase extends AbstractExchangeBase {
     }
 
     protected async ensureInstrumentMetadataLoaded(): Promise<void> {
-        if (!this.apiKey || !this.apiSecret || !this.apiPassphrase) {
-            return;
-        }
+        // if (!this.apiKey || !this.apiSecret || !this.apiPassphrase) {
+        //     return;
+        // }
         if (this.instrumentsLoadPromise) return this.instrumentsLoadPromise;
         this.instrumentsLoadPromise = (async () => {
             const res = await this.publicRequest<any>(
