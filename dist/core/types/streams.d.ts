@@ -9,7 +9,7 @@ export interface HandleWebSocket {
     disconnect: Function;
     id: string;
 }
-export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG';
+export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG' | 'AUTH_FAILED';
 export interface UserData {
     event: 'ACCOUNT_UPDATE' | 'ORDER_TRADE_UPDATE' | 'ALGO_UPDATE' | 'listenKeyExpired';
     accountData: AccountData | undefined;

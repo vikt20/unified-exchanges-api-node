@@ -378,6 +378,7 @@ export default class BybitStreams extends BybitBase {
     }
     // --- Spot Streams (Public) ---
     // Bybit V5 Spot Public topics use same structure as Linear
+    // For Spot streams there are 10 symbols limit per topic
     spotDepthStream(symbols, callback, statusCallback, levels) {
         const topics = symbols.map(s => `orderbook.${levels || 200}.${s}`);
         return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseDepth, 'spotDepthStream', statusCallback);

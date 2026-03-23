@@ -24,23 +24,73 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
         statusCallback?: (status: SocketStatus) => void,
         auth: boolean = false
     ): Promise<HandleWebSocket> {
-        const RECONNECT_DELAY = 3000;
-        const PING_INTERVAL = 20000;
+        // ── OKX WebSocket spec constants ──
+        const INITIAL_RECONNECT_DELAY = 3000;
+        const MAX_RECONNECT_DELAY = 60000;
+        const PING_TIMEOUT = 25000;      // Must be < 30s per OKX docs
+        const PONG_TIMEOUT = 10000;      // Wait for pong before killing connection
+        const SUB_CHUNK_SIZE = 50;
+        const SUB_CHUNK_DELAY = 350;     // ms between subscription batches (stay under 3 req/s)
+        const RATE_LIMIT_OPS_PER_HOUR = 480;
+        const RATE_LIMIT_WARN_THRESHOLD = 400;
 
         const id = Math.random().toString(36).substring(7);
         let isActive = true;
         let currentWs: ws | null = null;
         let reconnectTimeout: NodeJS.Timeout | null = null;
-        let pingInterval: NodeJS.Timeout | null = null;
+        let pingTimer: NodeJS.Timeout | null = null;
+        let pongTimer: NodeJS.Timeout | null = null;
+        let reconnectDelay = INITIAL_RECONNECT_DELAY;
+
+        // ── Rate-limit tracking (480 subscribe/unsubscribe/login ops per hour per connection) ──
+        let rateLimitOps: number[] = []; // timestamps of subscribe/login sends
+
+        const trackRateLimitOp = (): boolean => {
+            const now = Date.now();
+            // Prune ops older than 1 hour
+            rateLimitOps = rateLimitOps.filter(ts => now - ts < 3600000);
+            if (rateLimitOps.length >= RATE_LIMIT_OPS_PER_HOUR) {
+                console.error(`${title} - OKX rate limit reached (${RATE_LIMIT_OPS_PER_HOUR} subscribe/login ops per hour). Blocking send.`);
+                return false;
+            }
+            if (rateLimitOps.length >= RATE_LIMIT_WARN_THRESHOLD) {
+                console.warn(`${title} - Approaching OKX rate limit: ${rateLimitOps.length}/${RATE_LIMIT_OPS_PER_HOUR} ops in the last hour.`);
+            }
+            rateLimitOps.push(now);
+            return true;
+        };
+
+        // ── Inactivity-based ping/pong (OKX spec: reset timer on every message) ──
+        const resetPingTimer = () => {
+            if (pingTimer) clearTimeout(pingTimer);
+            if (!isActive || !currentWs) return;
+
+            pingTimer = setTimeout(() => {
+                if (currentWs?.readyState === ws.OPEN) {
+                    currentWs.send("ping");
+                    statusCallback?.('PING');
+
+                    // Start pong timeout — if no pong arrives, kill the connection
+                    pongTimer = setTimeout(() => {
+                        console.warn(`${title} - Pong not received within ${PONG_TIMEOUT}ms, terminating connection...`);
+                        currentWs?.terminate();
+                    }, PONG_TIMEOUT);
+                }
+            }, PING_TIMEOUT);
+        };
 
         const cleanup = () => {
             if (reconnectTimeout) {
                 clearTimeout(reconnectTimeout);
                 reconnectTimeout = null;
             }
-            if (pingInterval) {
-                clearInterval(pingInterval);
-                pingInterval = null;
+            if (pingTimer) {
+                clearTimeout(pingTimer);
+                pingTimer = null;
+            }
+            if (pongTimer) {
+                clearTimeout(pongTimer);
+                pongTimer = null;
             }
             if (currentWs) {
                 currentWs.removeAllListeners();
@@ -59,6 +109,8 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
         return new Promise((resolve, reject) => {
             let isInitialConnection = true;
 
+            let scheduleReconnect: () => void;
+
             const connect = () => {
                 if (!isActive) return;
                 cleanup();
@@ -71,29 +123,41 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
                         isInitialConnection = false;
                         reject(e);
                     } else {
-                        reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
+                        scheduleReconnect();
                     }
                     return;
                 }
 
                 currentWs.on('open', () => {
                     statusCallback?.('OPEN');
+                    // Reset backoff on successful open
+                    reconnectDelay = INITIAL_RECONNECT_DELAY;
+                    // Reset per-connection rate limit counter
+                    rateLimitOps = [];
 
-                    const sendSubscriptions = () => {
-                        if (args.length > 0) {
-                            const chunkSize = 50;
-                            for (let i = 0; i < args.length; i += chunkSize) {
-                                const chunk = args.slice(i, i + chunkSize);
-                                const subParams = {
-                                    op: 'subscribe',
-                                    args: chunk
-                                };
-                                currentWs?.send(JSON.stringify(subParams));
+                    const sendSubscriptions = async () => {
+                        if (args.length === 0) return;
+                        for (let i = 0; i < args.length; i += SUB_CHUNK_SIZE) {
+                            if (!trackRateLimitOp()) break;
+                            const chunk = args.slice(i, i + SUB_CHUNK_SIZE);
+                            const subParams = {
+                                op: 'subscribe',
+                                args: chunk
+                            };
+                            currentWs?.send(JSON.stringify(subParams));
+                            // Delay between chunks to stay under OKX 3 req/s limit
+                            if (i + SUB_CHUNK_SIZE < args.length) {
+                                await new Promise(r => setTimeout(r, SUB_CHUNK_DELAY));
                             }
                         }
                     };
 
                     if (auth && this.apiKey && this.apiSecret) {
+                        if (!trackRateLimitOp()) {
+                            console.error(`${title} - Rate limit reached, cannot send login. Closing.`);
+                            currentWs?.close();
+                            return;
+                        }
                         const timestamp = Math.floor(Date.now() / 1000).toString();
                         const signString = timestamp + 'GET' + '/users/self/verify';
                         const signature = crypto.createHmac('sha256', this.apiSecret).update(signString).digest('base64');
@@ -111,15 +175,11 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
                         (currentWs as any).__pendingSubscribe = sendSubscriptions;
                     } else {
                         // No auth needed, subscribe immediately
-                        sendSubscriptions();
+                        void sendSubscriptions();
                     }
 
-                    pingInterval = setInterval(() => {
-                        if (currentWs?.readyState === ws.OPEN) {
-                            currentWs.send("ping");
-                            statusCallback?.('PING');
-                        }
-                    }, PING_INTERVAL);
+                    // Start the inactivity-based ping timer
+                    resetPingTimer();
 
                     if (isInitialConnection) {
                         isInitialConnection = false;
@@ -128,9 +188,14 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
                 });
 
                 currentWs.on('message', (data: any) => {
+                    // Reset ping timer on EVERY received message (OKX spec)
+                    resetPingTimer();
+
                     try {
                         const messageStr = data.toString();
                         if (messageStr === 'pong') {
+                            // Clear pong timeout — server is alive
+                            if (pongTimer) { clearTimeout(pongTimer); pongTimer = null; }
                             statusCallback?.('PONG');
                             return;
                         }
@@ -142,11 +207,14 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
                                 // Login successful, send pending subscriptions
                                 const pendingFn = (currentWs as any)?.__pendingSubscribe;
                                 if (pendingFn) {
-                                    pendingFn();
+                                    void pendingFn();
                                     delete (currentWs as any).__pendingSubscribe;
                                 }
                             } else {
-                                console.error(`${title} - Auth Failed: ${parsed.msg}`);
+                                // Auth failed — close the connection, don't leave a zombie
+                                console.error(`${title} - Auth Failed (code: ${parsed.code}): ${parsed.msg}`);
+                                statusCallback?.('AUTH_FAILED');
+                                currentWs?.close();
                             }
                             return;
                         }
@@ -169,15 +237,23 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
 
                 currentWs.on('close', (code, reason) => {
                     if (!isActive) return;
-                    console.log(`${title} - WebSocket closed (code: ${code}), reconnecting...`);
+                    console.log(`${title} - WebSocket closed (code: ${code}), reconnecting in ${Math.round(reconnectDelay)}ms...`);
                     statusCallback?.('CLOSE');
-                    reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
+                    scheduleReconnect();
                 });
 
                 currentWs.on('error', (err) => {
                     console.error(`${title} - WebSocket error`, err);
                     statusCallback?.('ERROR');
                 });
+            };
+
+            // ── Exponential backoff with jitter (defined after connect for mutual reference) ──
+            scheduleReconnect = () => {
+                if (!isActive) return;
+                const jitter = reconnectDelay * (0.8 + Math.random() * 0.4); // ±20%
+                reconnectTimeout = setTimeout(connect, jitter);
+                reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
             };
 
             connect();

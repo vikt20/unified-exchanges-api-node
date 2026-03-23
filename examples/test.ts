@@ -7,7 +7,7 @@ dotenv.config({
 
 // console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET);
 
-const api = ExchangeFactory.create('OKX', process.env.OKX_TESTNET_API_KEY, process.env.OKX_TESTNET_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE);
+const api = ExchangeFactory.create('OKX');
 
 // async function getFuturesSymbols(): Promise<Set<string>> {
 //     const exchangeInfo = await api.futures.getExchangeInfo();
@@ -24,23 +24,40 @@ const api = ExchangeFactory.create('OKX', process.env.OKX_TESTNET_API_KEY, proce
 //     return symbols;
 // }
 
-// async function getSpotSymbols(): Promise<Set<string>> {
-//     const exchangeInfo = await api.spot.getExchangeInfo();
-//     const symbols = new Set<string>();
-//     if (exchangeInfo.success) {
-//         for (const symbol of Object.keys(exchangeInfo.data)) {
-//             if (symbol.includes("USDT")) {
-//                 symbols.add(symbol);
-//             }
-//         }
-//     } else {
-//         return new Set<string>();
-//     }
-//     return symbols;
-// }
+async function getSpotSymbols(): Promise<Set<string>> {
+    const exchangeInfo = await api.spot.getExchangeInfo();
+    const symbols = new Set<string>();
+    if (exchangeInfo.success) {
+        for (const symbol of Object.keys(exchangeInfo.data)) {
+            if (symbol.includes("USDT")) {
+                symbols.add(symbol);
+            }
+        }
+    } else {
+        return new Set<string>();
+    }
+    return symbols;
+}
 
 // // getFuturesSymbols().then(console.log);
-// // getSpotSymbols().then(console.log);
+// getSpotSymbols().then(console.log);
+const getSymbols = await getSpotSymbols()
+const symbolsDataReceieved = new Set<string>();
+api.streams.spotDepthStream(Array.from(getSymbols), (data) => {
+
+
+    if (!symbolsDataReceieved.has(data.symbol)) {
+        console.log(data.symbol);
+        symbolsDataReceieved.add(data.symbol);
+    }
+
+
+
+    if (symbolsDataReceieved.size === getSymbols.size) {
+        console.log("All symbols data received");
+    }
+
+})
 
 
 // api.futures.futuresCandleStickStream(["BTCUSDT"], "1m", (data) => {
@@ -63,9 +80,9 @@ const api = ExchangeFactory.create('OKX', process.env.OKX_TESTNET_API_KEY, proce
 
 // api.spot.getStaticDepth({ symbol: "ADA-USDT", limit: 400 }).then(console.log);
 
-api.streams.futuresDepthStream(["APR-USDT-SWAP"], (data) => {
-    console.log(data);
-}, status => console.log(status))
+// api.streams.futuresDepthStream(["APR-USDT-SWAP"], (data) => {
+//     console.log(data);
+// }, status => console.log(status))
 
 
 

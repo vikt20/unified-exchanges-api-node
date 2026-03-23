@@ -14,7 +14,7 @@ export interface HandleWebSocket {
 }
 
 // ━━ Socket Status ━━
-export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG';
+export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG' | 'AUTH_FAILED';
 
 // ━━ User Data Event ━━
 export interface UserData {
