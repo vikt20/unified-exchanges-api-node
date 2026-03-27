@@ -41,28 +41,28 @@ async function getSpotSymbols(): Promise<Set<string>> {
 
 // // getFuturesSymbols().then(console.log);
 // getSpotSymbols().then(console.log);
-const getSymbols = await getSpotSymbols()
-const symbolsDataReceieved = new Set<string>();
-api.streams.spotDepthStream(Array.from(getSymbols), (data) => {
+// const getSymbols = await getSpotSymbols()
+// const symbolsDataReceieved = new Set<string>();
+// api.streams.spotDepthStream(Array.from(getSymbols), (data) => {
 
 
-    if (!symbolsDataReceieved.has(data.symbol)) {
-        console.log(data.symbol);
-        symbolsDataReceieved.add(data.symbol);
-    }
+//     if (!symbolsDataReceieved.has(data.symbol)) {
+//         console.log(data.symbol);
+//         symbolsDataReceieved.add(data.symbol);
+//     }
 
 
 
-    if (symbolsDataReceieved.size === getSymbols.size) {
-        console.log("All symbols data received");
-    }
+//     if (symbolsDataReceieved.size === getSymbols.size) {
+//         console.log("All symbols data received");
+//     }
 
-})
-
-
-// api.futures.futuresCandleStickStream(["BTCUSDT"], "1m", (data) => {
-//     console.log(data);
 // })
+
+
+api.futures.futuresCandleStickStream(["BTC-USDT-SWAP"], "1m", (data) => {
+    console.log(data);
+})
 // await setTimeout(() => {
 //     // api.futures.trailingStopOrder({
 //     //     symbol: "SOL-USDT-SWAP",

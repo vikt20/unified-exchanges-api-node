@@ -17,6 +17,7 @@ export function convertExchangeInfo(data: any): { [key: string]: ExtractedInfo }
     const info: { [key: string]: ExtractedInfo } = {};
     if (data && Array.isArray(data)) {
         for (const item of data) {
+            if (item.state !== 'live') continue;
             info[item.instId] = {
                 symbol: item.instId,
                 status: item.state === 'live' ? 'TRADING' : 'BREAK',

@@ -2,6 +2,8 @@ export function convertExchangeInfo(data) {
     const info = {};
     if (data && Array.isArray(data.list)) {
         for (const item of data.list) {
+            if (item.status !== 'Trading')
+                continue;
             info[item.symbol] = {
                 symbol: item.symbol,
                 status: item.status === 'Trading' ? 'TRADING' : 'BREAK',
