@@ -7,7 +7,8 @@ dotenv.config({
 
 // console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET);
 
-const api = ExchangeFactory.create('OKX');
+const api = ExchangeFactory.create('BYBIT');
+const api2 = ExchangeFactory.create('BINANCE');
 
 // async function getFuturesSymbols(): Promise<Set<string>> {
 //     const exchangeInfo = await api.futures.getExchangeInfo();
@@ -42,6 +43,36 @@ async function getSpotSymbols(): Promise<Set<string>> {
 // // getFuturesSymbols().then(console.log);
 // getSpotSymbols().then(console.log);
 // const getSymbols = await getSpotSymbols()
+const getSymbols = ["BTCUSDT"]
+
+let bestAskBinance: number;
+let bestBidBinance: number;
+let bestAskBybit: number;
+let bestBidBybit: number;
+
+api.streams.spotBookTickerStream(Array.from(getSymbols), (data) => {
+    bestAskBybit = data.bestAsk;
+    bestBidBybit = data.bestBid;
+    // console.log(data);
+})
+
+api2.streams.spotBookTickerStream(Array.from(getSymbols), (data) => {
+    bestAskBinance = data.bestAsk;
+    bestBidBinance = data.bestBid;
+    // console.log(data);
+})
+
+setInterval(() => {
+    // console.log("Best Ask Binance: ", bestAskBinance);
+    // console.log("Best Bid Binance: ", bestBidBinance);
+    // console.log("Best Ask Bybit: ", bestAskBybit);
+    // console.log("Best Bid Bybit: ", bestBidBybit);
+    // console.log("Spread Binance: ", bestAskBinance - bestBidBinance);
+    // console.log("Spread Bybit: ", bestAskBybit - bestBidBybit);
+    // in percent
+    console.log("Difference: ", (bestAskBinance - bestBidBybit) / bestBidBybit * 100);
+    console.log("Difference: ", (bestBidBinance - bestAskBybit) / bestAskBybit * 100);
+}, 1000)
 // const symbolsDataReceieved = new Set<string>();
 // api.streams.spotDepthStream(Array.from(getSymbols), (data) => {
 
@@ -60,9 +91,9 @@ async function getSpotSymbols(): Promise<Set<string>> {
 // })
 
 
-api.futures.futuresCandleStickStream(["BTC-USDT-SWAP"], "1m", (data) => {
-    console.log(data);
-})
+// api.futures.futuresCandleStickStream(["BTC-USDT-SWAP"], "1m", (data) => {
+//     console.log(data);
+// })
 // await setTimeout(() => {
 //     // api.futures.trailingStopOrder({
 //     //     symbol: "SOL-USDT-SWAP",

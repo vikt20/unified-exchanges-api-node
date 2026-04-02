@@ -407,17 +407,24 @@ export default class OkxFutures extends OkxStreams {
         });
     }
     async reducePosition(params) {
-        const payload = {
-            instId: params.symbol,
-            mgnMode: 'cross',
-            posSide: 'net', //params.positionDirection.toLowerCase()
-            ccy: 'USDT', //ccy 	String 	Conditional 	Margin currency, required in the case of closing cross MARGIN position for Futures mode.
-        };
-        const request = await this.signedRequest('private', 'POST', '/api/v5/trade/close-position', payload);
-        if (request.success) {
-            return this.formattedResponse({ data: request.data });
-        }
-        return this.formattedResponse({ errors: request.errors });
+        if (params.positionDirection === 'LONG')
+            return await this.marketSell({ symbol: params.symbol, quantity: params.quantity, reduceOnly: true });
+        else if (params.positionDirection === 'SHORT')
+            return await this.marketBuy({ symbol: params.symbol, quantity: params.quantity, reduceOnly: true });
+        else
+            return this.formattedResponse({ errors: 'Invalid position direction' });
+        // close-position endpoint requires all "Close" orders to be closed before using it which creates latency in execution.
+        // const payload = {
+        //     instId: params.symbol,
+        //     mgnMode: 'cross',
+        //     posSide: 'net', //params.positionDirection.toLowerCase()
+        //     ccy: 'USDT', //ccy 	String 	Conditional 	Margin currency, required in the case of closing cross MARGIN position for Futures mode.
+        // }
+        // const request = await this.signedRequest('private', 'POST', '/api/v5/trade/close-position', payload);
+        // if (request.success) {
+        //     return this.formattedResponse({ data: request.data });
+        // }
+        // return this.formattedResponse({ errors: request.errors });
     }
     async trailingStopOrder(params) {
         this.assertInstrumentsReady();

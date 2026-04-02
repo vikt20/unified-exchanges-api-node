@@ -31,8 +31,8 @@ const binance = ExchangeFactory.create('binance', 'YOUR_API_KEY', 'YOUR_API_SECR
 
 // Access Spot, Futures, or Streams
 async function main() {
-    // Example: Get Spot Market Price
-    const ticker = await binance.spot.getExchangeInfo();
+    // Example: Get Futures Depth Snapshot
+    const ticker = await binance.futures.getStaticDepth({ symbol: 'BTCUSDT'});
     console.log(ticker);
 
     // Example: Connect to Futures Depth Stream

@@ -370,7 +370,7 @@ export default class OkxStreams extends OkxBase {
             symbol: symbol,
             rate: parseFloat(data.fundingRate || '0'),
             nextFundingTime: parseInt(data.nextFundingTime || '0'),
-            interval: 8 // standard
+            interval: undefined
         };
     }
     // --- Futures Streams (SWAP) ---

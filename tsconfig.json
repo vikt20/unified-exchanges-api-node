@@ -14,7 +14,8 @@
   "include": [
     "binance/**/*",
     "core/**/*",
-    "bybit/**/*"
+    "bybit/**/*",
+    "okx/**/*"
   ],
   "exclude": [
     "node_modules",

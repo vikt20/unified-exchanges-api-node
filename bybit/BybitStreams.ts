@@ -94,11 +94,18 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
                     }
 
                     if (topics.length > 0) {
-                        const subParams = {
-                            op: 'subscribe',
-                            args: topics
-                        };
-                        currentWs?.send(JSON.stringify(subParams));
+                        // Bybit Spot streams have a limit of 10 topic arguments per subscription request.
+                        const isSpot = url.includes('spot');
+                        const chunkSize = isSpot ? 9 : topics.length;
+
+                        for (let i = 0; i < topics.length; i += chunkSize) {
+                            const chunk = topics.slice(i, i + chunkSize);
+                            const subParams = {
+                                op: 'subscribe',
+                                args: chunk
+                            };
+                            currentWs?.send(JSON.stringify(subParams));
+                        }
                     }
 
                     pingInterval = setInterval(() => {
@@ -149,7 +156,7 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
                 });
 
                 currentWs.on('error', (err) => {
-                    console.error(`${title} - WebSocket error`, err);
+                    console.error(`${title} - WebSocket error ${err} ${JSON.stringify(topics)}`);
                     statusCallback?.('ERROR');
                 });
             };
@@ -214,14 +221,40 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
     }
 
     private parseBookTicker(msg: BybitWsMessage): BookTickerData | undefined {
-        const data = msg.data as BybitBookTickerWsData;
+        const data = msg.data as BybitBookTickerWsData | undefined;
+
+        // --- structural validation ---
+        if (!data || typeof data.symbol !== 'string') {
+            return;
+        }
+
+        const bid = Number(data.bid1Price);
+        const bidQty = Number(data.bid1Size);
+        const ask = Number(data.ask1Price);
+        const askQty = Number(data.ask1Size);
+
+        // --- numeric validation ---
+        if (
+            !Number.isFinite(bid) ||
+            !Number.isFinite(bidQty) ||
+            !Number.isFinite(ask) ||
+            !Number.isFinite(askQty)
+        ) {
+            return;
+        }
+
+        // --- market sanity check (important) ---
+        if (bid <= 0 || ask <= 0 || bid > ask) {
+            return;
+        }
+
         return {
             symbol: data.symbol,
-            bestBid: parseFloat(data.bid1Price),
-            bestBidQty: parseFloat(data.bid1Size),
-            bestAsk: parseFloat(data.ask1Price),
-            bestAskQty: parseFloat(data.ask1Size)
-        } as BookTickerData;
+            bestBid: bid,
+            bestBidQty: bidQty,
+            bestAsk: ask,
+            bestAskQty: askQty
+        };
     }
 
     private parseBookTickerSpot(msg: BybitWsMessage): BookTickerData | undefined {
@@ -468,6 +501,7 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
 
     public spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const topics = symbols.map(s => `publicTrade.${s}`);
+        console.log(topics);
         return this.handleWebSocket(this.getStreamUrl('spot'), topics, callback, this.parseTrade, 'spotTradeStream', statusCallback);
     }
 

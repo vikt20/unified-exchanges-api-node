@@ -401,7 +401,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
             symbol: symbol,
             rate: parseFloat(data.fundingRate || '0'),
             nextFundingTime: parseInt(data.nextFundingTime || '0'),
-            interval: 8 // standard
+            interval: undefined
         };
     }
 
