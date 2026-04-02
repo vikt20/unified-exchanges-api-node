@@ -7,23 +7,26 @@ dotenv.config({
 
 // console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET);
 
-const api = ExchangeFactory.create('BYBIT');
+const api = ExchangeFactory.create('BYBIT', process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
 const api2 = ExchangeFactory.create('BINANCE');
+const api3 = ExchangeFactory.create('OKX');
 
-// async function getFuturesSymbols(): Promise<Set<string>> {
-//     const exchangeInfo = await api.futures.getExchangeInfo();
-//     const symbols = new Set<string>();
-//     if (exchangeInfo.success) {
-//         for (const symbol of Object.keys(exchangeInfo.data)) {
-//             if (symbol.includes("USDT")) {
-//                 symbols.add(symbol);
-//             }
-//         }
-//     } else {
-//         return new Set<string>();
-//     }
-//     return symbols;
-// }
+api.spot.signedRequest('spot', 'GET', '/v5/order/spot-borrow-check', { category: 'spot', symbol: 'ETHUSDT', side: 'Sell' }).then(console.log);
+
+async function getFuturesSymbols(api: any): Promise<Set<string>> {
+    const exchangeInfo = await api.futures.getExchangeInfo();
+    const symbols = new Set<string>();
+    if (exchangeInfo.success) {
+        for (const symbol of Object.keys(exchangeInfo.data)) {
+            if (symbol.includes("USDT")) {
+                symbols.add(symbol);
+            }
+        }
+    } else {
+        return new Set<string>();
+    }
+    return symbols;
+}
 
 async function getSpotSymbols(): Promise<Set<string>> {
     const exchangeInfo = await api.spot.getExchangeInfo();
@@ -42,25 +45,41 @@ async function getSpotSymbols(): Promise<Set<string>> {
 
 // // getFuturesSymbols().then(console.log);
 // getSpotSymbols().then(console.log);
-// const getSymbols = await getSpotSymbols()
-const getSymbols = ["BTCUSDT"]
+// const getSymbolsBinance = await getFuturesSymbols(api2)
+// const getSymbolsBybit = await getFuturesSymbols(api)
+// console.log(`Binance: ${Array.from(getSymbolsBinance).filter(s => s.includes("STO"))}`)
+// console.log(`Bybit: ${Array.from(getSymbolsBybit).filter(s => s.includes("STO"))}`)
+// const getSymbols = ["BTCUSDT"]
 
-let bestAskBinance: number;
-let bestBidBinance: number;
-let bestAskBybit: number;
-let bestBidBybit: number;
+//stream funding
+// api.streams.fundingStream(getSymbols, (data) => {
+//     console.log("Bybit", data);
+// })
 
-api.streams.spotBookTickerStream(Array.from(getSymbols), (data) => {
-    bestAskBybit = data.bestAsk;
-    bestBidBybit = data.bestBid;
-    // console.log(data);
-})
+// api2.streams.fundingStream(getSymbols, (data) => {
+//     console.log("Binance", data);
+// })
 
-api2.streams.spotBookTickerStream(Array.from(getSymbols), (data) => {
-    bestAskBinance = data.bestAsk;
-    bestBidBinance = data.bestBid;
-    // console.log(data);
-})
+// api3.streams.fundingStream(["BTC-USDT-SWAP"], (data) => {
+//     console.log("Okx", data);
+// })
+
+// let bestAskBinance: number;
+// let bestBidBinance: number;
+// let bestAskBybit: number;
+// let bestBidBybit: number;
+
+// api.streams.spotBookTickerStream(Array.from(getSymbols), (data) => {
+//     bestAskBybit = data.bestAsk;
+//     bestBidBybit = data.bestBid;
+//     // console.log(data);
+// })
+
+// api2.streams.spotBookTickerStream(Array.from(getSymbols), (data) => {
+//     bestAskBinance = data.bestAsk;
+//     bestBidBinance = data.bestBid;
+//     // console.log(data);
+// })
 
 setInterval(() => {
     // console.log("Best Ask Binance: ", bestAskBinance);
@@ -70,8 +89,8 @@ setInterval(() => {
     // console.log("Spread Binance: ", bestAskBinance - bestBidBinance);
     // console.log("Spread Bybit: ", bestAskBybit - bestBidBybit);
     // in percent
-    console.log("Difference: ", (bestAskBinance - bestBidBybit) / bestBidBybit * 100);
-    console.log("Difference: ", (bestBidBinance - bestAskBybit) / bestAskBybit * 100);
+    // console.log("Difference: ", (bestAskBinance - bestBidBybit) / bestBidBybit * 100);
+    // console.log("Difference: ", (bestBidBinance - bestAskBybit) / bestAskBybit * 100);
 }, 1000)
 // const symbolsDataReceieved = new Set<string>();
 // api.streams.spotDepthStream(Array.from(getSymbols), (data) => {

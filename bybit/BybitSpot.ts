@@ -40,7 +40,7 @@ export default class BybitSpot extends BybitStreams implements IExchangeClient {
     }
 
     async getExchangeInfo(): Promise<FormattedResponse<{ [key: string]: ExtractedInfo }>> {
-        const res = await this.publicRequest('spot', 'GET', '/v5/market/instruments-info', { category: 'spot' });
+        const res = await this.publicRequest('spot', 'GET', '/v5/market/instruments-info', { category: 'spot', limit: 1000 });
         if (res.success && res.data) {
             const info = convertExchangeInfo(res.data);
             return this.formattedResponse({ data: info });

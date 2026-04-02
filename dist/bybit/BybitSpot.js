@@ -8,7 +8,7 @@ export default class BybitSpot extends BybitStreams {
         return this.formattedResponse({ data: "Not applicable for Bybit V5" });
     }
     async getExchangeInfo() {
-        const res = await this.publicRequest('spot', 'GET', '/v5/market/instruments-info', { category: 'spot' });
+        const res = await this.publicRequest('spot', 'GET', '/v5/market/instruments-info', { category: 'spot', limit: 1000 });
         if (res.success && res.data) {
             const info = convertExchangeInfo(res.data);
             return this.formattedResponse({ data: info });
