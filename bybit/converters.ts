@@ -230,9 +230,9 @@ export interface BybitTickerWsData {
 export function convertBybitFunding(item: BybitTickerWsData): import('../core/types.js').FundingData {
     return {
         symbol: item.symbol,
-        rate: parseFloat(item.fundingRate),
-        nextFundingTime: parseInt(item.nextFundingTime),
-        interval: parseInt(item.fundingIntervalHour)
+        rate: parseFloat(item.fundingRate) || undefined,
+        nextFundingTime: parseInt(item.nextFundingTime) || undefined,
+        interval: parseInt(item.fundingIntervalHour) || undefined
     };
 }
 

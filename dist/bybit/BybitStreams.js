@@ -430,7 +430,7 @@ export default class BybitStreams extends BybitBase {
     }
     parseFunding(msg) {
         const data = msg.data;
-        if (data && data.fundingRate && data.nextFundingTime) {
+        if (data && (data.fundingRate || data.nextFundingTime)) {
             return convertBybitFunding(data);
         }
         return undefined;

@@ -507,7 +507,7 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
 
     private parseFunding(msg: BybitWsMessage): import("../core/types.js").FundingData | undefined {
         const data = msg.data as BybitTickerWsData;
-        if (data && data.fundingRate && data.nextFundingTime) {
+        if (data && (data.fundingRate || data.nextFundingTime)) {
             return convertBybitFunding(data);
         }
         return undefined;

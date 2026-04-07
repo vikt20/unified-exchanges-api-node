@@ -39,8 +39,8 @@ export interface TradeData {
 }
 export interface FundingData {
     symbol: string;
-    nextFundingTime: number;
-    rate: number;
+    nextFundingTime?: number;
+    rate?: number;
     interval?: number;
 }
 export interface AggTradesData {

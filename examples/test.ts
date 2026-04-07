@@ -11,7 +11,7 @@ const api = ExchangeFactory.create('BYBIT', process.env.BYBIT_API_KEY, process.e
 const api2 = ExchangeFactory.create('BINANCE');
 const api3 = ExchangeFactory.create('OKX');
 
-api.spot.signedRequest('spot', 'GET', '/v5/order/spot-borrow-check', { category: 'spot', symbol: 'ETHUSDT', side: 'Sell' }).then(console.log);
+// api.spot.signedRequest('spot', 'GET', '/v5/order/spot-borrow-check', { category: 'spot', symbol: 'ETHUSDT', side: 'Sell' }).then(console.log);
 
 async function getFuturesSymbols(api: any): Promise<Set<string>> {
     const exchangeInfo = await api.futures.getExchangeInfo();
@@ -52,9 +52,10 @@ async function getSpotSymbols(): Promise<Set<string>> {
 // const getSymbols = ["BTCUSDT"]
 
 //stream funding
-// api.streams.fundingStream(getSymbols, (data) => {
-//     console.log("Bybit", data);
-// })
+api.streams.fundingStream(["REDUSDT"], (data) => {
+    console.log("Bybit", data);
+})
+api.futures.publicRequest('futures', 'GET', '/v5/market/tickers', { category: 'linear', symbol: 'REDUSDT' }).then(d => console.log(d.data?.list[0].fundingRate));
 
 // api2.streams.fundingStream(getSymbols, (data) => {
 //     console.log("Binance", data);

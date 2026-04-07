@@ -33,9 +33,9 @@ export function convertObjectIntoUrlEncoded(obj) {
 export function convertBybitFunding(item) {
     return {
         symbol: item.symbol,
-        rate: parseFloat(item.fundingRate),
-        nextFundingTime: parseInt(item.nextFundingTime),
-        interval: parseInt(item.fundingIntervalHour)
+        rate: parseFloat(item.fundingRate) || undefined,
+        nextFundingTime: parseInt(item.nextFundingTime) || undefined,
+        interval: parseInt(item.fundingIntervalHour) || undefined
     };
 }
 // --- Helpers ---

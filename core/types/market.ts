@@ -50,8 +50,8 @@ export interface TradeData {
 // ━━ Funding Data ━━
 export interface FundingData {
     symbol: string;
-    nextFundingTime: number;
-    rate: number;
+    nextFundingTime?: number;
+    rate?: number;
     interval?: number;
 }
 
