@@ -25,3 +25,6 @@ export * from './exchange.js';
 
 // ━━ Stream Types ━━
 export * from './streams.js';
+
+// ━━ Connection Options ━━
+export * from './connection.js';

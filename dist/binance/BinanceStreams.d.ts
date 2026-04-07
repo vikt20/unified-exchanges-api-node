@@ -1,7 +1,7 @@
 import { IStreamManager } from "../core/IStreamManager.js";
-import BinanceBase, { OrderType, TimeInForce, OrderStatus, OrderWorkingType, PositionDirection, Type } from "./BinanceBase.js";
+import BinanceBase, { FormattedResponse, OrderStatus, OrderType, OrderWorkingType, PositionDirection, TimeInForce, Type } from "./BinanceBase.js";
 import ws from 'ws';
-import { UserData } from "../core/types/streams.js";
+import type { UserData, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
 export type UserDataWebSocket = {
     e: UserData['event'];
     o?: OrderDataWebSocket | AlgoOrderDataWebSocket;
@@ -191,22 +191,31 @@ export type HandleWebSocket = {
     id: string;
 };
 export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG';
+export type TradingWsRequestResult<T> = {
+    status: 'success';
+    response: FormattedResponse<T>;
+} | {
+    status: 'unavailable';
+    error: string;
+};
 export default class BinanceStreams extends BinanceBase implements IStreamManager {
-    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean, useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
     protected subscriptions: {
         id: string;
         disconnect: Function;
     }[];
     protected listenKeyInterval: NodeJS.Timeout | undefined;
+    protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient>;
+    protected tradingWsApiClient: IWebsocketApiClient | undefined;
+    destroy(): void;
     closeAllSockets(): void;
     closeById(id: string): void;
-    /**
-     * @param createWs - function to create webSocket connection
-     * @param parser - convertation function
-     * @param callback - function to handle data
-     * @param title
-     * @returns object with webSocket, id and setIsKeepAlive function
-     */
+    protected isTradingWsApiConfigured(): boolean;
+    getTradingWsApiClient(): () => IWebsocketApiClient | undefined;
+    protected initTradingWsApiClient(): void;
+    protected sendTradingWsRequest<T>(method: string, params: Record<string, any>, timeoutMs?: number): Promise<TradingWsRequestResult<T>>;
+    protected destroyTradingWsApiClient(): void;
+    private createTradingWsApiClient;
     handleWebSocket(createWs: () => ws, parser: Function, callback: Function, title: string, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     keepAliveListenKeyByInterval: (type: Type) => void;
     spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;

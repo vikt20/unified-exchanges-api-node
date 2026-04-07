@@ -1,16 +1,24 @@
 import BinanceBase from "./BinanceBase.js";
-import { convertTradeDataWebSocket, convertDepthData, convertKlineData, convertUserData, convertBookTickerData, convertFundingData } from "./converters.js";
+import { convertBookTickerData, convertDepthData, convertFundingData, convertKlineData, convertTradeDataWebSocket, convertUserData } from "./converters.js";
 import ws from 'ws';
+import { BinanceWebsocketApiClient, BinanceWsUnavailableError } from "./BinanceWebsocketApi.js";
 export default class BinanceStreams extends BinanceBase {
-    constructor(apiKey, apiSecret, isTest = false, pingServer = false) {
+    constructor(apiKey, apiSecret, isTest = false, pingServer = false, useWebsocketApi = false) {
         super(apiKey, apiSecret, isTest, pingServer);
+        this.useWebsocketApi = useWebsocketApi;
+        if (this.useWebsocketApi === true || typeof this.useWebsocketApi === 'function')
+            this.initTradingWsApiClient();
     }
     subscriptions = [];
     listenKeyInterval;
+    useWebsocketApi = false;
+    tradingWsApiClient = undefined;
+    destroy() {
+        this.destroyTradingWsApiClient();
+        super.destroy();
+    }
     closeAllSockets() {
-        // Disconnect all sockets
         this.subscriptions.forEach(sub => sub.disconnect());
-        // Clear the subscriptions array
         this.subscriptions = [];
         clearInterval(this.listenKeyInterval);
         this.destroy();
@@ -22,13 +30,69 @@ export default class BinanceStreams extends BinanceBase {
             this.subscriptions.splice(index, 1);
         }
     }
-    /**
-     * @param createWs - function to create webSocket connection
-     * @param parser - convertation function
-     * @param callback - function to handle data
-     * @param title
-     * @returns object with webSocket, id and setIsKeepAlive function
-     */
+    isTradingWsApiConfigured() {
+        return Boolean(this.tradingWsApiClient);
+    }
+    getTradingWsApiClient() {
+        return () => this.tradingWsApiClient;
+    }
+    initTradingWsApiClient() {
+        if (this.useWebsocketApi === true) {
+            console.log(`Creating WebSocket API client`);
+            this.tradingWsApiClient = this.createTradingWsApiClient();
+        }
+        if (typeof this.useWebsocketApi === 'function') {
+            console.log(`Injecting WebSocket API client`);
+            this.tradingWsApiClient = this.useWebsocketApi();
+        }
+    }
+    async sendTradingWsRequest(method, params, timeoutMs = 5000) {
+        const client = this.tradingWsApiClient;
+        if (!client) {
+            return { status: 'unavailable', error: 'WebSocket API is not configured' };
+        }
+        try {
+            await client.ensureConnected();
+        }
+        catch (error) {
+            return { status: 'unavailable', error: error?.message || 'WebSocket API is unavailable' };
+        }
+        if (!client.isOnline()) {
+            return { status: 'unavailable', error: 'WebSocket API is not online' };
+        }
+        try {
+            const response = await client.request(method, params, { timeoutMs });
+            return { status: 'success', response };
+        }
+        catch (error) {
+            if (error instanceof BinanceWsUnavailableError) {
+                return { status: 'unavailable', error: error.message };
+            }
+            return {
+                status: 'success',
+                response: this.formattedResponse({ errors: error?.message || 'WebSocket API request failed' })
+            };
+        }
+    }
+    destroyTradingWsApiClient() {
+        // Don't destroy if client is provided externally
+        if (typeof this.useWebsocketApi === 'function') {
+            this.tradingWsApiClient = undefined;
+            return;
+        }
+        this.tradingWsApiClient?.destroy();
+        this.tradingWsApiClient = undefined;
+    }
+    createTradingWsApiClient() {
+        return new BinanceWebsocketApiClient({
+            getUrl: () => this.getFuturesWsApiUrl(),
+            getApiKey: () => this.apiKey,
+            getRecvWindow: () => this.recvWindow,
+            getTimestamp: () => Date.now() - this.timeOffset,
+            sign: (queryString) => this.generateSignature(queryString),
+            formattedResponse: (object) => this.formattedResponse(object)
+        });
+    }
     handleWebSocket(createWs, parser, callback, title, statusCallback) {
         const RECONNECT_DELAY = 3000;
         const id = Math.random().toString(36).substring(7);
@@ -47,7 +111,7 @@ export default class BinanceStreams extends BinanceBase {
             }
         };
         const disconnect = () => {
-            console.log(`Disconnecting manually Websocket ${title}`);
+            // console.log(`Disconnecting manually Websocket ${title}`);
             isActive = false;
             cleanup();
         };
@@ -69,7 +133,6 @@ export default class BinanceStreams extends BinanceBase {
                         reject(e);
                         return;
                     }
-                    // Retry after delay for subsequent failures
                     reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
                     return;
                 }
@@ -77,7 +140,7 @@ export default class BinanceStreams extends BinanceBase {
                     try {
                         callback(parser(JSON.parse(data)));
                     }
-                    catch (e) {
+                    catch {
                         console.error(`${title} - Error parsing message`);
                     }
                 });
@@ -88,20 +151,19 @@ export default class BinanceStreams extends BinanceBase {
                     statusCallback?.('PONG');
                 });
                 currentWs.on('open', () => {
+                    // console.log(`${title} - WebSocket connection opened`);
                     statusCallback?.('OPEN');
                     if (isInitialConnection) {
                         isInitialConnection = false;
                         resolve({ disconnect, id });
                     }
                 });
-                currentWs.on('close', (code, reason) => {
-                    // Don't reconnect if manually disconnected
+                currentWs.on('close', (code) => {
                     if (!isActive) {
-                        console.log(`WebSocket manually closed for ${title}`);
+                        // console.log(`WebSocket manually closed for ${title}`);
                         return;
                     }
-                    // Reconnect after delay for any close event
-                    console.log(`${title} - WebSocket closed for ${title} - (code: ${code}), reconnecting in ${RECONNECT_DELAY}ms`);
+                    console.log(`${title} - WebSocket closed (code: ${code}), reconnecting in ${RECONNECT_DELAY}ms`);
                     reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
                 });
                 currentWs.on('error', (error) => {
@@ -112,24 +174,20 @@ export default class BinanceStreams extends BinanceBase {
                         disconnect();
                         reject(error);
                     }
-                    // For subsequent errors, the close event will handle reconnection
                 });
             };
             connect();
         });
     }
-    // keep listen key alive by ping every 30min
     keepAliveListenKeyByInterval = (type) => {
         clearInterval(this.listenKeyInterval);
         this.listenKeyInterval = setInterval(() => this.keepAliveListenKey(type), 30 * 60 * 1000);
     };
-    //subscribe to spot depth stream
     spotDepthStream(symbols, callback, statusCallback) {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
         const createWs = () => new ws(this.getCombinedStreamUrl('spot') + streams.join('/'));
         return this.handleWebSocket(createWs, convertDepthData, callback, 'spotDepthStream()', statusCallback);
     }
-    //subscribe to futures depth stream
     futuresDepthStream(symbols, callback, statusCallback) {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
         const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
@@ -171,7 +229,6 @@ export default class BinanceStreams extends BinanceBase {
             console.log('Error getting listen key: ', listenKey.errors);
             return Promise.reject();
         }
-        // send ping every 30min to keep listenKey alive
         this.keepAliveListenKeyByInterval('futures');
         const createWs = () => new ws(this.getStreamUrl('futures') + listenKey.data.listenKey);
         return this.handleWebSocket(createWs, convertUserData, callback, 'futuresUserDataStream()', statusCallback);

@@ -7,6 +7,9 @@ export default class OkxStreams extends OkxBase {
     constructor(apiKey, apiSecret, apiPassphrase, isTest = false) {
         super(apiKey, apiSecret, apiPassphrase, isTest);
     }
+    getTradingWsApiClient() {
+        return () => undefined; // OkxStreams does not use BinanceWebsocketApiClient, so we return undefined
+    }
     handleWebSocket(url, args, callback, parser, title, statusCallback, auth = false) {
         // ── OKX WebSocket spec constants ──
         const INITIAL_RECONNECT_DELAY = 3000;

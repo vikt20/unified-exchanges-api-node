@@ -27,8 +27,8 @@ import { convertPositionRiskDataByRequest, convertPositionRiskToPositionData, co
     getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
 } */
 export default class BinanceFutures extends BinanceStreams {
-    constructor(apiKey, apiSecret, isTest = false, pingServer = false) {
-        super(apiKey, apiSecret, isTest, pingServer);
+    constructor(apiKey, apiSecret, isTest = false, pingServer = false, useWebsocketApi = false) {
+        super(apiKey, apiSecret, isTest, pingServer, useWebsocketApi);
     }
     async closeListenKey() {
         return await this.signedRequest('futures', 'DELETE', '/fapi/v1/listenKey');
@@ -218,7 +218,17 @@ export default class BinanceFutures extends BinanceStreams {
         if (params.isAlgoOrder) {
             return await this.signedRequest('futures', 'DELETE', '/fapi/v1/algoOrder', { symbol: params.symbol, clientalgoid: params.clientOrderId });
         }
-        return await this.signedRequest('futures', 'DELETE', '/fapi/v1/order', { symbol: params.symbol, origClientOrderId: params.clientOrderId });
+        if (!this.isTradingWsApiConfigured()) {
+            return await this.signedRequest('futures', 'DELETE', '/fapi/v1/order', { symbol: params.symbol, origClientOrderId: params.clientOrderId });
+        }
+        const wsResult = await this.sendTradingWsRequest('order.cancel', {
+            symbol: params.symbol,
+            origClientOrderId: params.clientOrderId
+        });
+        if (wsResult.status === 'unavailable') {
+            return await this.signedRequest('futures', 'DELETE', '/fapi/v1/order', { symbol: params.symbol, origClientOrderId: params.clientOrderId });
+        }
+        return wsResult.response;
     }
     async marketBuy(params) {
         return this.customOrder({
@@ -339,7 +349,7 @@ export default class BinanceFutures extends BinanceStreams {
         activatePrice = undefined, //used with trailing
         algoType = undefined //used with trailing
          } = orderInput;
-        const timestamp = Date.now();
+        const timestamp = Date.now() - this.timeOffset;
         let params = {
             symbol,
             side,
@@ -360,9 +370,17 @@ export default class BinanceFutures extends BinanceStreams {
             algoType
         };
         Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+        // Keep current behavior for algo endpoint.
         if (algoType)
             return await this.signedRequest('futures', 'POST', '/fapi/v1/algoOrder', params);
-        else
+        // console.log(`Is trading WS API configured?`, this.isTradingWsApiConfigured());
+        if (!this.isTradingWsApiConfigured()) {
             return await this.signedRequest('futures', 'POST', '/fapi/v1/order', params);
+        }
+        const wsResult = await this.sendTradingWsRequest('order.place', params);
+        if (wsResult.status === 'unavailable') {
+            return await this.signedRequest('futures', 'POST', '/fapi/v1/order', params);
+        }
+        return wsResult.response;
     }
 }

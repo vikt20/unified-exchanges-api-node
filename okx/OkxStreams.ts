@@ -2,7 +2,7 @@ import OkxBase from "./OkxBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import ws from 'ws';
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, IWebsocketApiClient } from "../core/types.js";
 import { convertOkxKline, convertOkxOrder, convertOkxPosition, OkxWsMessage } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
 import crypto from 'crypto';
@@ -13,6 +13,10 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
 
     constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false) {
         super(apiKey, apiSecret, apiPassphrase, isTest);
+    }
+
+    public getTradingWsApiClient(): () => IWebsocketApiClient | undefined {
+        return () => undefined; // OkxStreams does not use BinanceWebsocketApiClient, so we return undefined
     }
 
     protected handleWebSocket(

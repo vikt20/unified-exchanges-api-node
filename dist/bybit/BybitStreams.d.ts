@@ -1,13 +1,14 @@
 import BybitBase from "./BybitBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient } from "../core/types.js";
 export default class BybitStreams extends BybitBase implements IStreamManager {
     protected subscriptions: {
         id: string;
         disconnect: Function;
     }[];
     constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
+    getTradingWsApiClient(): () => IWebsocketApiClient | undefined;
     protected handleWebSocket(url: string, topics: string[], callback: Function, parser: Function, title: string, statusCallback?: (status: SocketStatus) => void, auth?: boolean): Promise<HandleWebSocket>;
     private generateHmacSignature;
     closeAllSockets(): void;

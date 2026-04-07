@@ -3,7 +3,7 @@ import BybitBase from "./BybitBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import ws from 'ws';
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, OrderWorkingType, OrderType } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, OrderWorkingType, OrderType, IWebsocketApiClient } from "../core/types.js";
 import { convertBybitKline, BybitWsMessage, BybitOrderWsData, BybitPositionWsData, BybitWalletWsData, mapBybitTriggerBy, BybitDepthWsData, BybitKlineWsData, BybitBookTickerWsData, BybitTradeWsData, convertBybitFunding, BybitTickerWsData, mapBybitOrderType } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
 import crypto from 'crypto';
@@ -15,6 +15,10 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
 
     constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false) {
         super(apiKey, apiSecret, isTest);
+    }
+
+    public getTradingWsApiClient(): () => IWebsocketApiClient | undefined {
+        return () => undefined; // BybitStreams does not use BinanceWebsocketApiClient, so we return undefined
     }
 
     // --- Base WebSocket Handler ---

@@ -138,6 +138,7 @@ export default class BinanceBase extends AbstractExchangeBase {
     public static SPOT_STREAM_URL_COMBINED: string = 'wss://stream.binance.com:9443/stream?streams=';
     public static FUTURES_BASE_URL: string = 'https://fapi.binance.com';
     public static SPOT_BASE_URL: string = 'https://api.binance.com';
+    public static FUTURES_WS_API_URL: string = 'wss://ws-fapi.binance.com/ws-fapi/v1';
 
     public static FUTURES_STREAM_URL_TESTNET: string = 'wss://stream.binancefuture.com/ws/';
     public static SPOT_STREAM_URL_TESTNET: string = 'wss://stream.testnet.binance.vision/ws/';
@@ -145,6 +146,7 @@ export default class BinanceBase extends AbstractExchangeBase {
     public static SPOT_STREAM_URL_COMBINED_TESTNET: string = 'wss://stream.testnet.binance.vision/stream?streams=';
     public static FUTURES_BASE_URL_TESTNET: string = 'https://testnet.binancefuture.com';
     public static SPOT_BASE_URL_TESTNET: string = 'https://testnet.binance.vision';
+    public static FUTURES_WS_API_URL_TESTNET: string = 'wss://testnet.binancefuture.com/ws-fapi/v1';
 
     constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false, pingServer: boolean = false) {
         super(apiKey, apiSecret, isTest);
@@ -180,6 +182,10 @@ export default class BinanceBase extends AbstractExchangeBase {
             return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL_COMBINED_TESTNET : BinanceBase.SPOT_STREAM_URL_COMBINED_TESTNET;
         }
         return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL_COMBINED : BinanceBase.SPOT_STREAM_URL_COMBINED;
+    }
+
+    public getFuturesWsApiUrl(): string {
+        return this.isTest ? BinanceBase.FUTURES_WS_API_URL_TESTNET : BinanceBase.FUTURES_WS_API_URL;
     }
 
     protected generateSignature(queryString: string): string {

@@ -5,6 +5,7 @@
  * All exchanges must implement this interface for WebSocket streams.
  */
 
+import { IBinanceWebsocketApiClient } from '../binance/BinanceWebsocketApi.js';
 import type {
     KlineData,
     DepthData,
@@ -26,6 +27,8 @@ export interface IStreamManager {
     // ━━ Connection Management ━━
     closeAllSockets(): void;
     closeById(id: string): void;
+
+    getTradingWsApiClient(): () => IBinanceWebsocketApiClient | undefined;
 
     // ━━ Depth Streams ━━
     spotDepthStream(

@@ -11,4 +11,5 @@ export * from './account.js';
 export * from './market.js';
 export * from './exchange.js';
 export * from './streams.js';
+export * from './connection.js';
 //# sourceMappingURL=index.d.ts.map

@@ -8,6 +8,9 @@ export default class BybitStreams extends BybitBase {
     constructor(apiKey, apiSecret, isTest = false) {
         super(apiKey, apiSecret, isTest);
     }
+    getTradingWsApiClient() {
+        return () => undefined; // BybitStreams does not use BinanceWebsocketApiClient, so we return undefined
+    }
     // --- Base WebSocket Handler ---
     handleWebSocket(url, topics, callback, parser, title, statusCallback, auth = false) {
         const RECONNECT_DELAY = 3000;

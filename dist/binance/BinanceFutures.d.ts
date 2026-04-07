@@ -1,6 +1,6 @@
 import BinanceStreams, { KlineData } from './BinanceStreams.js';
 import { FormattedResponse, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, OrderWorkingType, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, ReducePositionParams, ExtractedInfo, GetAggTradesParams, AggTradesData, StopMarketOrderParams } from './BinanceBase.js';
-import type { PositionRiskData } from '../core/types.js';
+import type { PositionRiskData, IWebsocketApiClient, WebsocketApiOption } from '../core/types.js';
 import { IExchangeClient } from '../core/IExchangeClient.js';
 type OrderInput = {
     symbol: string;
@@ -85,7 +85,7 @@ export type LongShortRatioDataByRequest = {
     "timestamp": number;
 };
 export default class BinanceFutures extends BinanceStreams implements IExchangeClient {
-    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean, useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
     closeListenKey(): Promise<FormattedResponse<any>>;
     getExchangeInfo(): Promise<FormattedResponse<{
         [key: string]: ExtractedInfo;

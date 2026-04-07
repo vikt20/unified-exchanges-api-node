@@ -3,6 +3,7 @@ import BinanceSpot from '../binance/BinanceSpot.js';
 import BinanceFutures from '../binance/BinanceFutures.js';
 import BinanceStreams from '../binance/BinanceStreams.js';
 import BinanceUserData from '../binance/BinanceUserData.js';
+import { BinanceWebsocketApiClient } from '../binance/BinanceWebsocketApi.js';
 import BybitSpot from '../bybit/BybitSpot.js';
 import BybitFutures from '../bybit/BybitFutures.js';
 import BybitStreams from '../bybit/BybitStreams.js';
@@ -15,12 +16,12 @@ import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
 import OkxUserData from '../okx/OkxUserData.js';
 export class ExchangeFactory {
-    static create(exchangeId, apiKey, apiSecret, apiPassphrase, isTestnet = false) {
+    static create(exchangeId, apiKey, apiSecret, apiPassphrase, isTestnet = false, connectionOptions) {
         switch (exchangeId) {
             case ExchangeList.BINANCE:
                 const connection = {
                     spot: new BinanceSpot(apiKey, apiSecret, isTestnet),
-                    futures: new BinanceFutures(apiKey, apiSecret, isTestnet),
+                    futures: new BinanceFutures(apiKey, apiSecret, isTestnet, false, connectionOptions?.useWebsocketApi),
                     streams: new BinanceStreams(apiKey, apiSecret, isTestnet),
                 };
                 if (apiKey && apiSecret) {
@@ -53,4 +54,4 @@ export class ExchangeFactory {
         }
     }
 }
-export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams };
+export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams };
