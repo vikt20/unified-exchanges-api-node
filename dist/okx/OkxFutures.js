@@ -1,8 +1,8 @@
 import OkxStreams from "./OkxStreams.js";
 import { convertExchangeInfo, convertOkxKline, convertOkxOrder } from "./converters.js";
 export default class OkxFutures extends OkxStreams {
-    constructor(apiKey, apiSecret, apiPassphrase, isTest = false) {
-        super(apiKey, apiSecret, apiPassphrase, isTest);
+    constructor(apiKey, apiSecret, apiPassphrase, isTest = false, exchangeInfoFutures) {
+        super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures);
     }
     async closeListenKey() {
         return this.formattedResponse({ data: "Not applicable for OKX V5" });
@@ -16,7 +16,7 @@ export default class OkxFutures extends OkxStreams {
         return this.formattedResponse({ errors: res.errors });
     }
     async getStaticDepth(params) {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         const res = await this.publicRequest('public', 'GET', '/api/v5/market/books', {
             instId: params.symbol,
             sz: params.limit || 400
@@ -61,7 +61,7 @@ export default class OkxFutures extends OkxStreams {
         return this.formattedResponse({ errors: res.errors });
     }
     async getAggTrades(params) {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         const res = await this.publicRequest('public', 'GET', '/api/v5/market/trades', {
             instId: params.symbol,
             limit: params.limit || 100
@@ -469,12 +469,19 @@ export default class OkxFutures extends OkxStreams {
         return this.formattedResponse({ errors: res.errors });
     }
     async getLatestPnlBySymbol(symbol) {
-        const res = await this.signedRequest('private', 'GET', '/api/v5/account/positions', { instId: symbol, instType: 'SWAP' });
-        if (res.success && res.data && Array.isArray(res.data) && res.data.length > 0) {
-            // "realized PnL" might be captured in pnl or upl
-            const pnl = res.data.reduce((acc, val) => acc + parseFloat(val.pnl || '0'), 0);
-            return this.formattedResponse({ data: pnl });
+        const res = await this.signedRequest('private', 'GET', '/api/v5/account/positions-history', {
+            instType: 'SWAP',
+            instId: symbol,
+            limit: 1
+        });
+        if (!res.success) {
+            return this.formattedResponse({
+                errors: 'No closed positions found'
+            });
         }
-        return this.formattedResponse({ errors: res.errors });
+        // console.log(res.data)
+        const latest = res.data[0];
+        const pnl = Number(latest.realizedPnl ?? 0);
+        return this.formattedResponse({ data: pnl });
     }
 }

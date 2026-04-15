@@ -4,8 +4,8 @@ import { convertOkxKline, convertOkxOrder, convertOkxPosition } from "./converte
 import crypto from 'crypto';
 export default class OkxStreams extends OkxBase {
     subscriptions = [];
-    constructor(apiKey, apiSecret, apiPassphrase, isTest = false) {
-        super(apiKey, apiSecret, apiPassphrase, isTest);
+    constructor(apiKey, apiSecret, apiPassphrase, isTest = false, exchangeInfoFutures) {
+        super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures);
     }
     getTradingWsApiClient() {
         return () => undefined; // OkxStreams does not use BinanceWebsocketApiClient, so we return undefined
@@ -379,7 +379,7 @@ export default class OkxStreams extends OkxBase {
     // --- Futures Streams (SWAP) ---
     // Use "books" for depth (or books5/books50-l2-tbt)
     async futuresDepthStream(symbols, callback, statusCallback, levels = 0) {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         let channel = 'books';
         if (levels === 5)
             channel = 'books5';
@@ -407,18 +407,18 @@ export default class OkxStreams extends OkxBase {
         return this.handleWebSocket(this.getStreamUrl('business'), args, callback, this.parseKline, 'futuresCandleStickStream', statusCallback);
     }
     async futuresBookTickerStream(symbols, callback, statusCallback) {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         // We use bbo-tbt for fast best bid/ask
         const args = symbols.map(s => ({ channel: 'bbo-tbt', instId: s }));
         return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseBookTickerFutures.bind(this), 'futuresBookTickerStream', statusCallback);
     }
     async futuresTradeStream(symbols, callback, statusCallback) {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         const args = symbols.map(s => ({ channel: 'trades', instId: s }));
         return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseTradeFutures.bind(this), 'futuresTradeStream', statusCallback);
     }
     async futuresUserDataStream(callback, statusCallback) {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         // Private channels (account, positions, orders) go on /private
         const privateArgs = [
             { channel: 'account' },

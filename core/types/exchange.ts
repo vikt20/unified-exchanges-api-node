@@ -75,6 +75,9 @@ export type ExtractedInfo = {
     orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>;
     baseAsset: string;
     quoteAsset: string;
+    additionalInfo?: {
+        okx_ctVal?: number; // OKX contract value for futures, if applicable
+    }
 };
 
 // ━━ Extracted/Processed Symbol Info (Normalized data) ━━

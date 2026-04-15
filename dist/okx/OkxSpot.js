@@ -2,7 +2,7 @@ import OkxStreams from "./OkxStreams.js";
 import { convertExchangeInfo, convertOkxKline, convertOkxOrder } from "./converters.js";
 export default class OkxSpot extends OkxStreams {
     constructor(apiKey, apiSecret, apiPassphrase, isTest) {
-        super(apiKey, apiSecret, apiPassphrase, isTest);
+        super(apiKey, apiSecret, apiPassphrase, isTest, false);
     }
     async closeListenKey() {
         return this.formattedResponse({ data: "Not applicable for OKX V5" });

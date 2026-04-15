@@ -1,6 +1,6 @@
 import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import OkxFutures from "./OkxFutures.js";
-import { PositionData, OrderData, SocketStatus, UserData } from "../core/types.js";
+import { PositionData, OrderData, SocketStatus, UserData, ExtractedInfo } from "../core/types.js";
 /**
  * OkxUserData - Implementation of IUserDataManager for Okx
  *
@@ -8,7 +8,7 @@ import { PositionData, OrderData, SocketStatus, UserData } from "../core/types.j
  * Uses instance-based callbacks for communication with UI/Bot components.
  */
 export default class OkxUserData extends OkxFutures implements IUserDataManager {
-    constructor(apiKey: string, apiSecret: string, apiPassphrase: string);
+    constructor(apiKey: string, apiSecret: string, apiPassphrase: string, exchangeInfoFutures?: ExtractedInfo[]);
     /**
      * Local "Single Source of Truth" for user data.
      * Continuously updated by the WebSocket stream.

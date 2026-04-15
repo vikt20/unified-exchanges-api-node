@@ -2,6 +2,7 @@ import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 import axios, { AxiosResponse } from 'axios';
 import * as crypto from 'crypto';
 import { FormattedResponse } from '../core/types.js';
+import { ExtractedInfo } from '../core/types.js';
 
 export default class OkxBase extends AbstractExchangeBase {
     public static BASE_URL = 'https://www.okx.com';
@@ -23,10 +24,36 @@ export default class OkxBase extends AbstractExchangeBase {
     public instrumentsReady: boolean = false;
     private instrumentsLoadError?: string;
 
-    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false) {
+    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false, exchangeInfoFutures?: ExtractedInfo[] | false) {
         super(apiKey, apiSecret, isTest);
         this.apiPassphrase = apiPassphrase || '';
-        void this.ensureInstrumentMetadataLoaded();
+
+        if (exchangeInfoFutures !== false) {
+            // For futures only
+            if (exchangeInfoFutures !== undefined) {
+                console.log(`Loading OKX instruments (${exchangeInfoFutures.length}) metadata from constructor...`);
+                this.loadCtValFromExchangeInfo(exchangeInfoFutures);
+                this.instrumentsReady = true;
+                this.instrumentsLoadError = undefined;
+                this.instrumentsLoadPromise = Promise.resolve();
+                return;
+            } else {
+                void this.ensureInstrumentMetadataLoaded();
+            }
+        }
+
+
+    }
+
+    private loadCtValFromExchangeInfo(exchangeInfoFutures: ExtractedInfo[]): void {
+        this.ctValBySymbol.clear();
+        for (const item of exchangeInfoFutures) {
+            const symbol = item.symbol;
+            const ctVal = item.additionalInfo?.okx_ctVal;
+            if (!symbol) continue;
+            if (!Number.isFinite(ctVal) || (ctVal as number) <= 0) continue;
+            this.ctValBySymbol.set(symbol, ctVal as number);
+        }
     }
 
     protected getBaseUrl(_marketType: string): string {
@@ -62,18 +89,19 @@ export default class OkxBase extends AbstractExchangeBase {
         return Date.now();
     }
 
+    // For Futures, we need to convert asset size to contracts and vice versa using ctVal from exchange info. For Spot, we can just pass through the values.
     protected async ensureInstrumentMetadataLoaded(): Promise<void> {
-        // if (!this.apiKey || !this.apiSecret || !this.apiPassphrase) {
-        //     return;
-        // }
+        if (this.instrumentsReady) return;
         if (this.instrumentsLoadPromise) return this.instrumentsLoadPromise;
         this.instrumentsLoadPromise = (async () => {
+            console.log('Requesting OKX instruments metadata...');
             const res = await this.publicRequest<any>(
                 'public',
                 'GET',
                 '/api/v5/public/instruments',
                 { instType: 'SWAP' }
             );
+
 
             if (res.success && res.data && Array.isArray(res.data)) {
                 for (const item of res.data) {
@@ -95,6 +123,7 @@ export default class OkxBase extends AbstractExchangeBase {
         return this.instrumentsLoadPromise;
     }
 
+    // Use Only for Futures endpoints that require contract value for conversions.
     protected async assertInstrumentsReady(): Promise<void> {
         if (this.instrumentsLoadError) {
             throw new Error(`OKX instruments metadata unavailable: ${this.instrumentsLoadError}`);
@@ -102,6 +131,7 @@ export default class OkxBase extends AbstractExchangeBase {
         if (!this.instrumentsReady) {
             await this.ensureInstrumentMetadataLoaded();
         }
+        
     }
 
     protected getCtVal(symbol: string): number | undefined {

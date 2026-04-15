@@ -29,8 +29,8 @@ import { convertExchangeInfo, convertOkxKline, convertOkxOrder } from "./convert
 
 export default class OkxFutures extends OkxStreams implements IExchangeClient {
 
-    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false) {
-        super(apiKey, apiSecret, apiPassphrase, isTest);
+    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false, exchangeInfoFutures?: ExtractedInfo[]) {
+        super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures);
     }
 
     async closeListenKey(): Promise<FormattedResponse<unknown>> {
@@ -47,7 +47,7 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
     }
 
     async getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>> {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         const res = await this.publicRequest('public', 'GET', '/api/v5/market/books', {
             instId: params.symbol,
             sz: params.limit || 400
@@ -97,7 +97,7 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
     }
 
     async getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>> {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         const res = await this.publicRequest('public', 'GET', '/api/v5/market/trades', {
             instId: params.symbol,
             limit: params.limit || 100
@@ -582,12 +582,29 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
     }
 
     async getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>> {
-        const res = await this.signedRequest('private', 'GET', '/api/v5/account/positions', { instId: symbol, instType: 'SWAP' });
-        if (res.success && res.data && Array.isArray(res.data) && res.data.length > 0) {
-            // "realized PnL" might be captured in pnl or upl
-            const pnl = res.data.reduce((acc: number, val: any) => acc + parseFloat(val.pnl || '0'), 0);
-            return this.formattedResponse({ data: pnl });
+        const res = await this.signedRequest(
+            'private',
+            'GET',
+            '/api/v5/account/positions-history',
+            {
+                instType: 'SWAP',
+                instId: symbol,
+                limit: 1
+            }
+        );
+
+        if (!res.success) {
+            return this.formattedResponse({
+                errors: 'No closed positions found'
+            });
         }
-        return this.formattedResponse({ errors: res.errors });
+
+        // console.log(res.data)
+
+        const latest = res.data[0];
+
+        const pnl = Number(latest.realizedPnl ?? 0);
+
+        return this.formattedResponse({ data: pnl });
     }
 }

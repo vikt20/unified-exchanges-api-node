@@ -1,15 +1,22 @@
-import { ExchangeFactory, BinanceUserData, BybitUserData } from 'unified-exchanges-api-node';
+import { ExchangeFactory, BinanceUserData, BybitUserData, ExchangeList, ExtractedInfo } from 'unified-exchanges-api-node';
 import dotenv from 'dotenv';
+import { OkxFutures } from 'unified-exchanges-api-node';
 // Load environment variables
 dotenv.config({
     path: '../.env'
 });
 
-// console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET);
+console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE);
+console.log(`starting okx futures instance...`)
+const okxFutures = new OkxFutures();
 
-const api = ExchangeFactory.create('BYBIT', process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
-const api2 = ExchangeFactory.create('BINANCE');
-const api3 = ExchangeFactory.create('OKX');
+const info = await okxFutures.getExchangeInfo().then(request => request.success && request.data ? Object.values(request.data) : [] );
+
+// const bybitApi = ExchangeFactory.create('BYBIT', process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
+// const binanceApi = ExchangeFactory.create('BINANCE');
+
+console.log(`starting okx api instance...`)
+const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false, { exchangeInfoFutures: info });
 
 // api.spot.signedRequest('spot', 'GET', '/v5/order/spot-borrow-check', { category: 'spot', symbol: 'ETHUSDT', side: 'Sell' }).then(console.log);
 
@@ -28,7 +35,7 @@ async function getFuturesSymbols(api: any): Promise<Set<string>> {
     return symbols;
 }
 
-async function getSpotSymbols(): Promise<Set<string>> {
+async function getSpotSymbols(api: any): Promise<Set<string>> {
     const exchangeInfo = await api.spot.getExchangeInfo();
     const symbols = new Set<string>();
     if (exchangeInfo.success) {
@@ -51,11 +58,14 @@ async function getSpotSymbols(): Promise<Set<string>> {
 // console.log(`Bybit: ${Array.from(getSymbolsBybit).filter(s => s.includes("STO"))}`)
 // const getSymbols = ["BTCUSDT"]
 
-//stream funding
-api.streams.fundingStream(["REDUSDT"], (data) => {
-    console.log("Bybit", data);
-})
-api.futures.publicRequest('futures', 'GET', '/v5/market/tickers', { category: 'linear', symbol: 'REDUSDT' }).then(d => console.log(d.data?.list[0].fundingRate));
+// okxApi.futures.getLatestPnlBySymbol("ZEC-USDT-SWAP").then(console.log);
+// okxApi.futures.getBalance().then(console.log);
+
+// okxApi.futures.getStaticDepth({ symbol: "ADA-USDT-SWAP", limit: 400 }).then(console.log);
+console.log(`fetching okx open positions...`)
+setTimeout(() => okxApi.futures.getOpenPositions().then(console.log), 30)
+setTimeout(() => okxApi.futures.getOpenPositions().then(console.log), 3000)
+
 
 // api2.streams.fundingStream(getSymbols, (data) => {
 //     console.log("Binance", data);
@@ -82,17 +92,7 @@ api.futures.publicRequest('futures', 'GET', '/v5/market/tickers', { category: 'l
 //     // console.log(data);
 // })
 
-setInterval(() => {
-    // console.log("Best Ask Binance: ", bestAskBinance);
-    // console.log("Best Bid Binance: ", bestBidBinance);
-    // console.log("Best Ask Bybit: ", bestAskBybit);
-    // console.log("Best Bid Bybit: ", bestBidBybit);
-    // console.log("Spread Binance: ", bestAskBinance - bestBidBinance);
-    // console.log("Spread Bybit: ", bestAskBybit - bestBidBybit);
-    // in percent
-    // console.log("Difference: ", (bestAskBinance - bestBidBybit) / bestBidBybit * 100);
-    // console.log("Difference: ", (bestBidBinance - bestAskBybit) / bestAskBybit * 100);
-}, 1000)
+
 // const symbolsDataReceieved = new Set<string>();
 // api.streams.spotDepthStream(Array.from(getSymbols), (data) => {
 
@@ -129,7 +129,7 @@ setInterval(() => {
 //     }).then(console.log);
 // }, 2000)
 
-// api.spot.getStaticDepth({ symbol: "ADA-USDT", limit: 400 }).then(console.log);
+
 
 // api.streams.futuresDepthStream(["APR-USDT-SWAP"], (data) => {
 //     console.log(data);

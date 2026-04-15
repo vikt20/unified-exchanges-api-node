@@ -1,6 +1,7 @@
 /**
  * Connection option types shared by ExchangeFactory and clients.
  */
+import { ExtractedInfo } from 'unified-exchanges-api-node';
 import type { FormattedResponse } from './response.js';
 export type WebsocketApiFactory<T = unknown> = () => T;
 export type WebsocketApiOption<T = unknown> = boolean | T | WebsocketApiFactory<T>;
@@ -14,5 +15,7 @@ export interface IWebsocketApiClient {
 }
 export interface ExchangeConnectionOptions {
     useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>;
+    exchangeInfoFutures?: ExtractedInfo[];
+    exchangeInfoSpot?: ExtractedInfo[];
 }
 //# sourceMappingURL=connection.d.ts.map

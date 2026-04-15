@@ -57,11 +57,11 @@ export class ExchangeFactory {
             case ExchangeList.OKX:
                 const connectionOkx: IUnifiedExchange = {
                     spot: new OkxSpot(apiKey, apiSecret, apiPassphrase, isTestnet),
-                    futures: new OkxFutures(apiKey, apiSecret, apiPassphrase, isTestnet),
-                    streams: new OkxStreams(apiKey, apiSecret, apiPassphrase, isTestnet),
+                    futures: new OkxFutures(apiKey, apiSecret, apiPassphrase, isTestnet, connectionOptions?.exchangeInfoFutures),
+                    streams: new OkxStreams(apiKey, apiSecret, apiPassphrase, isTestnet, connectionOptions?.exchangeInfoFutures),
                 };
                 if (apiKey && apiSecret && apiPassphrase) {
-                    connectionOkx.userData = new OkxUserData(apiKey, apiSecret, apiPassphrase);
+                    connectionOkx.userData = new OkxUserData(apiKey, apiSecret, apiPassphrase, connectionOptions?.exchangeInfoFutures);
                 }
                 // UserData is not implemented independently, it is handled via streams
                 return connectionOkx;

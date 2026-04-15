@@ -2,7 +2,7 @@ import OkxStreams from "./OkxStreams.js";
 import { IExchangeClient } from "../core/IExchangeClient.js";
 import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo } from "../core/types.js";
 export default class OkxFutures extends OkxStreams implements IExchangeClient {
-    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean);
+    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean, exchangeInfoFutures?: ExtractedInfo[]);
     closeListenKey(): Promise<FormattedResponse<unknown>>;
     getExchangeInfo(): Promise<FormattedResponse<{
         [key: string]: ExtractedInfo;

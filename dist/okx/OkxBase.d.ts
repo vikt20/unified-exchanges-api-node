@@ -1,5 +1,6 @@
 import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 import { FormattedResponse } from '../core/types.js';
+import { ExtractedInfo } from '../core/types.js';
 export default class OkxBase extends AbstractExchangeBase {
     static BASE_URL: string;
     static BASE_URL_TESTNET: string;
@@ -14,7 +15,8 @@ export default class OkxBase extends AbstractExchangeBase {
     private instrumentsLoadPromise?;
     instrumentsReady: boolean;
     private instrumentsLoadError?;
-    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean);
+    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean, exchangeInfoFutures?: ExtractedInfo[] | false);
+    private loadCtValFromExchangeInfo;
     protected getBaseUrl(_marketType: string): string;
     getStreamUrl(channelType: 'public' | 'private' | 'business'): string;
     setTimeOffset(): Promise<void>;

@@ -55,6 +55,9 @@ export type ExtractedInfo = {
     orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>;
     baseAsset: string;
     quoteAsset: string;
+    additionalInfo?: {
+        okx_ctVal?: number;
+    };
 };
 export interface ProcessedSymbolInfo {
     symbol: string;

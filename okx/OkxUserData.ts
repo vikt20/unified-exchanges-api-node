@@ -1,6 +1,6 @@
 import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import OkxFutures from "./OkxFutures.js";
-import { PositionData, OrderData, SocketStatus, UserData } from "../core/types.js";
+import { PositionData, OrderData, SocketStatus, UserData, ExtractedInfo } from "../core/types.js";
 
 /**
  * OkxUserData - Implementation of IUserDataManager for Okx
@@ -10,8 +10,8 @@ import { PositionData, OrderData, SocketStatus, UserData } from "../core/types.j
  */
 export default class OkxUserData extends OkxFutures implements IUserDataManager {
 
-    constructor(apiKey: string, apiSecret: string, apiPassphrase: string) {
-        super(apiKey, apiSecret, apiPassphrase);
+    constructor(apiKey: string, apiSecret: string, apiPassphrase: string, exchangeInfoFutures?: ExtractedInfo[]) {
+        super(apiKey, apiSecret, apiPassphrase, false, exchangeInfoFutures);
     }
 
     /**

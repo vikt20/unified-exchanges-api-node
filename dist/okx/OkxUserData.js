@@ -6,8 +6,8 @@ import OkxFutures from "./OkxFutures.js";
  * Uses instance-based callbacks for communication with UI/Bot components.
  */
 export default class OkxUserData extends OkxFutures {
-    constructor(apiKey, apiSecret, apiPassphrase) {
-        super(apiKey, apiSecret, apiPassphrase);
+    constructor(apiKey, apiSecret, apiPassphrase, exchangeInfoFutures) {
+        super(apiKey, apiSecret, apiPassphrase, false, exchangeInfoFutures);
     }
     /**
      * Local "Single Source of Truth" for user data.

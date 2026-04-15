@@ -1,14 +1,14 @@
 import OkxBase from "./OkxBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, ExtractedInfo } from "../core/types.js";
 export default class OkxStreams extends OkxBase implements IStreamManager {
     protected subscriptions: {
         id: string;
         disconnect: Function;
         title: string;
     }[];
-    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean);
+    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean, exchangeInfoFutures?: ExtractedInfo[] | false);
     getTradingWsApiClient(): () => IWebsocketApiClient | undefined;
     protected handleWebSocket(url: string, args: any[], callback: Function, parser: Function, title: string, statusCallback?: (status: SocketStatus) => void, auth?: boolean): Promise<HandleWebSocket>;
     closeAllSockets(): void;

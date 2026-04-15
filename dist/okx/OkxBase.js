@@ -16,10 +16,35 @@ export default class OkxBase extends AbstractExchangeBase {
     instrumentsLoadPromise;
     instrumentsReady = false;
     instrumentsLoadError;
-    constructor(apiKey, apiSecret, apiPassphrase, isTest = false) {
+    constructor(apiKey, apiSecret, apiPassphrase, isTest = false, exchangeInfoFutures) {
         super(apiKey, apiSecret, isTest);
         this.apiPassphrase = apiPassphrase || '';
-        void this.ensureInstrumentMetadataLoaded();
+        if (exchangeInfoFutures !== false) {
+            // For futures only
+            if (exchangeInfoFutures !== undefined) {
+                console.log(`Loading OKX instruments (${exchangeInfoFutures.length}) metadata from constructor...`);
+                this.loadCtValFromExchangeInfo(exchangeInfoFutures);
+                this.instrumentsReady = true;
+                this.instrumentsLoadError = undefined;
+                this.instrumentsLoadPromise = Promise.resolve();
+                return;
+            }
+            else {
+                void this.ensureInstrumentMetadataLoaded();
+            }
+        }
+    }
+    loadCtValFromExchangeInfo(exchangeInfoFutures) {
+        this.ctValBySymbol.clear();
+        for (const item of exchangeInfoFutures) {
+            const symbol = item.symbol;
+            const ctVal = item.additionalInfo?.okx_ctVal;
+            if (!symbol)
+                continue;
+            if (!Number.isFinite(ctVal) || ctVal <= 0)
+                continue;
+            this.ctValBySymbol.set(symbol, ctVal);
+        }
     }
     getBaseUrl(_marketType) {
         return OkxBase.BASE_URL; // OKX uses same base URL for everything
@@ -55,13 +80,14 @@ export default class OkxBase extends AbstractExchangeBase {
         }
         return Date.now();
     }
+    // For Futures, we need to convert asset size to contracts and vice versa using ctVal from exchange info. For Spot, we can just pass through the values.
     async ensureInstrumentMetadataLoaded() {
-        // if (!this.apiKey || !this.apiSecret || !this.apiPassphrase) {
-        //     return;
-        // }
+        if (this.instrumentsReady)
+            return;
         if (this.instrumentsLoadPromise)
             return this.instrumentsLoadPromise;
         this.instrumentsLoadPromise = (async () => {
+            console.log('Requesting OKX instruments metadata...');
             const res = await this.publicRequest('public', 'GET', '/api/v5/public/instruments', { instType: 'SWAP' });
             if (res.success && res.data && Array.isArray(res.data)) {
                 for (const item of res.data) {
@@ -81,6 +107,7 @@ export default class OkxBase extends AbstractExchangeBase {
         })();
         return this.instrumentsLoadPromise;
     }
+    // Use Only for Futures endpoints that require contract value for conversions.
     async assertInstrumentsReady() {
         if (this.instrumentsLoadError) {
             throw new Error(`OKX instruments metadata unavailable: ${this.instrumentsLoadError}`);

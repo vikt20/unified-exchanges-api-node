@@ -30,7 +30,7 @@ import { convertExchangeInfo, convertOkxKline, convertOkxOrder } from "./convert
 export default class OkxSpot extends OkxStreams implements IExchangeClient {
 
     constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean) {
-        super(apiKey, apiSecret, apiPassphrase, isTest);
+        super(apiKey, apiSecret, apiPassphrase, isTest, false);
     }
 
     async closeListenKey(): Promise<FormattedResponse<unknown>> {

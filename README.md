@@ -32,8 +32,8 @@ const binance = ExchangeFactory.create('binance', 'YOUR_API_KEY', 'YOUR_API_SECR
 // Access Spot, Futures, or Streams
 async function main() {
     // Example: Get Futures Depth Snapshot
-    const ticker = await binance.futures.getStaticDepth({ symbol: 'BTCUSDT'});
-    console.log(ticker);
+    const depth = await binance.futures.getStaticDepth({ symbol: 'BTCUSDT'});
+    console.log(depth);
 
     // Example: Connect to Futures Depth Stream
     await binance.streams.futuresDepthStream(['BTCUSDT'], (data) => {
@@ -44,10 +44,13 @@ async function main() {
     if (binance.userData) {
         await binance.userData.init();
         
-        // Listen to position updates
-        BinanceUserData.Emitter.on(BinanceUserData.POSITION_EVENT, (symbol, position) => {
-           console.log(`Position Update for ${symbol}:`, position);
-        });
+        // Subscribe to position updates
+        const offSubscribe = binance.userData.onPositionUpdate(positionUpdate => {
+            console.log(positionUpdate)
+        })
+
+        // Call offSubscribe to remove subscription
+        // offSubscribe();
     }
 }
 

@@ -2,7 +2,7 @@ import OkxBase from "./OkxBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import ws from 'ws';
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, IWebsocketApiClient } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, IWebsocketApiClient, ExtractedInfo } from "../core/types.js";
 import { convertOkxKline, convertOkxOrder, convertOkxPosition, OkxWsMessage } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
 import crypto from 'crypto';
@@ -11,8 +11,8 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
 
     protected subscriptions: { id: string, disconnect: Function, title: string }[] = [];
 
-    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false) {
-        super(apiKey, apiSecret, apiPassphrase, isTest);
+    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false, exchangeInfoFutures?: ExtractedInfo[] | false ) {
+        super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures);
     }
 
     public getTradingWsApiClient(): () => IWebsocketApiClient | undefined {
@@ -413,7 +413,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
 
     // Use "books" for depth (or books5/books50-l2-tbt)
     public async futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void, levels: number = 0): Promise<HandleWebSocket> {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         let channel = 'books';
         if (levels === 5) channel = 'books5';
         else if (levels === 50) channel = 'books50-l2-tbt';
@@ -442,20 +442,20 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
     }
 
     public async futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         // We use bbo-tbt for fast best bid/ask
         const args = symbols.map(s => ({ channel: 'bbo-tbt', instId: s }));
         return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseBookTickerFutures.bind(this), 'futuresBookTickerStream', statusCallback);
     }
 
     public async futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         const args = symbols.map(s => ({ channel: 'trades', instId: s }));
         return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseTradeFutures.bind(this), 'futuresTradeStream', statusCallback);
     }
 
     public async futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        await this.ensureInstrumentMetadataLoaded();
+        await this.assertInstrumentsReady();
         // Private channels (account, positions, orders) go on /private
         const privateArgs = [
             { channel: 'account' },
