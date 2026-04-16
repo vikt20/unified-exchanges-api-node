@@ -1,4 +1,5 @@
 import OkxStreams from "./OkxStreams.js";
+import Decimal from "decimal.js";
 import { convertExchangeInfo, convertOkxKline, convertOkxOrder } from "./converters.js";
 export default class OkxFutures extends OkxStreams {
     constructor(apiKey, apiSecret, apiPassphrase, isTest = false, exchangeInfoFutures) {
@@ -254,15 +255,17 @@ export default class OkxFutures extends OkxStreams {
             sz: contractSize?.toString()
         };
         payload.reduceOnly = reduceOnly;
+        const decimalCorrectedPrice = new Decimal(price?.toString() || "0");
         if (type.includes('MARKET')) {
             payload.ordType = 'market';
         }
         else {
             payload.ordType = 'limit';
             if (price)
-                payload.px = price.toString();
+                payload.px = decimalCorrectedPrice.toFixed();
         }
         if (triggerPrice) {
+            const decimalTriggerPrice = new Decimal(triggerPrice?.toString() || "0");
             // Algo order
             endpoint = '/api/v5/trade/order-algo';
             payload.ordType = 'conditional';
@@ -278,12 +281,12 @@ export default class OkxFutures extends OkxStreams {
             if (isExitOrder && (isTakeProfit || isStop)) {
                 payload.reduceOnly = true;
                 if (isTakeProfit) {
-                    payload.tpTriggerPx = triggerPrice.toString();
+                    payload.tpTriggerPx = decimalTriggerPrice.toFixed();
                     payload.tpTriggerPxType = triggerPxType;
                     payload.tpOrdPx = '-1'; // market
                 }
                 else {
-                    payload.slTriggerPx = triggerPrice.toString();
+                    payload.slTriggerPx = decimalTriggerPrice.toFixed();
                     payload.slTriggerPxType = triggerPxType;
                     payload.slOrdPx = '-1'; // market
                 }
@@ -292,13 +295,13 @@ export default class OkxFutures extends OkxStreams {
                 // For STOP orders (trigger market entry)
                 // trigger algo orders require triggerPx/orderPx for entry triggers
                 payload.ordType = 'trigger';
-                payload.triggerPx = triggerPrice.toString();
+                payload.triggerPx = decimalTriggerPrice.toFixed();
                 payload.triggerPxType = triggerPxType;
                 if (type.includes('STOP')) {
                     payload.orderPx = '-1'; // market
                 }
                 else if (price) {
-                    payload.orderPx = price.toString();
+                    payload.orderPx = decimalCorrectedPrice.toFixed();
                 }
             }
         }
@@ -317,7 +320,7 @@ export default class OkxFutures extends OkxStreams {
                 symbol: symbol,
                 status: 'NEW',
                 clientOrderId: orderRes.clOrdId || orderRes.ordId || orderRes.algoClOrdId || clOrdId,
-                price: price?.toString() || '0',
+                price: decimalCorrectedPrice?.toFixed() || '0',
                 avgPrice: '0',
                 origQty: quantity?.toString() || '0',
                 executedQty: '0',
@@ -439,7 +442,8 @@ export default class OkxFutures extends OkxStreams {
             callbackRatio: (params.callbackRate / 100).toString()
         };
         if (params.activatePrice) {
-            payload.activePx = params.activatePrice.toString();
+            const decimalCorrectedPrice = new Decimal(params.activatePrice.toString());
+            payload.activePx = decimalCorrectedPrice.toFixed();
         }
         const res = await this.signedRequest('private', 'POST', '/api/v5/trade/order-algo', payload);
         if (res.success && res.data && Array.isArray(res.data) && res.data[0]) {
