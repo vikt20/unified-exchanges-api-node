@@ -239,39 +239,55 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
         return this.getOpenOrders(params.symbol);
     }
 
-    async cancelAllOpenOrders(params: CancelAllOpenOrdersParams) {
-        const [pendingRes, algoRes] = await Promise.all([
+    async cancelAllOpenOrders(params: CancelAllOpenOrdersParams): Promise<FormattedResponse<unknown[]>> {
+        // Fetch all algo order types (including trailing stop orders)
+        const algoTypes: string[] = ['conditional', 'trigger', 'move_order_stop'];
+        const promises: Promise<FormattedResponse<any>>[] = [
             this.signedRequest(
                 'private',
                 'GET',
                 '/api/v5/trade/orders-pending',
                 { instId: params.symbol }
             ),
-            this.signedRequest(
-                'private',
-                'GET',
-                '/api/v5/trade/orders-algo-pending',
-                { instId: params.symbol, instType: 'SWAP' }
+            ...algoTypes.map((ordType: string) =>
+                this.signedRequest(
+                    'private',
+                    'GET',
+                    '/api/v5/trade/orders-algo-pending',
+                    { instId: params.symbol, instType: 'SWAP', ordType }
+                )
             )
-        ]);
+        ];
 
-        if ((!pendingRes.success || !pendingRes.data?.length) && (!algoRes.success || !algoRes.data?.length)) {
+        const responses: FormattedResponse<any>[] = await Promise.all(promises);
+        const pendingRes: FormattedResponse<any> = responses[0];
+        const algoResults: FormattedResponse<any>[] = responses.slice(1);
+
+        // Merge all algo orders
+        let allAlgoOrders: any[] = [];
+        for (const res of algoResults) {
+            if (res.success && Array.isArray(res.data)) {
+                allAlgoOrders = allAlgoOrders.concat(res.data);
+            }
+        }
+
+        if ((!pendingRes.success || !pendingRes.data?.length) && (!allAlgoOrders.length)) {
             return this.formattedResponse({ data: [] });
         }
 
-        const cancelPayloads = (pendingRes.data || []).map((order: any) => ({
+        const cancelPayloads: { instId: string; ordId: string }[] = (pendingRes.data || []).map((order: any) => ({
             instId: params.symbol,
             ordId: order.ordId
         }));
 
-        const algoCancelPayloads = (algoRes.data || []).map((order: any) => ({
+        const algoCancelPayloads: { instId: string; algoId: string }[] = (allAlgoOrders || []).map((order: any) => ({
             instId: params.symbol,
             algoId: order.algoId
         }));
 
         const chunkSize = 20;
-        const chunks = [];
-        const algoChunks = [];
+        const chunks: typeof cancelPayloads[] = [];
+        const algoChunks: typeof algoCancelPayloads[] = [];
 
         for (let i = 0; i < cancelPayloads.length; i += chunkSize) {
             chunks.push(cancelPayloads.slice(i, i + chunkSize));
@@ -281,7 +297,7 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
             algoChunks.push(algoCancelPayloads.slice(i, i + chunkSize));
         }
 
-        const results = [];
+        const results: unknown[] = [];
 
         for (const chunk of chunks) {
             const res = await this.signedRequest(

@@ -24,7 +24,7 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
     }): Promise<FormattedResponse<PositionData>>;
     getOpenOrders(symbol?: string): Promise<FormattedResponse<OrderData[]>>;
     getOpenOrdersBySymbol(params: GetOpenOrdersBySymbolParams): Promise<FormattedResponse<OrderData[]>>;
-    cancelAllOpenOrders(params: CancelAllOpenOrdersParams): Promise<FormattedResponse<unknown>>;
+    cancelAllOpenOrders(params: CancelAllOpenOrdersParams): Promise<FormattedResponse<unknown[]>>;
     cancelOrderById(params: CancelOrderByIdParams): Promise<FormattedResponse<unknown>>;
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
     marketBuy(params: MarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;

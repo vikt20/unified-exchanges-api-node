@@ -189,18 +189,30 @@ export default class OkxFutures extends OkxStreams {
         return this.getOpenOrders(params.symbol);
     }
     async cancelAllOpenOrders(params) {
-        const [pendingRes, algoRes] = await Promise.all([
+        // Fetch all algo order types (including trailing stop orders)
+        const algoTypes = ['conditional', 'trigger', 'move_order_stop'];
+        const promises = [
             this.signedRequest('private', 'GET', '/api/v5/trade/orders-pending', { instId: params.symbol }),
-            this.signedRequest('private', 'GET', '/api/v5/trade/orders-algo-pending', { instId: params.symbol, instType: 'SWAP' })
-        ]);
-        if ((!pendingRes.success || !pendingRes.data?.length) && (!algoRes.success || !algoRes.data?.length)) {
+            ...algoTypes.map((ordType) => this.signedRequest('private', 'GET', '/api/v5/trade/orders-algo-pending', { instId: params.symbol, instType: 'SWAP', ordType }))
+        ];
+        const responses = await Promise.all(promises);
+        const pendingRes = responses[0];
+        const algoResults = responses.slice(1);
+        // Merge all algo orders
+        let allAlgoOrders = [];
+        for (const res of algoResults) {
+            if (res.success && Array.isArray(res.data)) {
+                allAlgoOrders = allAlgoOrders.concat(res.data);
+            }
+        }
+        if ((!pendingRes.success || !pendingRes.data?.length) && (!allAlgoOrders.length)) {
             return this.formattedResponse({ data: [] });
         }
         const cancelPayloads = (pendingRes.data || []).map((order) => ({
             instId: params.symbol,
             ordId: order.ordId
         }));
-        const algoCancelPayloads = (algoRes.data || []).map((order) => ({
+        const algoCancelPayloads = (allAlgoOrders || []).map((order) => ({
             instId: params.symbol,
             algoId: order.algoId
         }));
