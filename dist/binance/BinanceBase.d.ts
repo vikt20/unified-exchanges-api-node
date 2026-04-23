@@ -2,6 +2,7 @@ export type { FormattedResponse, ExtractedInfo, MarketType, OrderSide, OrderType
 import type { FormattedResponse, OrderSide, OrderType, OrderStatus, TimeInForce, OrderWorkingType, PositionSide } from '../core/types.js';
 import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 export type Type = 'futures' | 'spot';
+export type FuturesStreamCategory = 'public' | 'market' | 'private';
 export type ListenKey = {
     listenKey: string;
 };
@@ -74,16 +75,24 @@ export type AlgoOrderResponse = {
     goodTillDate: number;
 };
 export default class BinanceBase extends AbstractExchangeBase {
-    static FUTURES_STREAM_URL: string;
+    static FUTURES_PUBLIC_STREAM_URL: string;
+    static FUTURES_MARKET_STREAM_URL: string;
+    static FUTURES_PRIVATE_STREAM_URL: string;
+    static FUTURES_PUBLIC_STREAM_URL_COMBINED: string;
+    static FUTURES_MARKET_STREAM_URL_COMBINED: string;
+    static FUTURES_PRIVATE_STREAM_URL_COMBINED: string;
     static SPOT_STREAM_URL: string;
-    static FUTURES_STREAM_URL_COMBINED: string;
     static SPOT_STREAM_URL_COMBINED: string;
     static FUTURES_BASE_URL: string;
     static SPOT_BASE_URL: string;
     static FUTURES_WS_API_URL: string;
-    static FUTURES_STREAM_URL_TESTNET: string;
+    static FUTURES_PUBLIC_STREAM_URL_TESTNET: string;
+    static FUTURES_MARKET_STREAM_URL_TESTNET: string;
+    static FUTURES_PRIVATE_STREAM_URL_TESTNET: string;
     static SPOT_STREAM_URL_TESTNET: string;
-    static FUTURES_STREAM_URL_COMBINED_TESTNET: string;
+    static FUTURES_PUBLIC_STREAM_URL_COMBINED_TESTNET: string;
+    static FUTURES_MARKET_STREAM_URL_COMBINED_TESTNET: string;
+    static FUTURES_PRIVATE_STREAM_URL_COMBINED_TESTNET: string;
     static SPOT_STREAM_URL_COMBINED_TESTNET: string;
     static FUTURES_BASE_URL_TESTNET: string;
     static SPOT_BASE_URL_TESTNET: string;
@@ -91,8 +100,8 @@ export default class BinanceBase extends AbstractExchangeBase {
     constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean);
     private doPingServer;
     protected getBaseUrl(marketType: string): string;
-    getStreamUrl(marketType: string): string;
-    getCombinedStreamUrl(marketType: string): string;
+    getStreamUrl(marketType: string, category?: FuturesStreamCategory): string;
+    getCombinedStreamUrl(marketType: string, category?: FuturesStreamCategory): string;
     getFuturesWsApiUrl(): string;
     protected generateSignature(queryString: string): string;
     getFuturesListenKey(): Promise<FormattedResponse<ListenKey>>;

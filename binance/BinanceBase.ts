@@ -55,6 +55,7 @@ import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 
 // ━━ Binance-Specific Types (Not Unified) ━━
 export type Type = 'futures' | 'spot';
+export type FuturesStreamCategory = 'public' | 'market' | 'private';
 
 export type ListenKey = {
     listenKey: string;
@@ -132,17 +133,28 @@ export type AlgoOrderResponse = {
 
 
 export default class BinanceBase extends AbstractExchangeBase {
-    public static FUTURES_STREAM_URL: string = 'wss://fstream.binance.com/ws/';
+    public static FUTURES_PUBLIC_STREAM_URL: string = 'wss://fstream.binance.com/public/ws/';
+    public static FUTURES_MARKET_STREAM_URL: string = 'wss://fstream.binance.com/market/ws/';
+    public static FUTURES_PRIVATE_STREAM_URL: string = 'wss://fstream.binance.com/private/ws';
+    
+    public static FUTURES_PUBLIC_STREAM_URL_COMBINED: string = 'wss://fstream.binance.com/public/stream?streams=';
+    public static FUTURES_MARKET_STREAM_URL_COMBINED: string = 'wss://fstream.binance.com/market/stream?streams=';
+    public static FUTURES_PRIVATE_STREAM_URL_COMBINED: string = 'wss://fstream.binance.com/private/stream?';
+
     public static SPOT_STREAM_URL: string = 'wss://stream.binance.com:9443/ws/';
-    public static FUTURES_STREAM_URL_COMBINED: string = 'wss://fstream.binance.com/stream?streams=';
     public static SPOT_STREAM_URL_COMBINED: string = 'wss://stream.binance.com:9443/stream?streams=';
+    
     public static FUTURES_BASE_URL: string = 'https://fapi.binance.com';
     public static SPOT_BASE_URL: string = 'https://api.binance.com';
     public static FUTURES_WS_API_URL: string = 'wss://ws-fapi.binance.com/ws-fapi/v1';
 
-    public static FUTURES_STREAM_URL_TESTNET: string = 'wss://stream.binancefuture.com/ws/';
+    public static FUTURES_PUBLIC_STREAM_URL_TESTNET: string = 'wss://stream.binancefuture.com/ws/';
+    public static FUTURES_MARKET_STREAM_URL_TESTNET: string = 'wss://stream.binancefuture.com/ws/';
+    public static FUTURES_PRIVATE_STREAM_URL_TESTNET: string = 'wss://stream.binancefuture.com/ws/';
     public static SPOT_STREAM_URL_TESTNET: string = 'wss://stream.testnet.binance.vision/ws/';
-    public static FUTURES_STREAM_URL_COMBINED_TESTNET: string = 'wss://stream.binancefuture.com/stream?streams=';
+    public static FUTURES_PUBLIC_STREAM_URL_COMBINED_TESTNET: string = 'wss://stream.binancefuture.com/stream?streams=';
+    public static FUTURES_MARKET_STREAM_URL_COMBINED_TESTNET: string = 'wss://stream.binancefuture.com/stream?streams=';
+    public static FUTURES_PRIVATE_STREAM_URL_COMBINED_TESTNET: string = 'wss://stream.binancefuture.com/stream?';
     public static SPOT_STREAM_URL_COMBINED_TESTNET: string = 'wss://stream.testnet.binance.vision/stream?streams=';
     public static FUTURES_BASE_URL_TESTNET: string = 'https://testnet.binancefuture.com';
     public static SPOT_BASE_URL_TESTNET: string = 'https://testnet.binance.vision';
@@ -170,18 +182,40 @@ export default class BinanceBase extends AbstractExchangeBase {
         return marketType === 'futures' ? BinanceBase.FUTURES_BASE_URL : BinanceBase.SPOT_BASE_URL;
     }
 
-    public getStreamUrl(marketType: string): string {
-        if (this.isTest) {
-            return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL_TESTNET : BinanceBase.SPOT_STREAM_URL_TESTNET;
+    public getStreamUrl(marketType: string, category?: FuturesStreamCategory): string {
+        if (marketType !== 'futures') {
+            return this.isTest ? BinanceBase.SPOT_STREAM_URL_TESTNET : BinanceBase.SPOT_STREAM_URL;
         }
-        return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL : BinanceBase.SPOT_STREAM_URL;
+
+        const resolvedCategory = category ?? 'market';
+
+        if (this.isTest) {
+            if (resolvedCategory === 'public') return BinanceBase.FUTURES_PUBLIC_STREAM_URL_TESTNET;
+            if (resolvedCategory === 'private') return BinanceBase.FUTURES_PRIVATE_STREAM_URL_TESTNET;
+            return BinanceBase.FUTURES_MARKET_STREAM_URL_TESTNET;
+        }
+
+        if (resolvedCategory === 'public') return BinanceBase.FUTURES_PUBLIC_STREAM_URL;
+        if (resolvedCategory === 'private') return BinanceBase.FUTURES_PRIVATE_STREAM_URL;
+        return BinanceBase.FUTURES_MARKET_STREAM_URL;
     }
 
-    public getCombinedStreamUrl(marketType: string): string {
-        if (this.isTest) {
-            return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL_COMBINED_TESTNET : BinanceBase.SPOT_STREAM_URL_COMBINED_TESTNET;
+    public getCombinedStreamUrl(marketType: string, category?: FuturesStreamCategory): string {
+        if (marketType !== 'futures') {
+            return this.isTest ? BinanceBase.SPOT_STREAM_URL_COMBINED_TESTNET : BinanceBase.SPOT_STREAM_URL_COMBINED;
         }
-        return marketType === 'futures' ? BinanceBase.FUTURES_STREAM_URL_COMBINED : BinanceBase.SPOT_STREAM_URL_COMBINED;
+
+        const resolvedCategory = category ?? 'market';
+
+        if (this.isTest) {
+            if (resolvedCategory === 'public') return BinanceBase.FUTURES_PUBLIC_STREAM_URL_COMBINED_TESTNET;
+            if (resolvedCategory === 'private') return BinanceBase.FUTURES_PRIVATE_STREAM_URL_COMBINED_TESTNET;
+            return BinanceBase.FUTURES_MARKET_STREAM_URL_COMBINED_TESTNET;
+        }
+
+        if (resolvedCategory === 'public') return BinanceBase.FUTURES_PUBLIC_STREAM_URL_COMBINED;
+        if (resolvedCategory === 'private') return BinanceBase.FUTURES_PRIVATE_STREAM_URL_COMBINED;
+        return BinanceBase.FUTURES_MARKET_STREAM_URL_COMBINED;
     }
 
     public getFuturesWsApiUrl(): string {

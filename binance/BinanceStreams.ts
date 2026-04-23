@@ -451,7 +451,7 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
 
     futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'public') + streams.join('/'));
         return this.handleWebSocket(createWs, convertDepthData, callback, 'futuresDepthStream()', statusCallback);
     }
 
@@ -463,13 +463,13 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
 
     futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@kline_${interval}`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'market') + streams.join('/'));
         return this.handleWebSocket(createWs, convertKlineData, callback, 'futuresCanldeStickStream()', statusCallback);
     }
 
     futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'public') + streams.join('/'));
         return this.handleWebSocket(createWs, convertBookTickerData, callback, 'futuresBookTickerStream()', statusCallback);
     }
 
@@ -481,7 +481,7 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
 
     async futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@aggTrade`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'market') + streams.join('/'));
         return this.handleWebSocket(createWs, convertTradeDataWebSocket, callback, 'futuresTradeStream()', statusCallback);
     }
 
@@ -495,17 +495,17 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
         const listenKey = await this.getFuturesListenKey();
         if (!listenKey.success || !listenKey.data) {
             console.log('Error getting listen key: ', listenKey.errors);
-            return Promise.reject();
+            return Promise.reject(listenKey.errors);
         }
 
         this.keepAliveListenKeyByInterval('futures');
-        const createWs = () => new ws(this.getStreamUrl('futures') + listenKey.data!.listenKey);
+        const createWs = () => new ws(`${this.getStreamUrl('futures', 'private')}?listenKey=${encodeURIComponent(listenKey.data!.listenKey)}&events=ORDER_TRADE_UPDATE/ACCOUNT_UPDATE/ALGO_UPDATE/listenKeyExpired`);
         return this.handleWebSocket(createWs, convertUserData, callback, 'futuresUserDataStream()', statusCallback);
     }
 
     async fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@markPrice`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'market') + streams.join('/'));
         return this.handleWebSocket(createWs, convertFundingData, callback, 'fundingStream()', statusCallback);
     }
 }

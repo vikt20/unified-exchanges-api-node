@@ -190,7 +190,7 @@ export default class BinanceStreams extends BinanceBase {
     }
     futuresDepthStream(symbols, callback, statusCallback) {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'public') + streams.join('/'));
         return this.handleWebSocket(createWs, convertDepthData, callback, 'futuresDepthStream()', statusCallback);
     }
     spotCandleStickStream(symbols, interval, callback, statusCallback) {
@@ -200,12 +200,12 @@ export default class BinanceStreams extends BinanceBase {
     }
     futuresCandleStickStream(symbols, interval, callback, statusCallback) {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@kline_${interval}`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'market') + streams.join('/'));
         return this.handleWebSocket(createWs, convertKlineData, callback, 'futuresCanldeStickStream()', statusCallback);
     }
     futuresBookTickerStream(symbols, callback, statusCallback) {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'public') + streams.join('/'));
         return this.handleWebSocket(createWs, convertBookTickerData, callback, 'futuresBookTickerStream()', statusCallback);
     }
     spotBookTickerStream(symbols, callback, statusCallback) {
@@ -215,7 +215,7 @@ export default class BinanceStreams extends BinanceBase {
     }
     async futuresTradeStream(symbols, callback, statusCallback) {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@aggTrade`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'market') + streams.join('/'));
         return this.handleWebSocket(createWs, convertTradeDataWebSocket, callback, 'futuresTradeStream()', statusCallback);
     }
     async spotTradeStream(symbols, callback, statusCallback) {
@@ -227,15 +227,15 @@ export default class BinanceStreams extends BinanceBase {
         const listenKey = await this.getFuturesListenKey();
         if (!listenKey.success || !listenKey.data) {
             console.log('Error getting listen key: ', listenKey.errors);
-            return Promise.reject();
+            return Promise.reject(listenKey.errors);
         }
         this.keepAliveListenKeyByInterval('futures');
-        const createWs = () => new ws(this.getStreamUrl('futures') + listenKey.data.listenKey);
+        const createWs = () => new ws(`${this.getStreamUrl('futures', 'private')}?listenKey=${encodeURIComponent(listenKey.data.listenKey)}&events=ORDER_TRADE_UPDATE/ACCOUNT_UPDATE/ALGO_UPDATE/listenKeyExpired`);
         return this.handleWebSocket(createWs, convertUserData, callback, 'futuresUserDataStream()', statusCallback);
     }
     async fundingStream(symbols, callback, statusCallback) {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@markPrice`);
-        const createWs = () => new ws(this.getCombinedStreamUrl('futures') + streams.join('/'));
+        const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'market') + streams.join('/'));
         return this.handleWebSocket(createWs, convertFundingData, callback, 'fundingStream()', statusCallback);
     }
 }
