@@ -178,7 +178,6 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];
-        this.destroy(); // from base
     }
 
     closeById(id: string) {

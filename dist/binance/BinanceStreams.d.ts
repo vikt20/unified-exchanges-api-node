@@ -199,7 +199,7 @@ export type TradingWsRequestResult<T> = {
     error: string;
 };
 export default class BinanceStreams extends BinanceBase implements IStreamManager {
-    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean, useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
     protected subscriptions: {
         id: string;
         disconnect: Function;
@@ -207,7 +207,6 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
     protected listenKeyInterval: NodeJS.Timeout | undefined;
     protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient>;
     protected tradingWsApiClient: IWebsocketApiClient | undefined;
-    destroy(): void;
     closeAllSockets(): void;
     closeById(id: string): void;
     protected isTradingWsApiConfigured(): boolean;

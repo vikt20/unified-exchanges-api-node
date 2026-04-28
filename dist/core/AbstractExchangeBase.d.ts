@@ -30,12 +30,7 @@ export declare abstract class AbstractExchangeBase {
     protected _AXIOS_INSTANCE: AxiosInstance;
     protected timeOffset: number;
     protected recvWindow: number;
-    protected pingServerInterval: NodeJS.Timeout | undefined;
     constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
-    /**
-     * Clean up resources (intervals, connections)
-     */
-    destroy(): void;
     /**
      * Get the base URL for REST API calls
      */

@@ -31,8 +31,6 @@ export class AbstractExchangeBase {
     // Time synchronization
     timeOffset = 0;
     recvWindow = 3000;
-    // Lifecycle management
-    pingServerInterval;
     constructor(apiKey, apiSecret, isTest = false) {
         this.apiKey = apiKey || '';
         this.apiSecret = apiSecret || '';
@@ -41,14 +39,6 @@ export class AbstractExchangeBase {
             httpAgent: this._HTTP_AGENT,
             httpsAgent: this._HTTPS_AGENT
         });
-    }
-    /**
-     * Clean up resources (intervals, connections)
-     */
-    destroy() {
-        if (this.pingServerInterval) {
-            clearInterval(this.pingServerInterval);
-        }
     }
     // ━━ Shared Utility Methods ━━
     /**

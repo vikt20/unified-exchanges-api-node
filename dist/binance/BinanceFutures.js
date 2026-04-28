@@ -27,8 +27,8 @@ import { convertPositionRiskDataByRequest, convertPositionRiskToPositionData, co
     getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
 } */
 export default class BinanceFutures extends BinanceStreams {
-    constructor(apiKey, apiSecret, isTest = false, pingServer = false, useWebsocketApi = false) {
-        super(apiKey, apiSecret, isTest, pingServer, useWebsocketApi);
+    constructor(apiKey, apiSecret, isTest = false, useWebsocketApi = false) {
+        super(apiKey, apiSecret, isTest, useWebsocketApi);
     }
     async closeListenKey() {
         return await this.signedRequest('futures', 'DELETE', '/fapi/v1/listenKey');

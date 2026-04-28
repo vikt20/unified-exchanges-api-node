@@ -217,10 +217,9 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
         apiKey?: string,
         apiSecret?: string,
         isTest: boolean = false,
-        pingServer: boolean = false,
         useWebsocketApi: WebsocketApiOption<IWebsocketApiClient> = false
     ) {
-        super(apiKey, apiSecret, isTest, pingServer);
+        super(apiKey, apiSecret, isTest);
         this.useWebsocketApi = useWebsocketApi;
         if (this.useWebsocketApi === true || typeof this.useWebsocketApi === 'function') this.initTradingWsApiClient()
     }
@@ -231,16 +230,11 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
     protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient> = false;
     protected tradingWsApiClient: IWebsocketApiClient | undefined = undefined;
 
-    public destroy(): void {
-        this.destroyTradingWsApiClient();
-        super.destroy();
-    }
-
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];
         clearInterval(this.listenKeyInterval);
-        this.destroy();
+        this.destroyTradingWsApiClient();
     }
 
     closeById(id: string) {

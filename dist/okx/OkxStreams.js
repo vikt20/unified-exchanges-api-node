@@ -238,7 +238,6 @@ export default class OkxStreams extends OkxBase {
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];
-        this.destroy();
     }
     closeById(id) {
         const index = this.subscriptions.findIndex(i => i.id === id);
@@ -372,7 +371,7 @@ export default class OkxStreams extends OkxBase {
         return {
             symbol: symbol,
             rate: parseFloat(data.fundingRate || '0'),
-            nextFundingTime: parseInt(data.nextFundingTime || '0'),
+            nextFundingTime: parseInt(data.fundingTime || '0'),
             interval: undefined
         };
     }

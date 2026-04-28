@@ -35,7 +35,7 @@ export class ExchangeFactory {
             case ExchangeList.BINANCE:
                 const connection: IUnifiedExchange = {
                     spot: new BinanceSpot(apiKey, apiSecret, isTestnet),
-                    futures: new BinanceFutures(apiKey, apiSecret, isTestnet, false, connectionOptions?.useWebsocketApi),
+                    futures: new BinanceFutures(apiKey, apiSecret, isTestnet, connectionOptions?.useWebsocketApi),
                     streams: new BinanceStreams(apiKey, apiSecret, isTestnet),
                 };
                 if (apiKey && apiSecret) {

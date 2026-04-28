@@ -144,7 +144,6 @@ export default class BybitStreams extends BybitBase {
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];
-        this.destroy(); // from base
     }
     closeById(id) {
         const index = this.subscriptions.findIndex(i => i.id === id);

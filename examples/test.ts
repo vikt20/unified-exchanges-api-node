@@ -6,17 +6,17 @@ dotenv.config({
     path: '../.env'
 });
 
-console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE);
-console.log(`starting okx futures instance...`)
-const okxFutures = new OkxFutures();
+// console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE);
+// console.log(`starting okx futures instance...`)
+// const okxFutures = new OkxFutures();
 
-const info = await okxFutures.getExchangeInfo().then(request => request.success && request.data ? Object.values(request.data) : [] );
+// const info = await okxFutures.getExchangeInfo().then(request => request.success && request.data ? Object.values(request.data) : [] );
 
-// const bybitApi = ExchangeFactory.create('BYBIT', process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
-// const binanceApi = ExchangeFactory.create('BINANCE');
+const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
+const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
 
-console.log(`starting okx api instance...`)
-const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false, { exchangeInfoFutures: info });
+// console.log(`starting okx api instance...`)
+// const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false, { exchangeInfoFutures: info });
 
 // api.spot.signedRequest('spot', 'GET', '/v5/order/spot-borrow-check', { category: 'spot', symbol: 'ETHUSDT', side: 'Sell' }).then(console.log);
 
@@ -50,6 +50,15 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
     return symbols;
 }
 
+bybitApi.userData?.init().then(() => {
+    console.log(`user data stream initialized.`);
+})
+
+setTimeout(() => {
+    bybitApi.userData?.destroy()
+    console.log(`user data stream destroyed.`);
+}, 5000)
+
 // // getFuturesSymbols().then(console.log);
 // getSpotSymbols().then(console.log);
 // const getSymbolsBinance = await getFuturesSymbols(api2)
@@ -62,17 +71,20 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
 // okxApi.futures.getBalance().then(console.log);
 
 // okxApi.futures.getStaticDepth({ symbol: "ADA-USDT-SWAP", limit: 400 }).then(console.log);
-console.log(`fetching okx open positions...`)
-setTimeout(() => okxApi.futures.getOpenPositions().then(console.log), 30)
-setTimeout(() => okxApi.futures.getOpenPositions().then(console.log), 3000)
+// console.log(`fetching okx open positions...`)
+// setTimeout(() => okxApi.futures.getOpenPositions().then(console.log), 30)
+// setTimeout(() => okxApi.futures.getOpenPositions().then(console.log), 3000)
 
 
 // api2.streams.fundingStream(getSymbols, (data) => {
 //     console.log("Binance", data);
 // })
 
-// api3.streams.fundingStream(["BTC-USDT-SWAP"], (data) => {
-//     console.log("Okx", data);
+// okxApi.streams.fundingStream(["KAT-USDT-SWAP", "ENJ-USDT-SWAP"], (data) => {
+//     const symbol = data.symbol;
+//     const fundingRate = data.rate ? (data.rate * 100).toFixed(4) + "%" : "N/A";
+//     const nextFundingTime = new Date(data.nextFundingTime!).toLocaleString();
+//     console.log(symbol, fundingRate, nextFundingTime);
 // })
 
 // let bestAskBinance: number;

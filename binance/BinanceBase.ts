@@ -160,19 +160,12 @@ export default class BinanceBase extends AbstractExchangeBase {
     public static SPOT_BASE_URL_TESTNET: string = 'https://testnet.binance.vision';
     public static FUTURES_WS_API_URL_TESTNET: string = 'wss://testnet.binancefuture.com/ws-fapi/v1';
 
-    constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false, pingServer: boolean = false) {
+    constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false) {
         super(apiKey, apiSecret, isTest);
-        if (pingServer) this.doPingServer();
         this.setTimeOffset()
     }
 
-    private doPingServer(): void {
-        const baseUrl = this.isTest ? BinanceBase.FUTURES_BASE_URL_TESTNET : BinanceBase.FUTURES_BASE_URL;
-        if (this.pingServerInterval) {
-            clearInterval(this.pingServerInterval);
-        }
-        this.pingServerInterval = setInterval(() => this._AXIOS_INSTANCE.get(`${baseUrl}/fapi/v1/ping`).catch(() => { }), 30000)
-    }
+
 
     // ━━ Abstract Method Implementations ━━
     protected getBaseUrl(marketType: string): string {

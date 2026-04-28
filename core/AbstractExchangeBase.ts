@@ -37,8 +37,6 @@ export abstract class AbstractExchangeBase {
     protected timeOffset: number = 0;
     protected recvWindow: number = 3000;
 
-    // Lifecycle management
-    protected pingServerInterval: NodeJS.Timeout | undefined;
 
     constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false) {
         this.apiKey = apiKey || '';
@@ -50,14 +48,6 @@ export abstract class AbstractExchangeBase {
         });
     }
 
-    /**
-     * Clean up resources (intervals, connections)
-     */
-    public destroy(): void {
-        if (this.pingServerInterval) {
-            clearInterval(this.pingServerInterval);
-        }
-    }
 
     // ━━ Abstract Methods (Exchange-Specific) ━━
 

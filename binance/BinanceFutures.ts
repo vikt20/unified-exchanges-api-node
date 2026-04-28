@@ -164,10 +164,9 @@ export default class BinanceFutures extends BinanceStreams implements IExchangeC
         apiKey?: string,
         apiSecret?: string,
         isTest: boolean = false,
-        pingServer: boolean = false,
         useWebsocketApi: WebsocketApiOption<IWebsocketApiClient> = false
     ) {
-        super(apiKey, apiSecret, isTest, pingServer, useWebsocketApi);
+        super(apiKey, apiSecret, isTest, useWebsocketApi);
     }
 
 

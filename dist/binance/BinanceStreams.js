@@ -3,8 +3,8 @@ import { convertBookTickerData, convertDepthData, convertFundingData, convertKli
 import ws from 'ws';
 import { BinanceWebsocketApiClient, BinanceWsUnavailableError } from "./BinanceWebsocketApi.js";
 export default class BinanceStreams extends BinanceBase {
-    constructor(apiKey, apiSecret, isTest = false, pingServer = false, useWebsocketApi = false) {
-        super(apiKey, apiSecret, isTest, pingServer);
+    constructor(apiKey, apiSecret, isTest = false, useWebsocketApi = false) {
+        super(apiKey, apiSecret, isTest);
         this.useWebsocketApi = useWebsocketApi;
         if (this.useWebsocketApi === true || typeof this.useWebsocketApi === 'function')
             this.initTradingWsApiClient();
@@ -13,15 +13,11 @@ export default class BinanceStreams extends BinanceBase {
     listenKeyInterval;
     useWebsocketApi = false;
     tradingWsApiClient = undefined;
-    destroy() {
-        this.destroyTradingWsApiClient();
-        super.destroy();
-    }
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];
         clearInterval(this.listenKeyInterval);
-        this.destroy();
+        this.destroyTradingWsApiClient();
     }
     closeById(id) {
         const index = this.subscriptions.findIndex(i => i.id === id);

@@ -97,8 +97,7 @@ export default class BinanceBase extends AbstractExchangeBase {
     static FUTURES_BASE_URL_TESTNET: string;
     static SPOT_BASE_URL_TESTNET: string;
     static FUTURES_WS_API_URL_TESTNET: string;
-    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, pingServer?: boolean);
-    private doPingServer;
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
     protected getBaseUrl(marketType: string): string;
     getStreamUrl(marketType: string, category?: FuturesStreamCategory): string;
     getCombinedStreamUrl(marketType: string, category?: FuturesStreamCategory): string;

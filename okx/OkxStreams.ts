@@ -267,7 +267,6 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];
-        this.destroy();
     }
 
     closeById(id: string) {
@@ -404,7 +403,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
         return {
             symbol: symbol,
             rate: parseFloat(data.fundingRate || '0'),
-            nextFundingTime: parseInt(data.nextFundingTime || '0'),
+            nextFundingTime: parseInt(data.fundingTime || '0'),
             interval: undefined
         };
     }
