@@ -70,6 +70,9 @@ export default class OkxSpot extends OkxStreams {
         }
         return this.formattedResponse({ errors: res.errors });
     }
+    async getFundingHistory(params) {
+        return this.formattedResponse({ errors: 'Not applicable for spot trading' });
+    }
     // --- Private Methods ---
     async getBalance() {
         const res = await this.signedRequest('private', 'GET', '/api/v5/account/balance');

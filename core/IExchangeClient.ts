@@ -19,6 +19,8 @@ import type {
     GetOpenOrdersBySymbolParams,
     GetAggTradesParams,
     AggTradesData,
+    GetFundingHistoryParams,
+    FundingHistoryData,
     CancelAllOpenOrdersParams,
     CancelOrderByIdParams,
     MarketOrderParams,
@@ -61,6 +63,7 @@ export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
     }): Promise<FormattedResponse<KlineData[]>>;
 
     getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>>;
+    getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>>;
 
     // ━━ Account Data ━━
     getBalance(): Promise<FormattedResponse<AccountData['balances']>>;
@@ -103,5 +106,5 @@ export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
 
     // ━━ PnL ━━
-    getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
+    getLatestPnlBySymbol(symbol: string, startTime?: number, endTime?: number): Promise<FormattedResponse<number>>;
 }

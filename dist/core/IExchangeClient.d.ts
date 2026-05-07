@@ -5,7 +5,7 @@
  * All exchanges must implement this interface.
  */
 import { IStreamManager } from './IStreamManager.js';
-import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData, PositionData, PositionRiskData, ExtractedInfo, OrderData, OrderRequestResponse, GetOpenOrdersBySymbolParams, GetAggTradesParams, AggTradesData, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, KlineData, OrderInput } from './types.js';
+import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData, PositionData, PositionRiskData, ExtractedInfo, OrderData, OrderRequestResponse, GetOpenOrdersBySymbolParams, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, KlineData, OrderInput } from './types.js';
 import { AbstractExchangeBase } from './AbstractExchangeBase.js';
 /**
  * Unified Exchange Client Interface
@@ -31,6 +31,7 @@ export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
         limit?: number;
     }): Promise<FormattedResponse<KlineData[]>>;
     getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>>;
+    getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>>;
     getBalance(): Promise<FormattedResponse<AccountData['balances']>>;
     getPositionRisk(): Promise<FormattedResponse<PositionRiskData[]>>;
     getOpenPositions(): Promise<FormattedResponse<AccountData['positions']>>;
@@ -51,6 +52,6 @@ export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
     trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
-    getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
+    getLatestPnlBySymbol(symbol: string, startTime?: number, endTime?: number): Promise<FormattedResponse<number>>;
 }
 //# sourceMappingURL=IExchangeClient.d.ts.map

@@ -1,6 +1,6 @@
 import BybitStreams from "./BybitStreams.js";
 import { IExchangeClient } from "../core/IExchangeClient.js";
-import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo } from "../core/types.js";
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo } from "../core/types.js";
 export default class BybitFutures extends BybitStreams implements IExchangeClient {
     constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
     closeListenKey(): Promise<FormattedResponse<unknown>>;
@@ -16,6 +16,7 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
         limit?: number;
     }): Promise<FormattedResponse<KlineData[]>>;
     getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>>;
+    getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>>;
     getBalance(): Promise<FormattedResponse<AccountData['balances']>>;
     getPositionRisk(): Promise<FormattedResponse<PositionRiskData[]>>;
     getOpenPositions(): Promise<FormattedResponse<AccountData['positions']>>;
@@ -36,7 +37,7 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
     reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
     trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
-    getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
+    getLatestPnlBySymbol(symbol: string, startTime?: number, endTime?: number): Promise<FormattedResponse<number>>;
     private getTickerPrice;
 }
 //# sourceMappingURL=BybitFutures.d.ts.map

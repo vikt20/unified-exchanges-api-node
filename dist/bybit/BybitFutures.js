@@ -90,6 +90,25 @@ export default class BybitFutures extends BybitStreams {
         }
         return this.formattedResponse({ errors: res.errors });
     }
+    async getFundingHistory(params) {
+        const res = await this.publicRequest('linear', 'GET', '/v5/market/funding/history', {
+            category: 'linear',
+            symbol: params.symbol,
+            startTime: params.startTime,
+            endTime: params.endTime,
+            limit: params.limit || 200
+        });
+        const data = res.data;
+        if (res.success && data && data.list) {
+            const history = data.list.map((item) => ({
+                symbol: item.symbol || params.symbol,
+                fundingTime: parseInt(item.fundingRateTimestamp),
+                rate: parseFloat(item.fundingRate)
+            }));
+            return this.formattedResponse({ data: history });
+        }
+        return this.formattedResponse({ errors: res.errors });
+    }
     // --- Private Methods ---
     async getBalance() {
         const res = await this.signedRequest('linear', 'GET', '/v5/account/wallet-balance', { accountType: 'UNIFIED' });
@@ -403,16 +422,36 @@ export default class BybitFutures extends BybitStreams {
         }
         return this.formattedResponse({ errors: res.errors });
     }
-    async getLatestPnlBySymbol(symbol) {
-        const res = await this.signedRequest('linear', 'GET', '/v5/position/closed-pnl', {
-            category: 'linear',
-            symbol,
-            limit: 1
-        });
-        if (res.success && res.data?.list?.length) {
-            return this.formattedResponse({ data: parseFloat(res.data.list[0].closedPnl) });
+    async getLatestPnlBySymbol(symbol, startTime, endTime) {
+        let totalPnl = 0;
+        let cursor = null;
+        try {
+            do {
+                const params = {
+                    category: 'linear',
+                    symbol,
+                    limit: 100, // max per page
+                    ...(startTime ? { startTime } : {}),
+                    ...(endTime ? { endTime } : {}),
+                    ...(cursor ? { cursor } : {}),
+                };
+                const res = await this.signedRequest('linear', 'GET', '/v5/position/closed-pnl', params);
+                if (!res.data || res.errors) {
+                    return this.formattedResponse({ errors: res.errors });
+                }
+                const list = res.data?.list || [];
+                for (const trade of list) {
+                    if (trade.closedPnl !== undefined && trade.closedPnl !== null) {
+                        totalPnl += parseFloat(trade.closedPnl);
+                    }
+                }
+                cursor = res.data?.nextPageCursor || null;
+            } while (cursor);
+            return this.formattedResponse({ data: totalPnl });
         }
-        return this.formattedResponse({ errors: res.errors });
+        catch (err) {
+            return this.formattedResponse({ errors: err?.message || 'Unknown error' });
+        }
     }
     async getTickerPrice(symbol) {
         const res = await this.publicRequest('linear', 'GET', '/v5/market/tickers', {

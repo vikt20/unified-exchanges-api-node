@@ -3,7 +3,7 @@ import { KlineDataByRequest, AggTradesDataByRequest } from "./BinanceFutures.js"
 import BinanceStreams, { KlineData } from "./BinanceStreams.js";
 import { convertKlinesDataByRequest, convertOrderDataRequestResponse, extractInfo, convertAggTradesDataByRequest } from "./converters.js";
 import { IExchangeClient } from '../core/IExchangeClient.js';
-import type { ExchangeInfoData, PositionRiskData } from '../core/types.js';
+import type { ExchangeInfoData, PositionRiskData, FundingHistoryData, GetFundingHistoryParams } from '../core/types.js';
 
 export default class BinanceSpot extends BinanceStreams implements IExchangeClient {
     constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false) {
@@ -173,6 +173,10 @@ export default class BinanceSpot extends BinanceStreams implements IExchangeClie
         const request = await this.publicRequest('spot', 'GET', '/api/v3/aggTrades', { symbol: params.symbol, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors) return this.formattedResponse({ errors: request.errors });
         return this.formattedResponse({ data: convertAggTradesDataByRequest(request.data, params.symbol) });
+    }
+
+    async getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>> {
+        return this.formattedResponse({ errors: 'Not applicable for spot trading' });
     }
 
     async getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>> {

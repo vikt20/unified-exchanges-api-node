@@ -8,6 +8,8 @@ import {
     KlineData,
     GetAggTradesParams,
     AggTradesData,
+    GetFundingHistoryParams,
+    FundingHistoryData,
     AccountData,
     PositionRiskData,
     PositionData,
@@ -121,6 +123,26 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
                 isBuyer: t.side === 'Buy'
             }));
             return this.formattedResponse({ data: trades });
+        }
+        return this.formattedResponse({ errors: res.errors });
+    }
+    async getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>> {
+        const res = await this.publicRequest('linear', 'GET', '/v5/market/funding/history', {
+            category: 'linear',
+            symbol: params.symbol,
+            startTime: params.startTime,
+            endTime: params.endTime,
+            limit: params.limit || 200
+        });
+        const data = res.data as any;
+
+        if (res.success && data && data.list) {
+            const history: FundingHistoryData[] = data.list.map((item: any) => ({
+                symbol: item.symbol || params.symbol,
+                fundingTime: parseInt(item.fundingRateTimestamp),
+                rate: parseFloat(item.fundingRate)
+            }));
+            return this.formattedResponse({ data: history });
         }
         return this.formattedResponse({ errors: res.errors });
     }
@@ -490,19 +512,45 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
         return this.formattedResponse({ errors: res.errors });
     }
 
-    async getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>> {
-        const res = await this.signedRequest('linear', 'GET', '/v5/position/closed-pnl', {
-            category: 'linear',
-            symbol,
-            limit: 1
-        });
+    async getLatestPnlBySymbol(
+        symbol: string,
+        startTime?: number,
+        endTime?: number
+    ): Promise<FormattedResponse<number>> {
+        let totalPnl = 0;
+        let cursor: string | null = null;
+        try {
+            do {
+                const params: any = {
+                    category: 'linear',
+                    symbol,
+                    limit: 100, // max per page
+                    ...(startTime ? { startTime } : {}),
+                    ...(endTime ? { endTime } : {}),
+                    ...(cursor ? { cursor } : {}),
+                };
 
-        if (res.success && res.data?.list?.length) {
-            return this.formattedResponse({ data: parseFloat(res.data.list[0].closedPnl) });
+                const res = await this.signedRequest('linear', 'GET', '/v5/position/closed-pnl', params);
+
+                if (!res.data  || res.errors) {
+                    return this.formattedResponse({ errors: res.errors});
+                }
+
+                const list = res.data?.list || [];
+                for (const trade of list) {
+                    if (trade.closedPnl !== undefined && trade.closedPnl !== null) {
+                        totalPnl += parseFloat(trade.closedPnl);
+                    }
+                }
+
+                cursor = res.data?.nextPageCursor || null;
+
+            } while (cursor);
+
+            return this.formattedResponse({ data: totalPnl });
+        } catch (err: any) {
+            return this.formattedResponse({ errors: err?.message || 'Unknown error' });
         }
-
-        return this.formattedResponse({ errors: res.errors });
-
     }
 
     private async getTickerPrice(symbol: string): Promise<{ lastPrice: number; markPrice: number } | null> {

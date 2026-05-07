@@ -57,6 +57,23 @@ export default class BinanceFutures extends BinanceStreams {
             return this.formattedResponse({ errors: request.errors });
         return this.formattedResponse({ data: convertAggTradesDataByRequest(request.data, params.symbol) });
     }
+    async getFundingHistory(params) {
+        const request = await this.publicRequest('futures', 'GET', '/fapi/v1/fundingRate', {
+            symbol: params.symbol,
+            startTime: params.startTime,
+            endTime: params.endTime,
+            limit: params.limit
+        });
+        if (request.errors)
+            return this.formattedResponse({ errors: request.errors });
+        const data = (request.data || []).map((item) => ({
+            symbol: item.symbol || params.symbol,
+            fundingTime: Number(item.fundingTime),
+            rate: Number(item.fundingRate),
+            markPrice: item.markPrice !== undefined ? Number(item.markPrice) : undefined
+        }));
+        return this.formattedResponse({ data });
+    }
     async getLongShortRatio(params) {
         const request = await this.publicRequest('futures', 'GET', '/futures/data/takerlongshortRatio', { symbol: params.symbol, limit: params.limit, period: params.period, startTime: params.startTime, endTime: params.endTime });
         if (request.errors)

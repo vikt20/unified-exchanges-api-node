@@ -2,6 +2,7 @@ import BinanceStreams, { KlineData } from './BinanceStreams.js';
 import { FormattedResponse, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, OrderWorkingType, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, ReducePositionParams, ExtractedInfo, GetAggTradesParams, AggTradesData, StopMarketOrderParams } from './BinanceBase.js';
 import type { PositionRiskData, IWebsocketApiClient, WebsocketApiOption } from '../core/types.js';
 import { IExchangeClient } from '../core/IExchangeClient.js';
+import type { FundingHistoryData, GetFundingHistoryParams } from '../core/types.js';
 type OrderInput = {
     symbol: string;
     side: OrderSide;
@@ -99,6 +100,7 @@ export default class BinanceFutures extends BinanceStreams implements IExchangeC
         limit?: number;
     }): Promise<FormattedResponse<KlineData[]>>;
     getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>>;
+    getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>>;
     getLongShortRatio(params: {
         symbol: string;
         limit?: number;

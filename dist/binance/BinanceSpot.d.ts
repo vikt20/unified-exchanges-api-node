@@ -1,7 +1,7 @@
 import { FormattedResponse, GetStaticDepthParams, StaticDepth, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, ReducePositionParams, StopMarketOrderParams, GetAggTradesParams, AggTradesData } from "./BinanceBase.js";
 import BinanceStreams, { KlineData } from "./BinanceStreams.js";
 import { IExchangeClient } from '../core/IExchangeClient.js';
-import type { PositionRiskData } from '../core/types.js';
+import type { PositionRiskData, FundingHistoryData, GetFundingHistoryParams } from '../core/types.js';
 export default class BinanceSpot extends BinanceStreams implements IExchangeClient {
     constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
     closeListenKey(): Promise<FormattedResponse<any>>;
@@ -46,6 +46,7 @@ export default class BinanceSpot extends BinanceStreams implements IExchangeClie
         timeInForce?: TimeInForce;
     }): Promise<FormattedResponse<OrderRequestResponse>>;
     getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>>;
+    getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>>;
     getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
 }
 //# sourceMappingURL=BinanceSpot.d.ts.map

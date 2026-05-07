@@ -90,6 +90,9 @@ export default class BybitSpot extends BybitStreams {
         }
         return this.formattedResponse({ errors: res.errors });
     }
+    async getFundingHistory(params) {
+        return this.formattedResponse({ errors: 'Not applicable for spot trading' });
+    }
     // --- Private Methods ---
     async getBalance() {
         const res = await this.signedRequest('spot', 'GET', '/v5/account/wallet-balance', { accountType: 'UNIFIED' });

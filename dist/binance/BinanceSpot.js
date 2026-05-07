@@ -143,6 +143,9 @@ export default class BinanceSpot extends BinanceStreams {
             return this.formattedResponse({ errors: request.errors });
         return this.formattedResponse({ data: convertAggTradesDataByRequest(request.data, params.symbol) });
     }
+    async getFundingHistory(params) {
+        return this.formattedResponse({ errors: 'Not applicable for spot trading' });
+    }
     async getLatestPnlBySymbol(symbol) {
         // Not applicable for spot trading - PnL tracking is futures-specific
         return this.formattedResponse({ errors: 'Not applicable for spot trading' });

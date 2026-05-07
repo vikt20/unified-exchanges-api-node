@@ -17,6 +17,7 @@ import {
 } from './BinanceBase.js';
 import type { PositionRiskData, IWebsocketApiClient, WebsocketApiOption } from '../core/types.js';
 import { IExchangeClient } from '../core/IExchangeClient.js';
+import type { FundingHistoryData, GetFundingHistoryParams } from '../core/types.js';
 
 type OrderInput = {
     symbol: string;
@@ -194,6 +195,24 @@ export default class BinanceFutures extends BinanceStreams implements IExchangeC
         const request = await this.publicRequest('futures', 'GET', '/fapi/v1/aggTrades', { symbol: params.symbol, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors) return this.formattedResponse({ errors: request.errors });
         return this.formattedResponse({ data: convertAggTradesDataByRequest(request.data, params.symbol) });
+    }
+    async getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>> {
+        const request = await this.publicRequest('futures', 'GET', '/fapi/v1/fundingRate', {
+            symbol: params.symbol,
+            startTime: params.startTime,
+            endTime: params.endTime,
+            limit: params.limit
+        });
+        if (request.errors) return this.formattedResponse({ errors: request.errors });
+
+        const data: FundingHistoryData[] = (request.data || []).map((item: any) => ({
+            symbol: item.symbol || params.symbol,
+            fundingTime: Number(item.fundingTime),
+            rate: Number(item.fundingRate),
+            markPrice: item.markPrice !== undefined ? Number(item.markPrice) : undefined
+        }));
+
+        return this.formattedResponse({ data });
     }
     async getLongShortRatio(params: { symbol: string, limit?: number, period?: string, startTime?: number, endTime?: number }): Promise<FormattedResponse<LongShortRatioDataByRequest[]>> {
         const request = await this.publicRequest('futures', 'GET', '/futures/data/takerlongshortRatio', { symbol: params.symbol, limit: params.limit, period: params.period, startTime: params.startTime, endTime: params.endTime });

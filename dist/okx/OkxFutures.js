@@ -84,6 +84,23 @@ export default class OkxFutures extends OkxStreams {
         }
         return this.formattedResponse({ errors: res.errors });
     }
+    async getFundingHistory(params) {
+        const res = await this.publicRequest('public', 'GET', '/api/v5/public/funding-rate-history', {
+            instId: params.symbol,
+            before: params.startTime,
+            after: params.endTime,
+            limit: params.limit || 100
+        });
+        if (res.success && res.data && Array.isArray(res.data)) {
+            const history = res.data.map((item) => ({
+                symbol: item.instId || params.symbol,
+                fundingTime: parseInt(item.fundingTime),
+                rate: parseFloat(item.fundingRate)
+            }));
+            return this.formattedResponse({ data: history });
+        }
+        return this.formattedResponse({ errors: res.errors });
+    }
     // --- Private Methods ---
     async getBalance() {
         const res = await this.signedRequest('private', 'GET', '/api/v5/account/balance');

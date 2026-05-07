@@ -7,6 +7,8 @@ import {
     KlineData,
     GetAggTradesParams,
     AggTradesData,
+    GetFundingHistoryParams,
+    FundingHistoryData,
     AccountData,
     PositionRiskData,
     PositionData,
@@ -106,6 +108,10 @@ export default class OkxSpot extends OkxStreams implements IExchangeClient {
             return this.formattedResponse({ data: trades });
         }
         return this.formattedResponse({ errors: res.errors });
+    }
+
+    async getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>> {
+        return this.formattedResponse({ errors: 'Not applicable for spot trading' });
     }
 
     // --- Private Methods ---

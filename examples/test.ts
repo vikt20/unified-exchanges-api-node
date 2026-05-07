@@ -16,7 +16,7 @@ const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_AP
 const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
 
 // console.log(`starting okx api instance...`)
-// const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false, { exchangeInfoFutures: info });
+// const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false);
 
 // api.spot.signedRequest('spot', 'GET', '/v5/order/spot-borrow-check', { category: 'spot', symbol: 'ETHUSDT', side: 'Sell' }).then(console.log);
 
@@ -50,14 +50,28 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
     return symbols;
 }
 
-bybitApi.userData?.init().then(() => {
-    console.log(`user data stream initialized.`);
-})
+// okxApi.futures.getExchangeInfo().then(data => {
+//     if (data.success && data.data) {
+//         console.log(`exchange info received. Number of symbols: ${Object.keys(data.data).length}`);
+        
+//         console.log(`AIUSDT symbol info: ${JSON.stringify(data.data["AI-USDT-SWAP"])}`);
 
-setTimeout(() => {
-    bybitApi.userData?.destroy()
-    console.log(`user data stream destroyed.`);
-}, 5000)
+       
+//     } else {
+//         console.log(`Failed to fetch  exchange info: ${data.error}`);
+//     }
+// });
+
+bybitApi.futures.getLatestPnlBySymbol("KSMUSDT", 1778160163000, 1778163793000).then(console.log);
+
+// bybitApi.userData?.init().then(() => {
+//     console.log(`user data stream initialized.`);
+// })
+
+// setTimeout(() => {
+//     bybitApi.userData?.destroy()
+//     console.log(`user data stream destroyed.`);
+// }, 5000)
 
 // // getFuturesSymbols().then(console.log);
 // getSpotSymbols().then(console.log);
@@ -76,8 +90,8 @@ setTimeout(() => {
 // setTimeout(() => okxApi.futures.getOpenPositions().then(console.log), 3000)
 
 
-// api2.streams.fundingStream(getSymbols, (data) => {
-//     console.log("Binance", data);
+// bybitApi.streams.fundingStream(["ORCAUSDT", "PRLUSDT"], (data) => {
+//     console.log(data);
 // })
 
 // okxApi.streams.fundingStream(["KAT-USDT-SWAP", "ENJ-USDT-SWAP"], (data) => {

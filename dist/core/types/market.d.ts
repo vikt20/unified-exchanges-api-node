@@ -43,6 +43,12 @@ export interface FundingData {
     rate?: number;
     interval?: number;
 }
+export interface FundingHistoryData {
+    symbol: string;
+    fundingTime: number;
+    rate: number;
+    markPrice?: number;
+}
 export interface AggTradesData {
     symbol: string;
     id: number;
@@ -63,6 +69,12 @@ export interface GetStaticDepthParams {
     limit?: number;
 }
 export interface GetAggTradesParams {
+    symbol: string;
+    startTime?: number;
+    endTime?: number;
+    limit?: number;
+}
+export interface GetFundingHistoryParams {
     symbol: string;
     startTime?: number;
     endTime?: number;
