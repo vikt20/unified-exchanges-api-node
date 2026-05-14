@@ -644,6 +644,12 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
 
         // console.log(res.data)
 
+        if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
+            return this.formattedResponse({
+                errors: 'No closed positions found'
+            });
+        }
+
         const latest = res.data[0];
 
         const pnl = Number(latest.realizedPnl ?? 0);
