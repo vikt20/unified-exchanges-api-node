@@ -12,11 +12,12 @@ dotenv.config({
 
 // const info = await okxFutures.getExchangeInfo().then(request => request.success && request.data ? Object.values(request.data) : [] );
 
-const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
-const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
+// const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
+// const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
+const krakenApi = ExchangeFactory.create(ExchangeList.KRAKEN, process.env.KRAKEN_API_KEY, process.env.KRAKEN_API_SECRET);
 
 // console.log(`starting okx api instance...`)
-const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false);
+// const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false);
 
 // api.spot.signedRequest('spot', 'GET', '/v5/order/spot-borrow-check', { category: 'spot', symbol: 'ETHUSDT', side: 'Sell' }).then(console.log);
 
@@ -50,6 +51,8 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
     return symbols;
 }
 
+// krakenApi.futures.getOpenOrders().then(console.log);
+
 // okxApi.futures.getExchangeInfo().then(data => {
 //     if (data.success && data.data) {
 //         console.log(`exchange info received. Number of symbols: ${Object.keys(data.data).length}`);
@@ -62,7 +65,7 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
 //     }
 // });
 
-okxApi.futures.getLatestPnlBySymbol("LAB-USDT-SWAP", 1778576453000, Date.now()).then(console.log);
+// okxApi.futures.getLatestPnlBySymbol("LAB-USDT-SWAP", 1778576453000, Date.now()).then(console.log);
 
 // bybitApi.userData?.init().then(() => {
 //     console.log(`user data stream initialized.`);
@@ -82,7 +85,7 @@ okxApi.futures.getLatestPnlBySymbol("LAB-USDT-SWAP", 1778576453000, Date.now()).
 // const getSymbols = ["BTCUSDT"]
 
 // okxApi.futures.getLatestPnlBySymbol("ZEC-USDT-SWAP").then(console.log);
-// okxApi.futures.getBalance().then(console.log);
+// krakenApi.futures.getBalance().then(console.log);
 
 // okxApi.futures.getStaticDepth({ symbol: "ADA-USDT-SWAP", limit: 400 }).then(console.log);
 // console.log(`fetching okx open positions...`)
@@ -90,9 +93,8 @@ okxApi.futures.getLatestPnlBySymbol("LAB-USDT-SWAP", 1778576453000, Date.now()).
 // setTimeout(() => okxApi.futures.getOpenPositions().then(console.log), 3000)
 
 
-// bybitApi.streams.fundingStream(["ORCAUSDT", "PRLUSDT"], (data) => {
-//     console.log(data);
-// })
+// krakenApi.streams.fundingStream(["PF_XBTUSD"], console.log)
+krakenApi.futures.getFundingHistory({symbol:"PF_XBTUSD", startTime: 1779970830000, endTime: Date.now()}).then(console.log);
 
 // okxApi.streams.fundingStream(["KAT-USDT-SWAP", "ENJ-USDT-SWAP"], (data) => {
 //     const symbol = data.symbol;

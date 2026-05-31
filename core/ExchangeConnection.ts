@@ -21,6 +21,12 @@ import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
 import OkxUserData from '../okx/OkxUserData.js';
 
+import KrakenSpot from '../kraken/KrakenSpot.js';
+import KrakenFutures from '../kraken/KrakenFutures.js';
+import KrakenStreams from '../kraken/KrakenStreams.js';
+import KrakenBase from '../kraken/KrakenBase.js';
+import KrakenUserData from '../kraken/KrakenUserData.js';
+
 export class ExchangeFactory {
     static create(
         exchangeId: ExchangeList,
@@ -66,6 +72,17 @@ export class ExchangeFactory {
                 // UserData is not implemented independently, it is handled via streams
                 return connectionOkx;
 
+            case ExchangeList.KRAKEN:
+                const connectionKraken: IUnifiedExchange = {
+                    spot: new KrakenSpot(apiKey, apiSecret, isTestnet),
+                    futures: new KrakenFutures(apiKey, apiSecret, isTestnet),
+                    streams: new KrakenStreams(apiKey, apiSecret, isTestnet),
+                };
+                if (apiKey && apiSecret) {
+                    connectionKraken.userData = new KrakenUserData(apiKey, apiSecret, isTestnet);
+                }
+                return connectionKraken;
+
             default:
                 throw new Error(`Exchange '${exchangeId}' is not supported.`);
         }
@@ -89,5 +106,11 @@ export {
     OkxBase,
     OkxSpot,
     OkxFutures,
-    OkxStreams
+    OkxStreams,
+
+    KrakenBase,
+    KrakenSpot,
+    KrakenFutures,
+    KrakenStreams,
+    KrakenUserData
 };

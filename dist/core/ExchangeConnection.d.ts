@@ -16,8 +16,13 @@ import OkxSpot from '../okx/OkxSpot.js';
 import OkxFutures from '../okx/OkxFutures.js';
 import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
+import KrakenSpot from '../kraken/KrakenSpot.js';
+import KrakenFutures from '../kraken/KrakenFutures.js';
+import KrakenStreams from '../kraken/KrakenStreams.js';
+import KrakenBase from '../kraken/KrakenBase.js';
+import KrakenUserData from '../kraken/KrakenUserData.js';
 export declare class ExchangeFactory {
     static create(exchangeId: ExchangeList, apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTestnet?: boolean, connectionOptions?: ExchangeConnectionOptions): IUnifiedExchange;
 }
-export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams };
+export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, KrakenBase, KrakenSpot, KrakenFutures, KrakenStreams, KrakenUserData };
 //# sourceMappingURL=ExchangeConnection.d.ts.map

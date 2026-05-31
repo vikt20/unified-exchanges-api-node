@@ -14,5 +14,6 @@ export interface UserData {
     event: 'ACCOUNT_UPDATE' | 'ORDER_TRADE_UPDATE' | 'ALGO_UPDATE' | 'listenKeyExpired';
     accountData: AccountData | undefined;
     orderData: OrderData[] | undefined;
+    updateType?: 'SNAPSHOT' | 'DELTA';
 }
 //# sourceMappingURL=streams.d.ts.map

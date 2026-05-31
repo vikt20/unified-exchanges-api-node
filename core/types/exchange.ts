@@ -10,7 +10,8 @@ import { OrderType } from './common.js';
 export enum ExchangeList {
     BINANCE = 'BINANCE',
     BYBIT = 'BYBIT',
-    OKX = 'OKX'
+    OKX = 'OKX',
+    KRAKEN = 'KRAKEN'
 }
 
 // ━━ Common Filter Types ━━

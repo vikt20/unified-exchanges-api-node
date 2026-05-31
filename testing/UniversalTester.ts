@@ -7,8 +7,10 @@ import BybitFutures from '../bybit/BybitFutures.js';
 import BybitSpot from '../bybit/BybitSpot.js';
 import OkxFutures from '../okx/OkxFutures.js';
 import OkxSpot from '../okx/OkxSpot.js';
+import KrakenFutures from '../kraken/KrakenFutures.js';
+import KrakenSpot from '../kraken/KrakenSpot.js';
 
-export type ExchangeType = 'binance_futures' | 'binance_spot' | 'bybit_futures' | 'bybit_spot' | 'okx_futures' | 'okx_spot';
+export type ExchangeType = 'binance_futures' | 'binance_spot' | 'bybit_futures' | 'bybit_spot' | 'okx_futures' | 'okx_spot' | 'kraken_futures' | 'kraken_spot';
 
 export interface ExchangeConfig {
     type: ExchangeType;
@@ -71,6 +73,10 @@ export class UniversalTester {
                 return new OkxFutures(apiKey, apiSecret, apiPassphrase, isTest);
             case 'okx_spot':
                 return new OkxSpot(apiKey, apiSecret, apiPassphrase, isTest);
+            case 'kraken_futures':
+                return new KrakenFutures(apiKey, apiSecret, isTest);
+            case 'kraken_spot':
+                return new KrakenSpot(apiKey, apiSecret, isTest);
             default:
                 throw new Error(`Unsupported exchange type: ${type}`);
         }

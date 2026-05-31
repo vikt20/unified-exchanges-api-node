@@ -6,7 +6,7 @@ import { UniversalTester, ExchangeConfig } from './testing/UniversalTester.js';
 dotenv.config();
 
 interface TestConfig {
-    exchanges: string[]; // Array of exchanges to test: ['binance', 'bybit'] or ['all']
+    exchanges: string[]; // Array of exchanges to test: ['binance', 'bybit', 'kraken'] or ['all']
     target: {
         spot: boolean;
         futures: boolean;
@@ -31,8 +31,9 @@ async function main(config: TestConfig) {
     const runBinance = selectedExchanges.includes('all') || selectedExchanges.includes('binance');
     const runBybit = selectedExchanges.includes('all') || selectedExchanges.includes('bybit');
     const runOkx = selectedExchanges.includes('all') || selectedExchanges.includes('okx');
+    const runKraken = selectedExchanges.includes('all') || selectedExchanges.includes('kraken');
 
-    console.log(`\n[Test Runner] Configuration: Exchanges=[${runBinance ? 'BINANCE' : ''} ${runBybit ? 'BYBIT' : ''} ${runOkx ? 'OKX' : ''}] | Targets=[${config.target.spot ? 'SPOT' : ''} ${config.target.futures ? 'FUTURES' : ''}] | Modes=[${config.mode.public ? 'PUBLIC' : ''} ${config.mode.authenticated ? 'AUTH' : ''}]`);
+    console.log(`\n[Test Runner] Configuration: Exchanges=[${runBinance ? 'BINANCE' : ''} ${runBybit ? 'BYBIT' : ''} ${runOkx ? 'OKX' : ''} ${runKraken ? 'KRAKEN' : ''}] | Targets=[${config.target.spot ? 'SPOT' : ''} ${config.target.futures ? 'FUTURES' : ''}] | Modes=[${config.mode.public ? 'PUBLIC' : ''} ${config.mode.authenticated ? 'AUTH' : ''}]`);
 
     // ─────────────────────────────────────────────────────────────────
     // FUTURES EXCHANGES
@@ -91,6 +92,29 @@ async function main(config: TestConfig) {
                 });
             } else {
                 console.log('[SKIP] OKX Futures Testnet: Credentials not found (OKX_TESTNET_API_KEY)');
+            }
+        }
+
+        // Kraken Futures (Demo/Testnet)
+        if (runKraken) {
+            if (process.env.KRAKEN_TESTNET_API_KEY && process.env.KRAKEN_TESTNET_API_SECRET) {
+                exchangeConfigs.push({
+                    type: 'kraken_futures',
+                    name: 'Kraken Futures (TESTNET)',
+                    apiKey: process.env.KRAKEN_TESTNET_API_KEY,
+                    apiSecret: process.env.KRAKEN_TESTNET_API_SECRET,
+                    isTest: true,
+                    testSymbol: 'PI_XBTUSD'
+                });
+            } else if (config.mode.public) {
+                exchangeConfigs.push({
+                    type: 'kraken_futures',
+                    name: 'Kraken Futures (TESTNET - PUBLIC ONLY)',
+                    isTest: true,
+                    testSymbol: 'PI_XBTUSD'
+                });
+            } else {
+                console.log('[SKIP] Kraken Futures Testnet: Credentials not found (KRAKEN_TESTNET_API_KEY)');
             }
         }
     }
@@ -154,6 +178,29 @@ async function main(config: TestConfig) {
                 console.log('[SKIP] OKX Spot Testnet: Credentials not found (OKX_TESTNET_API_KEY)');
             }
         }
+
+        // Kraken Spot has no sandbox; authenticated tests use live credentials.
+        if (runKraken) {
+            if (process.env.KRAKEN_API_KEY && process.env.KRAKEN_API_SECRET) {
+                exchangeConfigs.push({
+                    type: 'kraken_spot',
+                    name: 'Kraken Spot (LIVE)',
+                    apiKey: process.env.KRAKEN_API_KEY,
+                    apiSecret: process.env.KRAKEN_API_SECRET,
+                    isTest: false,
+                    testSymbol: 'XBTUSD'
+                });
+            } else if (config.mode.public) {
+                exchangeConfigs.push({
+                    type: 'kraken_spot',
+                    name: 'Kraken Spot (PUBLIC ONLY)',
+                    isTest: false,
+                    testSymbol: 'XBTUSD'
+                });
+            } else {
+                console.log('[SKIP] Kraken Spot: Credentials not found (KRAKEN_API_KEY)');
+            }
+        }
     }
 
     // 3. Register Exchanges
@@ -176,8 +223,9 @@ async function main(config: TestConfig) {
 // ─────────────────────────────────────────────────────────────────
 const RUN_CONFIG: TestConfig = {
     exchanges: [
-        'okx'
-    ], // Options: 'binance', 'bybit', 'okx' or ['all']
+        // 'okx',
+        'kraken'
+    ], // Options: 'binance', 'bybit', 'okx', 'kraken' or ['all']
     target: {
         spot: false,      // Set to true to test Spot
         futures: true,    // Set to true to test Futures
