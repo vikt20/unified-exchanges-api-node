@@ -7,9 +7,6 @@
     "type": "git",
     "url": "https://github.com/vikt20/unified-exchanges-api-node.git"
   },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [],
   "author": "Viktor Bokhan",
   "license": "ISC",
@@ -27,6 +24,10 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node dist/test.js"
+  },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^25.0.3",

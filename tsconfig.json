@@ -15,7 +15,11 @@
     "binance/**/*",
     "core/**/*",
     "bybit/**/*",
-    "okx/**/*"
+    "okx/**/*",
+    "bitget/**/*",
+    "kraken/**/*",
+    "testing/**/*",
+    "test.ts"
   ],
   "exclude": [
     "node_modules",

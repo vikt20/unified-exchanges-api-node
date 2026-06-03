@@ -8,7 +8,8 @@ export declare enum ExchangeList {
     BINANCE = "BINANCE",
     BYBIT = "BYBIT",
     OKX = "OKX",
-    KRAKEN = "KRAKEN"
+    KRAKEN = "KRAKEN",
+    BITGET = "BITGET"
 }
 export type FilterType = 'PRICE_FILTER' | 'LOT_SIZE' | 'MIN_NOTIONAL' | 'NOTIONAL' | 'MARKET_LOT_SIZE' | 'MAX_NUM_ORDERS' | 'MAX_NUM_ALGO_ORDERS' | 'PERCENT_PRICE';
 export interface SymbolFilter {

@@ -21,8 +21,13 @@ import KrakenFutures from '../kraken/KrakenFutures.js';
 import KrakenStreams from '../kraken/KrakenStreams.js';
 import KrakenBase from '../kraken/KrakenBase.js';
 import KrakenUserData from '../kraken/KrakenUserData.js';
+import BitgetSpot from '../bitget/BitgetSpot.js';
+import BitgetFutures from '../bitget/BitgetFutures.js';
+import BitgetStreams from '../bitget/BitgetStreams.js';
+import BitgetBase from '../bitget/BitgetBase.js';
+import BitgetUserData from '../bitget/BitgetUserData.js';
 export declare class ExchangeFactory {
     static create(exchangeId: ExchangeList, apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTestnet?: boolean, connectionOptions?: ExchangeConnectionOptions): IUnifiedExchange;
 }
-export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, KrakenBase, KrakenSpot, KrakenFutures, KrakenStreams, KrakenUserData };
+export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, KrakenBase, KrakenSpot, KrakenFutures, KrakenStreams, KrakenUserData, BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };
 //# sourceMappingURL=ExchangeConnection.d.ts.map

@@ -1,0 +1,333 @@
+/**
+ * Custom Schema Validation System
+ * strict runtime type checking without external dependencies.
+ */
+export class Validator {
+    static validate(data, schema, path = 'root') {
+        const errors = [];
+        // 1. Check null/undefined/requirement
+        if (data === undefined || data === null) {
+            if (schema.required !== false && !this.isTypeAllowed('undefined', schema.type) && !this.isTypeAllowed('null', schema.type)) {
+                errors.push(`Missing required field at '${path}'`);
+                return { valid: false, errors };
+            }
+            return { valid: true, errors: [] };
+        }
+        // 2. Check Type
+        const currentType = this.getType(data);
+        if (!this.isTypeAllowed(currentType, schema.type)) {
+            // Special case: 'any' allows everything
+            if (!this.isTypeAllowed('any', schema.type)) {
+                errors.push(`Invalid type at '${path}': expected '${Array.isArray(schema.type) ? schema.type.join('|') : schema.type}', got '${currentType}'`);
+                // Fail immediately on type mismatch usually means deeper checks fail too
+                return { valid: false, errors };
+            }
+        }
+        // 3. Enum Check
+        if (schema.enum && !schema.enum.includes(data)) {
+            errors.push(`Invalid value at '${path}': expected one of [${schema.enum.join(', ')}], got '${data}'`);
+        }
+        // 4. Object Properties Recursion
+        if (currentType === 'object') {
+            if (schema.properties) {
+                for (const key in schema.properties) {
+                    const fieldSchema = schema.properties[key];
+                    const result = this.validate(data[key], fieldSchema, `${path}.${key}`);
+                    if (!result.valid) {
+                        errors.push(...result.errors);
+                    }
+                }
+            }
+            // Support dictionary validation: validate all values in object against 'items' schema
+            if (schema.items) {
+                for (const key in data) {
+                    if (schema.properties && schema.properties[key])
+                        continue; // Already validated
+                    const result = this.validate(data[key], schema.items, `${path}.${key}`);
+                    if (!result.valid) {
+                        errors.push(...result.errors);
+                    }
+                }
+            }
+        }
+        // 5. Array Items Recursion
+        if (currentType === 'array' && schema.items) {
+            for (let i = 0; i < data.length; i++) {
+                const result = this.validate(data[i], schema.items, `${path}[${i}]`);
+                if (!result.valid) {
+                    errors.push(...result.errors);
+                }
+            }
+        }
+        return { valid: errors.length === 0, errors };
+    }
+    static getType(value) {
+        if (Array.isArray(value))
+            return 'array';
+        if (value === null)
+            return 'null';
+        return typeof value;
+    }
+    static isTypeAllowed(actual, expected) {
+        if (Array.isArray(expected)) {
+            return expected.includes(actual) || expected.includes('any');
+        }
+        return expected === actual || expected === 'any';
+    }
+}
+// --- Core Schemas ---
+// Defining schemas strictly based on core/types/*.ts
+// From core/types/market.ts
+export const KlineSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        symbol: { type: 'string', required: true },
+        time: { type: 'number', required: true },
+        open: { type: 'number', required: true },
+        high: { type: 'number', required: true },
+        low: { type: 'number', required: true },
+        close: { type: 'number', required: true },
+        volume: { type: 'number', required: true },
+        trades: { type: 'number', required: true }
+    }
+};
+export const StaticDepthSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        lastUpdateId: { type: 'number', required: true },
+        bids: {
+            type: 'array',
+            required: true,
+            items: {
+                type: 'array',
+                required: true
+                // Tuple: [price, qty] as strings
+            }
+        },
+        asks: { type: 'array', required: true, items: { type: 'array', required: true } }
+    }
+};
+// From core/types/exchange.ts
+export const ExtractedInfoSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        symbol: { type: 'string', required: true },
+        status: { type: 'string', required: true },
+        baseAsset: { type: 'string', required: true },
+        quoteAsset: { type: 'string', required: true },
+        minPrice: { type: 'number', required: true },
+        maxPrice: { type: 'number', required: true },
+        tickSize: { type: 'number', required: true },
+        stepSize: { type: 'number', required: true },
+        minQty: { type: 'number', required: true },
+        maxQty: { type: 'number', required: true },
+        minNotional: { type: 'number', required: true },
+        orderTypes: { type: 'array', required: true, items: { type: 'string', required: true } },
+    }
+};
+export const ExchangeInfoSchema = {
+    type: 'object',
+    required: true,
+    items: ExtractedInfoSchema
+};
+// From core/types/account.ts
+export const BalanceDataSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        asset: { type: 'string', required: true },
+        balance: { type: 'string', required: true }, // NOTE: Type definition says string
+        crossWalletBalance: { type: 'string', required: true }, // Type definition says string
+        balanceChange: { type: 'string', required: true } // Type definition says string
+    }
+};
+export const PositionSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        symbol: { type: 'string', required: true },
+        positionAmount: { type: 'number', required: true },
+        entryPrice: { type: 'number', required: true },
+        positionDirection: { type: 'string', required: true, enum: ['LONG', 'SHORT', 'BOTH'] },
+        isInPosition: { type: 'boolean', required: true },
+        unrealizedPnL: { type: 'number', required: true }
+    }
+};
+export const AccountDataSchema = {
+    type: 'object', // AccountData wrapper
+    required: true,
+    properties: {
+        balances: { type: ['array', 'undefined'], required: false, items: BalanceDataSchema },
+        positions: { type: ['array', 'undefined'], required: false, items: PositionSchema }
+    }
+};
+// From core/types/orders.ts
+// OrderData is complex, defining mandatory fields
+export const OrderSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        symbol: { type: 'string', required: true },
+        clientOrderId: { type: 'string', required: true },
+        side: { type: 'string', required: true, enum: ['BUY', 'SELL'] },
+        orderType: { type: 'string', required: true },
+        timeInForce: { type: 'string', required: true },
+        originalQuantity: { type: 'number', required: true },
+        originalPrice: { type: 'number', required: true },
+        averagePrice: { type: 'number', required: true },
+        stopPrice: { type: 'number', required: true },
+        executionType: { type: 'string', required: true },
+        orderStatus: { type: 'string', required: true },
+        orderId: { type: ['number', 'string'], required: true },
+        orderLastFilledQuantity: { type: 'number', required: true },
+        orderFilledAccumulatedQuantity: { type: 'number', required: true },
+        lastFilledPrice: { type: 'number', required: true },
+        commissionAsset: { type: 'string', required: true },
+        orderTradeTime: { type: 'number', required: true },
+        tradeId: { type: 'number', required: true },
+        isMakerSide: { type: 'boolean', required: true },
+        isReduceOnly: { type: 'boolean', required: true },
+        workingType: { type: 'string', required: true },
+        originalOrderType: { type: 'string', required: true },
+        positionSide: { type: 'string', required: true },
+        closeAll: { type: 'boolean', required: true },
+        activationPrice: { type: 'string', required: true },
+        callbackRate: { type: 'string', required: true },
+        realizedProfit: { type: 'string', required: true },
+        isAlgoOrder: { type: 'boolean', required: true }
+    }
+};
+export const TradeDataSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        symbol: { type: 'string', required: true },
+        price: { type: 'number', required: true },
+        quantity: { type: 'number', required: true },
+        tradeTime: { type: 'number', required: true },
+        orderType: { type: 'string', required: true, enum: ['BUY', 'SELL'] }
+    }
+};
+export const BookTickerDataSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        symbol: { type: 'string', required: true },
+        bestBid: { type: 'number', required: true },
+        bestBidQty: { type: 'number', required: true },
+        bestAsk: { type: 'number', required: true },
+        bestAskQty: { type: 'number', required: true }
+    }
+};
+export const StreamDepthSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        symbol: { type: 'string', required: true },
+        // DepthData in core/types/market.ts is defined as Array<[string, string]>
+        // This corresponds to an array of arrays in runtime
+        asks: {
+            type: 'array',
+            required: true,
+            items: { type: 'array', required: true, items: { type: 'string', required: true } }
+        },
+        bids: {
+            type: 'array',
+            required: true,
+            items: { type: 'array', required: true, items: { type: 'string', required: true } }
+        }
+    }
+};
+// ━━ Funding Data Schema ━━
+export const FundingDataSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        symbol: { type: 'string', required: true },
+        rate: { type: 'number', required: true },
+        nextFundingTime: { type: 'number', required: true },
+        interval: { type: 'number', required: false }
+    }
+};
+// ━━ User Data Event Schema ━━
+// This schema validates the complete UserData structure including nested accountData and orderData
+export const UserDataEventSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        event: { type: 'string', required: true, enum: ['ACCOUNT_UPDATE', 'ORDER_TRADE_UPDATE', 'ALGO_UPDATE', 'TRADE_LITE', 'listenKeyExpired'] },
+        accountData: {
+            type: ['object', 'undefined'],
+            required: false,
+            properties: {
+                balances: { type: ['array', 'undefined'], required: false, items: BalanceDataSchema },
+                positions: { type: ['array', 'undefined'], required: false, items: PositionSchema }
+            }
+        },
+        orderData: {
+            type: ['object', 'undefined'],
+            required: false,
+            properties: {
+                symbol: { type: 'string', required: true },
+                clientOrderId: { type: 'string', required: true },
+                side: { type: 'string', required: true, enum: ['BUY', 'SELL'] },
+                orderType: { type: 'string', required: true },
+                timeInForce: { type: 'string', required: true },
+                originalQuantity: { type: 'number', required: true },
+                originalPrice: { type: 'number', required: true },
+                averagePrice: { type: 'number', required: true },
+                stopPrice: { type: 'number', required: true },
+                executionType: { type: 'string', required: true },
+                orderStatus: {
+                    type: 'string',
+                    required: true,
+                    enum: ['NEW', 'PARTIALLY_FILLED', 'FILLED', 'CANCELED', 'PENDING_CANCEL', 'REJECTED', 'EXPIRED', 'PENDING', 'TRIGGERED', 'FINISHED']
+                },
+                orderId: { type: ['number', 'string'], required: true },
+                orderLastFilledQuantity: { type: 'number', required: true },
+                orderFilledAccumulatedQuantity: { type: 'number', required: true },
+                lastFilledPrice: { type: 'number', required: true },
+                commissionAsset: { type: 'string', required: true },
+                commission: { type: 'string', required: false }, // Optional per OrderData interface
+                orderTradeTime: { type: 'number', required: true },
+                tradeId: { type: 'number', required: true },
+                bidsNotional: { type: 'string', required: false },
+                askNotional: { type: 'string', required: false },
+                isMakerSide: { type: 'boolean', required: true },
+                isReduceOnly: { type: 'boolean', required: true },
+                workingType: { type: 'string', required: true },
+                originalOrderType: { type: 'string', required: true },
+                positionSide: { type: 'string', required: true, enum: ['BOTH', 'LONG', 'SHORT'] },
+                closeAll: { type: 'boolean', required: true },
+                activationPrice: { type: 'string', required: true },
+                callbackRate: { type: 'string', required: true },
+                realizedProfit: { type: 'string', required: true },
+                isAlgoOrder: { type: 'boolean', required: true }
+            }
+        }
+    }
+};
+// ━━ Order Request Response Schema ━━
+export const OrderRequestResponseSchema = {
+    type: 'object',
+    required: true,
+    properties: {
+        orderId: { type: ['number', 'string'], required: true },
+        symbol: { type: 'string', required: true },
+        status: { type: 'string', required: true },
+        clientOrderId: { type: 'string', required: true },
+        price: { type: 'string', required: true },
+        origQty: { type: 'string', required: true },
+        timeInForce: { type: 'string', required: true },
+        type: { type: 'string', required: true },
+        reduceOnly: { type: 'boolean', required: true },
+        closePosition: { type: 'boolean', required: true },
+        side: { type: 'string', required: true, enum: ['BUY', 'SELL'] },
+        positionSide: { type: 'string', required: true },
+        workingType: { type: 'string', required: true },
+        origType: { type: 'string', required: true }
+    }
+};

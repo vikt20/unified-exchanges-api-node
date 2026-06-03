@@ -10,4 +10,5 @@ export var ExchangeList;
     ExchangeList["BYBIT"] = "BYBIT";
     ExchangeList["OKX"] = "OKX";
     ExchangeList["KRAKEN"] = "KRAKEN";
+    ExchangeList["BITGET"] = "BITGET";
 })(ExchangeList || (ExchangeList = {}));

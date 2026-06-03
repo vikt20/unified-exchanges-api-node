@@ -13,8 +13,9 @@ dotenv.config({
 // const info = await okxFutures.getExchangeInfo().then(request => request.success && request.data ? Object.values(request.data) : [] );
 
 // const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
-// const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
+const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
 const krakenApi = ExchangeFactory.create(ExchangeList.KRAKEN, process.env.KRAKEN_API_KEY, process.env.KRAKEN_API_SECRET);
+const bitgetApi = ExchangeFactory.create(ExchangeList.BITGET, process.env.BITGET_API_KEY, process.env.BITGET_API_SECRET, process.env.BITGET_TESTNET_PASSPHRASE, false);
 
 // console.log(`starting okx api instance...`)
 // const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false);
@@ -50,6 +51,13 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
     }
     return symbols;
 }
+// filter by s.underlyingType === 'COIN'
+const exchangeInfo = await binanceApi.futures.getExchangeInfo().then(data => data.success && data.data ? Object.values(data.data) : [])
+console.log(exchangeInfo.find((s: ExtractedInfo) => s.symbol === "OPENAIUSDT"));
+
+// bitgetApi.futures.futuresCandleStickStream(limitedSymbols, "1m", (data) => {
+//     console.log(data);
+// }, status => console.log(status))
 
 // krakenApi.futures.getOpenOrders().then(console.log);
 
@@ -94,7 +102,7 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
 
 
 // krakenApi.streams.fundingStream(["PF_XBTUSD"], console.log)
-krakenApi.futures.getFundingHistory({symbol:"PF_XBTUSD", startTime: 1779970830000, endTime: Date.now()}).then(console.log);
+// krakenApi.futures.getFundingHistory({symbol:"PF_XBTUSD", startTime: 1779970830000, endTime: Date.now()}).then(console.log);
 
 // okxApi.streams.fundingStream(["KAT-USDT-SWAP", "ENJ-USDT-SWAP"], (data) => {
 //     const symbol = data.symbol;

@@ -27,6 +27,12 @@ import KrakenStreams from '../kraken/KrakenStreams.js';
 import KrakenBase from '../kraken/KrakenBase.js';
 import KrakenUserData from '../kraken/KrakenUserData.js';
 
+import BitgetSpot from '../bitget/BitgetSpot.js';
+import BitgetFutures from '../bitget/BitgetFutures.js';
+import BitgetStreams from '../bitget/BitgetStreams.js';
+import BitgetBase from '../bitget/BitgetBase.js';
+import BitgetUserData from '../bitget/BitgetUserData.js';
+
 export class ExchangeFactory {
     static create(
         exchangeId: ExchangeList,
@@ -83,6 +89,17 @@ export class ExchangeFactory {
                 }
                 return connectionKraken;
 
+            case ExchangeList.BITGET:
+                const connectionBitget: IUnifiedExchange = {
+                    spot: new BitgetSpot(apiKey, apiSecret, apiPassphrase, isTestnet),
+                    futures: new BitgetFutures(apiKey, apiSecret, apiPassphrase, isTestnet),
+                    streams: new BitgetStreams(apiKey, apiSecret, apiPassphrase, isTestnet),
+                };
+                if (apiKey && apiSecret && apiPassphrase) {
+                    connectionBitget.userData = new BitgetUserData(apiKey, apiSecret, apiPassphrase, isTestnet);
+                }
+                return connectionBitget;
+
             default:
                 throw new Error(`Exchange '${exchangeId}' is not supported.`);
         }
@@ -112,5 +129,11 @@ export {
     KrakenSpot,
     KrakenFutures,
     KrakenStreams,
-    KrakenUserData
+    KrakenUserData,
+
+    BitgetBase,
+    BitgetSpot,
+    BitgetFutures,
+    BitgetStreams,
+    BitgetUserData
 };

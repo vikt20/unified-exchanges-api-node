@@ -1,38 +1,10 @@
-
-import { IExchangeClient } from '../core/IExchangeClient.js';
-import { IStreamManager } from '../core/IStreamManager.js';
-import { UserData, HandleWebSocket } from '../core/types/streams.js';
-import {
-    Validator,
-    KlineSchema,
-    StaticDepthSchema,
-    ExchangeInfoSchema,
-    BalanceDataSchema,
-    AccountDataSchema,
-    PositionSchema,
-    OrderSchema,
-    StreamDepthSchema,
-    TradeDataSchema,
-    BookTickerDataSchema,
-    UserDataEventSchema,
-    OrderRequestResponseSchema,
-    FundingDataSchema
-} from './Validator.js';
-
-interface TestContext {
-    userDataHandle?: HandleWebSocket;
-    userDataEvents: UserData[];
-    placedOrderIds: { clientOrderId: string; orderId: number }[];
-    testPrice?: number;
-}
-
+import { Validator, KlineSchema, StaticDepthSchema, ExchangeInfoSchema, BalanceDataSchema, PositionSchema, OrderSchema, StreamDepthSchema, TradeDataSchema, BookTickerDataSchema, UserDataEventSchema, OrderRequestResponseSchema, FundingDataSchema } from './Validator.js';
 export class ExchangeTester {
-    private client: IExchangeClient;
-    private name: string;
-    private symbol: string;
-    private context: TestContext;
-
-    constructor(client: IExchangeClient, name: string, testSymbol: string) {
+    client;
+    name;
+    symbol;
+    context;
+    constructor(client, name, testSymbol) {
         this.client = client;
         this.name = name;
         this.symbol = testSymbol;
@@ -41,21 +13,18 @@ export class ExchangeTester {
             placedOrderIds: []
         };
     }
-
-    public async runAllTests() {
+    async runAllTests() {
         console.log(`\n === Starting Tests for ${this.name}(${this.symbol}) === `);
-
         try {
             await this.testPublicMarketData();
             // await this.testPrivateAccountData();
             await this.testStreams();
-        } finally {
+        }
+        finally {
             this.closeAllStreams();
         }
-
         console.log(`=== Tests Complete for ${this.name} ===\n`);
     }
-
     /**
      * Comprehensive authenticated testing sequence:
      * 1. Start User Data Stream
@@ -64,105 +33,87 @@ export class ExchangeTester {
      * 4. Cancel Orders
      * 5. Cleanup
      */
-    public async runAuthenticatedTests() {
+    async runAuthenticatedTests() {
         console.log(`\n === Starting Authenticated Tests for ${this.name}(${this.symbol}) === `);
-
         // Step 1: Start User Data Stream
         await this.testUserDataStream();
-
         // Step 2: Place Orders (limit and market)
         await this.testOrderPlacement();
-
         // Wait a moment for events to propagate
         await this.sleep(2000);
-
         // Step 3: Query Orders and Positions
         await this.testOrderQueryMethods();
-
         // Step 4: Cancel Orders
         await this.testOrderCancellation();
-
         // Step 5: Cleanup
         await this.testCleanup();
-
         // Summary of user data events received
         this.summarizeUserDataEvents();
-
         console.log(`=== Authenticated Tests Complete for ${this.name} ===\n`);
     }
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // USER DATA STREAM TESTING
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private async testUserDataStream() {
+    async testUserDataStream() {
         console.log(`[${this.name}] Starting User Data Stream...`);
-
-        const streamClient = this.client as unknown as IStreamManager;
-
+        const streamClient = this.client;
         if (typeof streamClient.futuresUserDataStream !== 'function') {
             console.log(`   [SKIP] futuresUserDataStream not available`);
             return;
         }
-
         try {
-            this.context.userDataHandle = await streamClient.futuresUserDataStream(
-                (data: UserData) => {
-                    // Validate each event
-                    const result = Validator.validate(data, UserDataEventSchema);
-                    if (result.valid) {
-                        console.log(`   [EVENT] ${data.event} received ✓`);
-                    } else {
-                        console.log(`   [EVENT] ${data.event} received (validation issues: ${result.errors.join(', ')})`);
-                    }
-                    this.context.userDataEvents.push(data);
-                },
-                (status) => {
-                    if (status === 'OPEN') {
-                        console.log(`   [PASS] User Data Stream connected`);
-                    } else if (status === 'ERROR') {
-                        console.log(`   [WARN] User Data Stream status: ${status}`);
-                    }
+            this.context.userDataHandle = await streamClient.futuresUserDataStream((data) => {
+                // Validate each event
+                const result = Validator.validate(data, UserDataEventSchema);
+                if (result.valid) {
+                    console.log(`   [EVENT] ${data.event} received ✓`);
                 }
-            );
-
+                else {
+                    console.log(`   [EVENT] ${data.event} received (validation issues: ${result.errors.join(', ')})`);
+                }
+                this.context.userDataEvents.push(data);
+            }, (status) => {
+                if (status === 'OPEN') {
+                    console.log(`   [PASS] User Data Stream connected`);
+                }
+                else if (status === 'ERROR') {
+                    console.log(`   [WARN] User Data Stream status: ${status}`);
+                }
+            });
             // Wait for connection
             await this.sleep(1000);
-
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('User Data Stream exception', e);
         }
     }
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ORDER PLACEMENT TESTING
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private async testOrderPlacement() {
+    async testOrderPlacement() {
         console.log(`[${this.name}] Testing Order Placement...`);
-
         // Get current market price first
         try {
             const klines = await this.client.getKlines({ symbol: this.symbol, interval: '1m', limit: 1 });
             if (klines.success && klines.data && klines.data.length > 0) {
                 this.context.testPrice = klines.data[0].close;
                 console.log(`   Current price for ${this.symbol}: ${this.context.testPrice}`);
-            } else {
+            }
+            else {
                 console.error(`   [WARN] Could not get current price, using default`);
                 this.context.testPrice = 50000; // fallback for BTC
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.context.testPrice = 50000;
         }
-
-        const price = this.context.testPrice!;
+        const price = this.context.testPrice;
         const limitBuyPrice = Math.floor(price * 0.90); // 10% below market
         const limitSellPrice = Math.floor(price * 1.10); // 10% above market
         // Calculate quantity to meet minimum notional (100 USDT) + buffer
         // notional = price * quantity >= 100, so quantity >= 100 / price
         const minQuantity = Math.ceil((110 / price) * 1000) / 1000; // Round up to 3 decimals
         const quantity = Math.max(minQuantity, 0.002); // At least 0.002 BTC
-
         // 1. Limit Buy Order (won't fill immediately)
         try {
             const response = await this.client.limitBuy({
@@ -170,7 +121,6 @@ export class ExchangeTester {
                 price: limitBuyPrice,
                 quantity: quantity
             });
-
             this.assert(response.success, 'limitBuy');
             if (response.success && response.data) {
                 this.validateObject('limitBuy response', response.data, OrderRequestResponseSchema);
@@ -179,13 +129,14 @@ export class ExchangeTester {
                     orderId: response.data.orderId
                 });
                 console.log(`   Order placed: ${response.data.clientOrderId} (Buy @ ${limitBuyPrice})`);
-            } else {
+            }
+            else {
                 console.error(`   [FAIL] limitBuy failed: ${response.errors}`);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('limitBuy exception', e);
         }
-
         // 2. Limit Sell Order (won't fill immediately)
         try {
             const response = await this.client.limitSell({
@@ -193,7 +144,6 @@ export class ExchangeTester {
                 price: limitSellPrice,
                 quantity: quantity
             });
-
             this.assert(response.success, 'limitSell');
             if (response.success && response.data) {
                 this.validateObject('limitSell response', response.data, OrderRequestResponseSchema);
@@ -202,38 +152,37 @@ export class ExchangeTester {
                     orderId: response.data.orderId
                 });
                 console.log(`   Order placed: ${response.data.clientOrderId} (Sell @ ${limitSellPrice})`);
-            } else {
+            }
+            else {
                 console.error(`   [FAIL] limitSell failed: ${response.errors}`);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('limitSell exception', e);
         }
-
         // 3. Market Buy (will fill and create position)
         try {
             const response = await this.client.marketBuy({
                 symbol: this.symbol,
                 quantity: quantity
             });
-
             this.assert(response.success, 'marketBuy');
             if (response.success && response.data) {
                 console.log(`   Market Buy executed: ${response.data.clientOrderId}`);
-            } else {
+            }
+            else {
                 console.error(`   [WARN] marketBuy failed: ${response.errors}`);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('marketBuy exception', e);
         }
     }
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ORDER QUERY METHODS TESTING
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private async testOrderQueryMethods() {
+    async testOrderQueryMethods() {
         console.log(`[${this.name}] Testing Order Query Methods...`);
-
         // 1. Get Open Orders
         try {
             const orders = await this.client.getOpenOrders();
@@ -244,10 +193,10 @@ export class ExchangeTester {
                     this.validateArray('Open Orders', orders.data, OrderSchema);
                 }
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getOpenOrders exception', e);
         }
-
         // 2. Get Open Orders By Symbol
         try {
             const orders = await this.client.getOpenOrdersBySymbol({ symbol: this.symbol });
@@ -255,10 +204,10 @@ export class ExchangeTester {
             if (orders.success && orders.data) {
                 console.log(`   Open Orders for ${this.symbol}: ${orders.data.length}`);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getOpenOrdersBySymbol exception', e);
         }
-
         // 3. Get Open Positions
         try {
             const positions = await this.client.getOpenPositions();
@@ -270,10 +219,10 @@ export class ExchangeTester {
                     this.validateArray('Positions', activePositions, PositionSchema);
                 }
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getOpenPositions exception', e);
         }
-
         // 4. Get Position By Symbol
         try {
             const position = await this.client.getOpenPositionBySymbol({ symbol: this.symbol });
@@ -281,18 +230,16 @@ export class ExchangeTester {
                 this.assert(true, 'getOpenPositionBySymbol');
                 console.log(`   Position for ${this.symbol}: ${position.data.positionAmount} @ ${position.data.entryPrice}`);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getOpenPositionBySymbol exception', e);
         }
     }
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ORDER CANCELLATION TESTING
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private async testOrderCancellation() {
+    async testOrderCancellation() {
         console.log(`[${this.name}] Testing Order Cancellation...`);
-
         // 1. Cancel single order by ID (if we have any)
         if (this.context.placedOrderIds.length > 0) {
             const orderToCancel = this.context.placedOrderIds[0];
@@ -301,90 +248,87 @@ export class ExchangeTester {
                     symbol: this.symbol,
                     clientOrderId: orderToCancel.clientOrderId
                 });
-
                 this.assert(response.success, 'cancelOrderById');
                 if (response.success) {
                     console.log(`   Cancelled order: ${orderToCancel.clientOrderId}`);
-                } else {
+                }
+                else {
                     console.log(`   [WARN] cancelOrderById failed: ${response.errors}`);
                 }
-            } catch (e) {
+            }
+            catch (e) {
                 this.fail('cancelOrderById exception', e);
             }
-        } else {
+        }
+        else {
             console.log(`   [SKIP] No orders to cancel by ID`);
         }
-
         // 2. Cancel all remaining orders
         try {
             const response = await this.client.cancelAllOpenOrders({
                 symbol: this.symbol
             });
-
             this.assert(response.success, 'cancelAllOpenOrders');
             if (response.success) {
                 console.log(`   Cancelled all open orders for ${this.symbol}`);
-            } else {
+            }
+            else {
                 console.error(`   [INFO] cancelAllOpenOrders: ${response.errors}`);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('cancelAllOpenOrders exception', e);
         }
     }
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // CLEANUP
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private async testCleanup() {
+    async testCleanup() {
         console.log(`[${this.name}] Cleaning up...`);
-
         // Close user data stream
         if (this.context.userDataHandle) {
             try {
                 this.context.userDataHandle.disconnect();
                 console.log(`   User Data Stream closed`);
-            } catch (e) {
+            }
+            catch (e) {
                 console.log(`   [WARN] Failed to close User Data Stream`);
             }
         }
-
         // Close any open positions (reduce to zero)
         try {
             const position = await this.client.getOpenPositionBySymbol({ symbol: this.symbol });
             if (position.success && position.data && position.data.isInPosition) {
                 const qty = Math.abs(position.data.positionAmount);
                 const direction = position.data.positionDirection;
-
                 console.log(`   Closing position: ${qty} ${direction}`);
-
                 const response = await this.client.reducePosition({
                     symbol: this.symbol,
                     positionDirection: direction,
                     quantity: qty
                 });
-
                 if (response.success) {
                     console.log(`   Position closed`);
-                } else {
+                }
+                else {
                     console.log(`   [WARN] Failed to close position: ${response.errors}`);
                 }
             }
-        } catch (e) {
+        }
+        catch (e) {
             console.log(`   [WARN] Cleanup position exception`);
         }
-
         // Close listen key
         try {
             await this.client.closeListenKey();
-        } catch (e) {
+        }
+        catch (e) {
             // Ignore
         }
     }
-
-    private summarizeUserDataEvents() {
+    summarizeUserDataEvents() {
         console.log(`\n   --- User Data Events Summary ---`);
-        const eventCounts: Record<string, number> = {};
+        const eventCounts = {};
         for (const event of this.context.userDataEvents) {
             eventCounts[event.event] = (eventCounts[event.event] || 0) + 1;
         }
@@ -393,14 +337,11 @@ export class ExchangeTester {
         }
         console.log(`   Total events received: ${this.context.userDataEvents.length}`);
     }
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // EXISTING PUBLIC/PRIVATE DATA TESTS (unchanged)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private async testPublicMarketData() {
+    async testPublicMarketData() {
         console.log(`[${this.name}] Testing Public Market Data...`);
-
         // 1. Exchange Info
         try {
             const info = await this.client.getExchangeInfo();
@@ -408,13 +349,15 @@ export class ExchangeTester {
             if (info.success && info.data) {
                 this.validateObject('ExchangeInfo', info.data, ExchangeInfoSchema);
                 const sym = info.data[this.symbol];
-                if (sym) console.log(`   [PASS] Found symbol ${this.symbol} in Info`);
-                else console.warn(`   [WARN] Symbol ${this.symbol} not found in Info`);
+                if (sym)
+                    console.log(`   [PASS] Found symbol ${this.symbol} in Info`);
+                else
+                    console.warn(`   [WARN] Symbol ${this.symbol} not found in Info`);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getExchangeInfo exception', e);
         }
-
         // 2. Klines
         try {
             const klines = await this.client.getKlines({ symbol: this.symbol, interval: '1m', limit: 5 });
@@ -422,10 +365,10 @@ export class ExchangeTester {
             if (klines.success && klines.data) {
                 this.validateArray('Klines', klines.data, KlineSchema);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getKlines exception', e);
         }
-
         // 3. Static Depth
         try {
             const depth = await this.client.getStaticDepth({ symbol: this.symbol, limit: 10 });
@@ -433,22 +376,21 @@ export class ExchangeTester {
             if (depth.success && depth.data) {
                 this.validateObject('StaticDepth', depth.data, StaticDepthSchema);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getStaticDepth exception', e);
         }
-
         // 4. Agg Trades
         try {
             const trades = await this.client.getAggTrades({ symbol: this.symbol, limit: 5 });
             this.assert(trades.success, 'getAggTrades');
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getAggTrades exception', e);
         }
     }
-
-    private async testPrivateAccountData() {
+    async testPrivateAccountData() {
         console.log(`[${this.name}] Testing Private Account Data...`);
-
         // 1. Balance
         try {
             const balances = await this.client.getBalance();
@@ -456,10 +398,10 @@ export class ExchangeTester {
             if (balances.success && balances.data) {
                 this.validateArray('Balances', balances.data, BalanceDataSchema);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getBalance exception', e);
         }
-
         // 2. Positions
         try {
             const positions = await this.client.getOpenPositions();
@@ -468,13 +410,14 @@ export class ExchangeTester {
                 if (positions.data) {
                     this.validateArray('Positions', positions.data, PositionSchema);
                 }
-            } else {
+            }
+            else {
                 console.error(`   - getOpenPositions: Skipped or Failed(${positions.errors})`);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getOpenPositions exception', e);
         }
-
         // 3. Open Orders
         try {
             const orders = await this.client.getOpenOrders();
@@ -483,18 +426,18 @@ export class ExchangeTester {
                 if (orders.data) {
                     this.validateArray('Orders', orders.data, OrderSchema);
                 }
-            } else {
+            }
+            else {
                 console.error(`   - getOpenOrders: Skipped or Failed(${orders.errors})`);
             }
-        } catch (e) {
+        }
+        catch (e) {
             this.fail('getOpenOrders exception', e);
         }
     }
-
-    private async testStreams() {
+    async testStreams() {
         console.log(`[${this.name}] Testing Streams...`);
-        const streamClient = this.client as unknown as IStreamManager;
-
+        const streamClient = this.client;
         const tasks = [
             {
                 name: 'Kline Stream',
@@ -528,115 +471,104 @@ export class ExchangeTester {
                 isExactName: true
             }
         ];
-
         for (const task of tasks) {
             await this.runStreamTest(streamClient, task);
         }
     }
-
-    private async runStreamTest(client: IStreamManager, task: any) {
+    async runStreamTest(client, task) {
         console.log(`   - [${task.name}] Connecting...`);
-
-        const received = await new Promise<any>((resolve) => {
-            let handle: HandleWebSocket | undefined;
+        const received = await new Promise((resolve) => {
+            let handle;
             let isDone = false;
-
-            const finish = (result: any) => {
-                if (isDone) return;
+            const finish = (result) => {
+                if (isDone)
+                    return;
                 isDone = true;
                 clearTimeout(timeout);
-                if (handle) handle.disconnect();
+                if (handle)
+                    handle.disconnect();
                 resolve(result);
             };
-
             const timeout = setTimeout(() => {
                 finish('TIMEOUT');
             }, 10000);
-
-            let method: Function | undefined;
+            let method;
             const isSpot = this.name.toLowerCase().includes('spot');
             let candidate = isSpot ? `spot${task.suffix}` : `futures${task.suffix}`;
-
             if (task.isExactName) {
                 candidate = task.suffix;
             }
-
-            if (typeof (client as any)[candidate] === 'function') {
-                method = (client as any)[candidate].bind(client);
+            if (typeof client[candidate] === 'function') {
+                method = client[candidate].bind(client);
             }
-
             if (!method) {
                 finish('METHOD_NOT_FOUND');
                 return;
             }
-
             const args = [...task.args];
-
-            args.push((data: any) => {
+            args.push((data) => {
                 finish(data);
             });
-
             try {
-                method(...args).then((socketHandle: HandleWebSocket) => {
+                method(...args).then((socketHandle) => {
                     handle = socketHandle;
                     if (isDone) {
                         handle.disconnect();
-                    } else {
+                    }
+                    else {
                         setTimeout(() => finish('TIMEOUT'), 5000);
                     }
-                }).catch((err: any) => {
+                }).catch((err) => {
                     console.error(`      Stream Connection Error:`, err);
                     finish('CONNECTION_ERROR');
                 });
-            } catch (e) {
+            }
+            catch (e) {
                 console.error(`      Stream Call Error:`, e);
                 finish('CALL_ERROR');
             }
         });
-
         if (received === 'TIMEOUT') {
             console.error(`      [FAIL] Timeout (No data in 10s)`);
-        } else if (received === 'METHOD_NOT_FOUND') {
+        }
+        else if (received === 'METHOD_NOT_FOUND') {
             console.log(`      [SKIP] Method not found for ${task.suffix}`);
-        } else {
+        }
+        else {
             this.validateObject(task.name, received, task.schema);
         }
     }
-
-    private closeAllStreams() {
-        const streamClient = this.client as unknown as IStreamManager;
+    closeAllStreams() {
+        const streamClient = this.client;
         if (typeof streamClient.closeAllSockets === 'function') {
             streamClient.closeAllSockets();
         }
     }
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // UTILITIES
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private assert(condition: boolean, message: string) {
+    assert(condition, message) {
         if (condition) {
             console.log(`   [PASS] ${message} `);
-        } else {
+        }
+        else {
             console.error(`   [FAIL] ${message} `);
         }
     }
-
-    private fail(message: string, error: any) {
+    fail(message, error) {
         console.error(`   [FAIL] ${message} `, error);
     }
-
-    private validateObject(name: string, data: any, schema: any) {
+    validateObject(name, data, schema) {
         const result = Validator.validate(data, schema);
         if (result.valid) {
             console.log(`   [PASS] Schema Check: ${name} `);
-        } else {
+        }
+        else {
             console.error(`   [FAIL] Schema Check: ${name} `);
             result.errors.forEach(e => console.error(`      -> ${e} `));
         }
     }
-
-    private validateArray(name: string, data: any[], schema: any) {
+    validateArray(name, data, schema) {
         if (!Array.isArray(data)) {
             console.error(`   [FAIL] Schema Check: ${name} (Expected Array, got ${typeof data})`);
             return;
@@ -645,17 +577,16 @@ export class ExchangeTester {
             console.log(`   [WARN] Schema Check: ${name} (Empty Array, cannot validate items)`);
             return;
         }
-
         const result = Validator.validate(data[0], schema);
         if (result.valid) {
             console.log(`   [PASS] Schema Check: ${name} (1st item valid)`);
-        } else {
+        }
+        else {
             console.error(`   [FAIL] Schema Check: ${name} `);
             result.errors.forEach(e => console.error(`      -> ${e} `));
         }
     }
-
-    private sleep(ms: number): Promise<void> {
+    sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 }

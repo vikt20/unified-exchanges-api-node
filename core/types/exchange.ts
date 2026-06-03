@@ -11,7 +11,8 @@ export enum ExchangeList {
     BINANCE = 'BINANCE',
     BYBIT = 'BYBIT',
     OKX = 'OKX',
-    KRAKEN = 'KRAKEN'
+    KRAKEN = 'KRAKEN',
+    BITGET = 'BITGET'
 }
 
 // ━━ Common Filter Types ━━

@@ -20,6 +20,11 @@ import KrakenFutures from '../kraken/KrakenFutures.js';
 import KrakenStreams from '../kraken/KrakenStreams.js';
 import KrakenBase from '../kraken/KrakenBase.js';
 import KrakenUserData from '../kraken/KrakenUserData.js';
+import BitgetSpot from '../bitget/BitgetSpot.js';
+import BitgetFutures from '../bitget/BitgetFutures.js';
+import BitgetStreams from '../bitget/BitgetStreams.js';
+import BitgetBase from '../bitget/BitgetBase.js';
+import BitgetUserData from '../bitget/BitgetUserData.js';
 export class ExchangeFactory {
     static create(exchangeId, apiKey, apiSecret, apiPassphrase, isTestnet = false, connectionOptions) {
         switch (exchangeId) {
@@ -64,9 +69,19 @@ export class ExchangeFactory {
                     connectionKraken.userData = new KrakenUserData(apiKey, apiSecret, isTestnet);
                 }
                 return connectionKraken;
+            case ExchangeList.BITGET:
+                const connectionBitget = {
+                    spot: new BitgetSpot(apiKey, apiSecret, apiPassphrase, isTestnet),
+                    futures: new BitgetFutures(apiKey, apiSecret, apiPassphrase, isTestnet),
+                    streams: new BitgetStreams(apiKey, apiSecret, apiPassphrase, isTestnet),
+                };
+                if (apiKey && apiSecret && apiPassphrase) {
+                    connectionBitget.userData = new BitgetUserData(apiKey, apiSecret, apiPassphrase, isTestnet);
+                }
+                return connectionBitget;
             default:
                 throw new Error(`Exchange '${exchangeId}' is not supported.`);
         }
     }
 }
-export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, KrakenBase, KrakenSpot, KrakenFutures, KrakenStreams, KrakenUserData };
+export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, KrakenBase, KrakenSpot, KrakenFutures, KrakenStreams, KrakenUserData, BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };
