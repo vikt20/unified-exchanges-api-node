@@ -1,3 +1,10 @@
+function normalizeBybitInstrumentType(item) {
+    if (item.status === 'PreLaunch' || item.isPreListing === true || item.preListingInfo)
+        return 'PRE_IPO';
+    if (item.symbolType === 'xstocks' || item.innovation === 'xstocks' || item.xstockMultiplier)
+        return 'STOCK';
+    return 'COIN';
+}
 export function convertExchangeInfo(data) {
     const info = {};
     if (data && Array.isArray(data.list)) {
@@ -7,6 +14,7 @@ export function convertExchangeInfo(data) {
             info[item.symbol] = {
                 symbol: item.symbol,
                 status: item.status === 'Trading' ? 'TRADING' : 'BREAK',
+                type: normalizeBybitInstrumentType(item),
                 baseAsset: item.baseCoin,
                 quoteAsset: item.quoteCoin,
                 minPrice: parseFloat(item.priceFilter?.minPrice || '0'),

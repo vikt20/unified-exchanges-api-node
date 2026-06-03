@@ -64,9 +64,12 @@ export interface ExchangeInfoData {
     [key: string]: unknown;  // Allow additional exchange-specific properties
 }
 
+export type ExtractedInfoType = 'COIN' | 'STOCK' | 'TRADFI' | 'PRE_IPO' | 'UNKNOWN';
+
 export type ExtractedInfo = {
     symbol: string;
     status: string;
+    type: ExtractedInfoType;
     minPrice: number;
     maxPrice: number;
     tickSize: number;

@@ -116,6 +116,7 @@ export const ExtractedInfoSchema = {
     properties: {
         symbol: { type: 'string', required: true },
         status: { type: 'string', required: true },
+        type: { type: 'string', required: true, enum: ['COIN', 'STOCK', 'TRADFI', 'PRE_IPO', 'UNKNOWN'] },
         baseAsset: { type: 'string', required: true },
         quoteAsset: { type: 'string', required: true },
         minPrice: { type: 'number', required: true },

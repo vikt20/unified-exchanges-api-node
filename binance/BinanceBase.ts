@@ -65,6 +65,7 @@ export type ExchangeInfo = {
     symbols: Array<{
         symbol: string;
         status: string;
+        underlyingType?: string;
         baseAsset: string;
         baseAssetPrecision: number;
         quoteAsset: string;

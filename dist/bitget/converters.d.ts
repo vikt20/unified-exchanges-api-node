@@ -18,6 +18,7 @@ export interface BitgetEnvelope<T> {
 }
 export interface BitgetSpotSymbol {
     symbol: string;
+    symbolType?: string;
     baseCoin: string;
     quoteCoin: string;
     minTradeAmount?: string;
@@ -31,6 +32,8 @@ export interface BitgetSpotSymbol {
 }
 export interface BitgetFuturesContract {
     symbol: string;
+    productType?: string;
+    symbolType?: string;
     baseCoin: string;
     quoteCoin: string;
     minTradeNum: string;

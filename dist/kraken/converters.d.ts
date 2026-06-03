@@ -7,6 +7,8 @@ export interface KrakenAssetPair {
     altname?: string;
     wsname?: string;
     status?: string;
+    aclass_base?: string;
+    aclass_quote?: string;
     base?: string;
     quote?: string;
     pair_decimals?: number;
@@ -159,6 +161,7 @@ export interface KrakenFuturesBaseResponse {
 export interface KrakenFuturesInstrument {
     symbol: string;
     type?: string;
+    tradfi?: boolean;
     underlying?: string;
     base?: string;
     quote?: string;

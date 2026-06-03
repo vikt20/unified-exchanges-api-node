@@ -24,6 +24,8 @@ export interface KrakenAssetPair {
     altname?: string;
     wsname?: string;
     status?: string;
+    aclass_base?: string;
+    aclass_quote?: string;
     base?: string;
     quote?: string;
     pair_decimals?: number;
@@ -202,6 +204,7 @@ export interface KrakenFuturesBaseResponse {
 export interface KrakenFuturesInstrument {
     symbol: string;
     type?: string;
+    tradfi?: boolean;
     underlying?: string;
     base?: string;
     quote?: string;
@@ -499,6 +502,7 @@ export function convertKrakenAssetPairsToExtractedInfo(pairs: KrakenAssetPairsRe
         info[symbol] = {
             symbol,
             status: pair.status ? (pair.status.startsWith('online') ? 'TRADING' : 'BREAK') : 'TRADING',
+            type: pair.aclass_base === 'tokenized_asset' || pair.aclass_quote === 'tokenized_asset' ? 'STOCK' : 'COIN',
             minPrice: 0,
             maxPrice: 0,
             tickSize: tickSize,
@@ -807,6 +811,7 @@ export function mapKrakenFuturesInstrumentToExtractedInfo(instrument: KrakenFutu
     return {
         symbol,
         status: instrument.status && instrument.status !== 'online' ? 'BREAK' : 'TRADING',
+        type: instrument.tradfi === true ? 'TRADFI' : 'COIN',
         minPrice: 0,
         maxPrice: 0,
         tickSize: instrument.tickSize ?? 0,

@@ -12,7 +12,7 @@ export function extractInfo(data: ExchangeInfo['symbols']): { [key: string]: Ext
     for (let obj of data) {
         if (obj.status !== "TRADING") continue
 
-        let filters: any = { status: obj.status };
+        let filters: any = { status: obj.status, type: obj.underlyingType === 'COIN' || obj.underlyingType === undefined ? 'COIN' : 'UNKNOWN' };
         for (let filter of obj.filters) {
             // filters.all = obj.filters
 

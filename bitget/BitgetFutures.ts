@@ -388,4 +388,3 @@ export default class BitgetFutures extends BitgetStreams implements IExchangeCli
         return map[interval] ?? interval;
     }
 }
-

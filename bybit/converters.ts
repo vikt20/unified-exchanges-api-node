@@ -143,6 +143,12 @@ export interface BybitWalletWsData {
     coin: BybitWalletCoinData[];
 }
 
+function normalizeBybitInstrumentType(item: any): ExtractedInfo['type'] {
+    if (item.status === 'PreLaunch' || item.isPreListing === true || item.preListingInfo) return 'PRE_IPO';
+    if (item.symbolType === 'xstocks' || item.innovation === 'xstocks' || item.xstockMultiplier) return 'STOCK';
+    return 'COIN';
+}
+
 export function convertExchangeInfo(data: any): { [key: string]: ExtractedInfo } {
     const info: { [key: string]: ExtractedInfo } = {};
     if (data && Array.isArray(data.list)) {
@@ -151,6 +157,7 @@ export function convertExchangeInfo(data: any): { [key: string]: ExtractedInfo }
             info[item.symbol] = {
                 symbol: item.symbol,
                 status: item.status === 'Trading' ? 'TRADING' : 'BREAK',
+                type: normalizeBybitInstrumentType(item),
                 baseAsset: item.baseCoin,
                 quoteAsset: item.quoteCoin,
                 minPrice: parseFloat(item.priceFilter?.minPrice || '0'),

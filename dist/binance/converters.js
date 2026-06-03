@@ -6,7 +6,7 @@ export function extractInfo(data) {
     for (let obj of data) {
         if (obj.status !== "TRADING")
             continue;
-        let filters = { status: obj.status };
+        let filters = { status: obj.status, type: obj.underlyingType === 'COIN' || obj.underlyingType === undefined ? 'COIN' : 'UNKNOWN' };
         for (let filter of obj.filters) {
             // filters.all = obj.filters
             if (filter.filterType == "MIN_NOTIONAL") {

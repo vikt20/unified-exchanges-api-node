@@ -51,7 +51,7 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
     }
     return symbols;
 }
-// filter by s.underlyingType === 'COIN'
+// filter by s.type === 'COIN'
 const exchangeInfo = await binanceApi.futures.getExchangeInfo().then(data => data.success && data.data ? Object.values(data.data) : [])
 console.log(exchangeInfo.find((s: ExtractedInfo) => s.symbol === "OPENAIUSDT"));
 

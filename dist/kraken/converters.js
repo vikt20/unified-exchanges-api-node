@@ -36,6 +36,7 @@ export function convertKrakenAssetPairsToExtractedInfo(pairs) {
         info[symbol] = {
             symbol,
             status: pair.status ? (pair.status.startsWith('online') ? 'TRADING' : 'BREAK') : 'TRADING',
+            type: pair.aclass_base === 'tokenized_asset' || pair.aclass_quote === 'tokenized_asset' ? 'STOCK' : 'COIN',
             minPrice: 0,
             maxPrice: 0,
             tickSize: tickSize,
@@ -330,6 +331,7 @@ export function mapKrakenFuturesInstrumentToExtractedInfo(instrument) {
     return {
         symbol,
         status: instrument.status && instrument.status !== 'online' ? 'BREAK' : 'TRADING',
+        type: instrument.tradfi === true ? 'TRADFI' : 'COIN',
         minPrice: 0,
         maxPrice: 0,
         tickSize: instrument.tickSize ?? 0,

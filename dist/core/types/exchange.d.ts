@@ -44,9 +44,11 @@ export interface ExchangeInfoData {
     timezone?: string;
     [key: string]: unknown;
 }
+export type ExtractedInfoType = 'COIN' | 'STOCK' | 'TRADFI' | 'PRE_IPO' | 'UNKNOWN';
 export type ExtractedInfo = {
     symbol: string;
     status: string;
+    type: ExtractedInfoType;
     minPrice: number;
     maxPrice: number;
     tickSize: number;
