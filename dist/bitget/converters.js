@@ -216,7 +216,7 @@ export function convertFuturesExchangeInfo(items) {
         info[item.symbol] = {
             symbol: item.symbol,
             status: 'TRADING',
-            type: 'COIN',
+            type: item.isRwa == "NO" ? 'COIN' : 'UNKNOWN',
             baseAsset: item.baseCoin,
             quoteAsset: item.quoteCoin,
             minPrice: decimalStepFromPlaces(item.pricePlace),

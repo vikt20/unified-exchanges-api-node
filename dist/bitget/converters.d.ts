@@ -33,7 +33,7 @@ export interface BitgetSpotSymbol {
 export interface BitgetFuturesContract {
     symbol: string;
     productType?: string;
-    symbolType?: string;
+    isRwa?: 'YES' | 'NO';
     baseCoin: string;
     quoteCoin: string;
     minTradeNum: string;

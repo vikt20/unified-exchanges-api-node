@@ -58,7 +58,7 @@ export interface BitgetSpotSymbol {
 export interface BitgetFuturesContract {
     symbol: string;
     productType?: string;
-    symbolType?: string;
+    isRwa?: 'YES' | 'NO' ;
     baseCoin: string;
     quoteCoin: string;
     minTradeNum: string;
@@ -473,7 +473,7 @@ export function convertFuturesExchangeInfo(items: BitgetFuturesContract[]): { [k
         info[item.symbol] = {
             symbol: item.symbol,
             status: 'TRADING',
-            type: 'COIN',
+            type: item.isRwa == "NO" ? 'COIN' : 'UNKNOWN',
             baseAsset: item.baseCoin,
             quoteAsset: item.quoteCoin,
             minPrice: decimalStepFromPlaces(item.pricePlace),

@@ -21,7 +21,7 @@ export function convertExchangeInfo(data: any): { [key: string]: ExtractedInfo }
             info[item.instId] = {
                 symbol: item.instId,
                 status: item.state === 'live' ? 'TRADING' : 'BREAK',
-                type: 'COIN',
+                type: parseFloat(item.instCategory || '0') === 1 && item.ruleType === 'normal' ? 'COIN' : 'UNKNOWN',
                 baseAsset: item.baseCcy || item.settleCcy,
                 quoteAsset: item.quoteCcy || item.settleCcy,
                 minPrice: parseFloat(item.tickSz || '0'),

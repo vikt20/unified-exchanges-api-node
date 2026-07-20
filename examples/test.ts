@@ -52,8 +52,12 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
     return symbols;
 }
 // filter by s.type === 'COIN'
-const exchangeInfo = await binanceApi.futures.getExchangeInfo().then(data => data.success && data.data ? Object.values(data.data) : [])
+const exchangeInfo = await bitgetApi.futures.getExchangeInfo().then(data => data.success && data.data ? Object.values(data.data) : [])
 console.log(exchangeInfo.find((s: ExtractedInfo) => s.symbol === "OPENAIUSDT"));
+// const res = await bitgetApi.futures.publicRequest('futures', 'GET', '/api/v2/mix/market/contracts', {
+//             productType: 'USDT-FUTURES'
+//         }).then(data => data.success && Array.isArray(data.data) ? data.data : [])
+// console.log(res.find((s) => s.symbol === "OPENAIUSDT"));
 
 // bitgetApi.futures.futuresCandleStickStream(limitedSymbols, "1m", (data) => {
 //     console.log(data);
