@@ -32,6 +32,9 @@ import type {
     ReducePositionParams,
     KlineData,
     OrderInput,
+    SymbolLeverageData,
+    SymbolMarginModeData,
+    MarginMode,
 } from './types.js';
 
 import { AbstractExchangeBase } from './AbstractExchangeBase.js';
@@ -107,4 +110,11 @@ export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
 
     // ━━ PnL ━━
     getLatestPnlBySymbol(symbol: string, startTime?: number, endTime?: number): Promise<FormattedResponse<number>>;
+}
+
+export interface IFuturesExchangeClient extends IExchangeClient {
+    getSymbolLeverage(params: { symbol: string }): Promise<FormattedResponse<SymbolLeverageData>>;
+    updateSymbolLeverage(params: { symbol: string; leverage: number }): Promise<FormattedResponse<SymbolLeverageData>>;
+    getSymbolMarginMode(params: { symbol: string }): Promise<FormattedResponse<SymbolMarginModeData>>;
+    updateSymbolMarginMode(params: { symbol: string; marginMode: MarginMode }): Promise<FormattedResponse<SymbolMarginModeData>>;
 }

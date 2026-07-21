@@ -230,6 +230,9 @@ export interface BitgetWsPosition {
     total?: string;
     openPriceAvg?: string;
     unrealizedPL?: string;
+    liquidationPrice?: string;
+    marginMode?: string;
+    leverage?: string;
 }
 
 export const BITGET_SUCCESS_CODE = '00000';
@@ -613,6 +616,9 @@ export function convertPosition(item: BitgetPosition | BitgetWsPosition): Positi
         symbol,
         positionAmount: direction === 'SHORT' ? -amount : amount,
         entryPrice: toNumber(item.openPriceAvg),
+        liquidationPrice: toNumber(item.liquidationPrice),
+        leverage: toNumber(item.leverage),
+        marginMode: item.marginMode === 'isolated' ? 'isolated' : 'cross',
         positionDirection: direction,
         isInPosition: amount !== 0,
         unrealizedPnL: toNumber(item.unrealizedPL)

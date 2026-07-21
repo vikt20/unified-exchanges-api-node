@@ -345,6 +345,9 @@ export function convertPosition(item) {
         symbol,
         positionAmount: direction === 'SHORT' ? -amount : amount,
         entryPrice: toNumber(item.openPriceAvg),
+        liquidationPrice: toNumber(item.liquidationPrice),
+        leverage: toNumber(item.leverage),
+        marginMode: item.marginMode === 'isolated' ? 'isolated' : 'cross',
         positionDirection: direction,
         isInPosition: amount !== 0,
         unrealizedPnL: toNumber(item.unrealizedPL)

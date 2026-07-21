@@ -83,8 +83,37 @@ export default class BinanceFutures extends BinanceStreams {
     async getBalance() {
         return await this.signedRequest('futures', 'GET', '/fapi/v2/balance');
     }
-    async getPositionRisk() {
-        const request = await this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk');
+    async getSymbolLeverage({ symbol }) {
+        const [positions, brackets] = await Promise.all([
+            this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk', { symbol }),
+            this.signedRequest('futures', 'GET', '/fapi/v1/leverageBracket', { symbol })
+        ]);
+        if (positions.errors || brackets.errors)
+            return this.formattedResponse({ errors: positions.errors ?? brackets.errors });
+        const position = Array.isArray(positions.data) ? positions.data[0] : positions.data;
+        const bracket = Array.isArray(brackets.data) ? brackets.data[0] : brackets.data;
+        return this.formattedResponse({ data: { symbol, leverage: Number(position?.leverage ?? 0), maxLeverage: Number(bracket?.brackets?.[0]?.initialLeverage ?? 0) } });
+    }
+    async updateSymbolLeverage({ symbol, leverage }) {
+        const res = await this.signedRequest('futures', 'POST', '/fapi/v1/leverage', { symbol, leverage });
+        if (res.errors)
+            return this.formattedResponse({ errors: res.errors });
+        const current = await this.getSymbolLeverage({ symbol });
+        return current.success ? this.formattedResponse({ data: { ...current.data, leverage: Number(res.data?.leverage ?? leverage) } }) : current;
+    }
+    async getSymbolMarginMode({ symbol }) {
+        const res = await this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk', { symbol });
+        if (res.errors)
+            return this.formattedResponse({ errors: res.errors });
+        const position = Array.isArray(res.data) ? res.data[0] : res.data;
+        return this.formattedResponse({ data: { symbol, marginMode: position?.marginType?.toLowerCase() === 'isolated' ? 'isolated' : 'cross' } });
+    }
+    async updateSymbolMarginMode({ symbol, marginMode }) {
+        const res = await this.signedRequest('futures', 'POST', '/fapi/v1/marginType', { symbol, marginType: marginMode === 'cross' ? 'CROSSED' : 'ISOLATED' });
+        return res.errors ? this.formattedResponse({ errors: res.errors }) : this.formattedResponse({ data: { symbol, marginMode } });
+    }
+    async getPositionRisk(params = {}) {
+        const request = await this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk', params);
         if (request.errors)
             return this.formattedResponse({ errors: request.errors });
         if (!request.data)

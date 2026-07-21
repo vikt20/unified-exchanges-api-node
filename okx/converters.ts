@@ -225,6 +225,9 @@ export function convertOkxPosition(item: any): PositionData {
         symbol: item.instId,
         positionAmount: Math.abs(size), // Generally absolute for positions
         entryPrice: parseFloat(item.avgPx || '0'),
+        liquidationPrice: parseFloat(item.liqPx || '0'),
+        leverage: parseFloat(item.lever || '0'),
+        marginMode: item.mgnMode === 'isolated' ? 'isolated' : 'cross',
         positionDirection: direction,
         isInPosition: Math.abs(size) > 0,
         unrealizedPnL: parseFloat(item.upl || '0'),

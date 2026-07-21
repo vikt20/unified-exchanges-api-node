@@ -165,7 +165,13 @@ export default class BybitBase extends AbstractExchangeBase {
 
         } catch (error: any) {
             if (error.response?.data) {
-                return this.formattedResponse({ errors: error.response.data });
+                const data = error.response.data;
+                const message = typeof data === 'string'
+                    ? data
+                    : data.retMsg
+                        ? `${data.retCode ?? error.response.status}: ${data.retMsg}`
+                        : JSON.stringify(data);
+                return this.formattedResponse({ errors: message });
             }
             return this.handleRequestError(error);
         }

@@ -171,6 +171,9 @@ export function convertKrakenFuturesPosition(pos) {
         symbol: pos.symbol,
         positionAmount: direction === 'LONG' ? pos.size : -pos.size,
         entryPrice: pos.entryPrice ?? 0,
+        liquidationPrice: pos.liquidationPrice ?? 0,
+        leverage: pos.leverage ?? 0,
+        marginMode: pos.marginType ?? 'cross',
         positionDirection: direction,
         isInPosition: pos.size !== 0,
         unrealizedPnL: pos.unrealizedPnl ?? 0
@@ -246,6 +249,9 @@ export function convertKrakenFuturesWsPosition(position) {
         symbol: position.instrument,
         positionAmount: balance,
         entryPrice: position.entry_price ?? 0,
+        liquidationPrice: position.liquidation_threshold ?? 0,
+        leverage: position.effective_leverage ?? 0,
+        marginMode: 'cross',
         positionDirection: direction,
         isInPosition: balance !== 0,
         unrealizedPnL: position.pnl ?? 0

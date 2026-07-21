@@ -77,6 +77,34 @@ export default class BitgetFutures extends BitgetStreams {
         }
         return this.formattedResponse({ errors: res.errors });
     }
+    async getSymbolLeverage({ symbol }) {
+        const [account, contracts] = await Promise.all([
+            this.signedRequest('futures', 'GET', '/api/v2/mix/account/account', { symbol, productType: this.productType, marginCoin: this.marginCoin }),
+            this.publicRequest('futures', 'GET', '/api/v2/mix/market/contracts', { symbol, productType: this.productType })
+        ]);
+        if (account.errors || contracts.errors)
+            return this.formattedResponse({ errors: account.errors ?? contracts.errors });
+        const mode = account.data?.marginMode === 'isolated' ? 'isolated' : 'cross';
+        const leverage = mode === 'cross' ? account.data?.crossedMarginLeverage ?? account.data?.crossMarginLeverage : account.data?.fixedLongLeverage;
+        return this.formattedResponse({ data: { symbol, leverage: Number(leverage ?? 0), maxLeverage: Number(contracts.data?.[0]?.maxLever ?? 0) } });
+    }
+    async updateSymbolLeverage({ symbol, leverage }) {
+        const res = await this.signedRequest('futures', 'POST', '/api/v2/mix/account/set-leverage', { symbol, productType: this.productType, marginCoin: this.marginCoin, leverage: String(leverage) });
+        if (res.errors)
+            return this.formattedResponse({ errors: res.errors });
+        const current = await this.getSymbolLeverage({ symbol });
+        return current.success ? this.formattedResponse({ data: { ...current.data, leverage } }) : current;
+    }
+    async getSymbolMarginMode({ symbol }) {
+        const res = await this.signedRequest('futures', 'GET', '/api/v2/mix/account/account', { symbol, productType: this.productType, marginCoin: this.marginCoin });
+        if (res.errors)
+            return this.formattedResponse({ errors: res.errors });
+        return this.formattedResponse({ data: { symbol, marginMode: res.data?.marginMode === 'isolated' ? 'isolated' : 'cross' } });
+    }
+    async updateSymbolMarginMode({ symbol, marginMode }) {
+        const res = await this.signedRequest('futures', 'POST', '/api/v2/mix/account/set-margin-mode', { symbol, productType: this.productType, marginCoin: this.marginCoin, marginMode: marginMode === 'cross' ? 'crossed' : 'isolated' });
+        return res.errors ? this.formattedResponse({ errors: res.errors }) : this.formattedResponse({ data: { symbol, marginMode } });
+    }
     async getPositionRisk() {
         const res = await this.signedRequest('futures', 'GET', '/api/v2/mix/position/all-position', {
             productType: this.productType,

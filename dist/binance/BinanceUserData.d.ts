@@ -13,7 +13,20 @@ export type CustomUserData = {
  * Uses instance-based callbacks for communication with UI/Bot components.
  */
 export default class BinanceUserData extends BinanceFutures implements IUserDataManager {
-    constructor(apiKey: string, apiSecret: string);
+    private static readonly POSITION_RISK_REFRESH_INTERVAL_MS;
+    private static readonly POSITION_RISK_DEBOUNCE_MS;
+    private positionRiskRefreshTimers;
+    private positionRiskRefreshInFlight;
+    private positionRiskRefreshPending;
+    private positionRiskLastRequestAt;
+    private readonly enablePositionRiskEnrichment;
+    /**
+     *
+     * @param apiKey
+     * @param apiSecret
+     * @param enablePositionRiskEnrichment | If true, will automatically refresh position risk data (leverage, liquidation price) after account updates.
+     */
+    constructor(apiKey: string, apiSecret: string, enablePositionRiskEnrichment?: boolean);
     /**
      * Local "Single Source of Truth" for user data.
      * Continuously updated by the WebSocket stream.
@@ -70,5 +83,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
     requestAllPositions(): Promise<void>;
     setOrders: (data: OrderData) => Promise<void>;
     setPosition: (data: PositionData) => Promise<void>;
+    private schedulePositionRiskRefresh;
+    private refreshPositionRisk;
 }
 //# sourceMappingURL=BinanceUserData.d.ts.map

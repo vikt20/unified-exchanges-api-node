@@ -126,6 +126,38 @@ export default class BybitFutures extends BybitStreams {
         }
         return this.formattedResponse({ errors: res.errors });
     }
+    async getSymbolLeverage({ symbol }) {
+        const [positions, instruments] = await Promise.all([
+            this.signedRequest('linear', 'GET', '/v5/position/list', { category: 'linear', symbol }),
+            this.publicRequest('linear', 'GET', '/v5/market/instruments-info', { category: 'linear', symbol })
+        ]);
+        if (positions.errors || instruments.errors)
+            return this.formattedResponse({ errors: positions.errors ?? instruments.errors });
+        const position = positions.data?.list?.[0];
+        const instrument = instruments.data?.list?.[0];
+        return this.formattedResponse({ data: { symbol, leverage: Number(position?.leverage ?? 0), maxLeverage: Number(instrument?.leverageFilter?.maxLeverage ?? 0) } });
+    }
+    async updateSymbolLeverage({ symbol, leverage }) {
+        const res = await this.signedRequest('linear', 'POST', '/v5/position/set-leverage', { category: 'linear', symbol, buyLeverage: String(leverage), sellLeverage: String(leverage) });
+        if (res.errors)
+            return this.formattedResponse({ errors: res.errors });
+        const current = await this.getSymbolLeverage({ symbol });
+        return current.success ? this.formattedResponse({ data: { ...current.data, leverage } }) : current;
+    }
+    async getSymbolMarginMode({ symbol }) {
+        const res = await this.signedRequest('linear', 'GET', '/v5/position/list', { category: 'linear', symbol });
+        if (res.errors)
+            return this.formattedResponse({ errors: res.errors });
+        return this.formattedResponse({ data: { symbol, marginMode: res.data?.list?.[0]?.tradeMode === 1 ? 'isolated' : 'cross' } });
+    }
+    async updateSymbolMarginMode({ symbol, marginMode }) {
+        const leverage = await this.getSymbolLeverage({ symbol });
+        if (!leverage.success || !leverage.data)
+            return this.formattedResponse({ errors: leverage.errors });
+        const value = String(leverage.data.leverage || 1);
+        const res = await this.signedRequest('linear', 'POST', '/v5/position/switch-isolated', { category: 'linear', symbol, tradeMode: marginMode === 'isolated' ? 1 : 0, buyLeverage: value, sellLeverage: value });
+        return res.errors ? this.formattedResponse({ errors: res.errors }) : this.formattedResponse({ data: { symbol, marginMode } });
+    }
     async getPositionRisk() {
         const res = await this.signedRequest('linear', 'GET', '/v5/position/list', { category: 'linear', settleCoin: 'USDT' });
         const data = res.data;
@@ -140,7 +172,7 @@ export default class BybitFutures extends BybitStreams {
                     entryPrice: parseFloat(p.avgPrice),
                     markPrice: parseFloat(p.markPrice),
                     unrealizedPnL: parseFloat(p.unrealisedPnl),
-                    liquidationPrice: parseFloat(p.liqPrice),
+                    liquidationPrice: parseFloat(p.liqPrice || '0'),
                     leverage: parseFloat(p.leverage),
                     marginType: p.tradeMode === 1 ? 'isolated' : 'cross',
                     isolatedMargin: parseFloat(p.positionBalance),
@@ -164,6 +196,9 @@ export default class BybitFutures extends BybitStreams {
                 symbol: p.symbol,
                 positionAmount: p.positionSide === 'LONG' ? p.positionAmount : -p.positionAmount,
                 entryPrice: p.entryPrice,
+                liquidationPrice: p.liquidationPrice,
+                leverage: p.leverage,
+                marginMode: p.marginType,
                 positionDirection: p.positionSide,
                 isInPosition: true,
                 unrealizedPnL: p.unrealizedPnL

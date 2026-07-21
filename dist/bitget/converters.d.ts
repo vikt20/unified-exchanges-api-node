@@ -187,6 +187,9 @@ export interface BitgetWsPosition {
     total?: string;
     openPriceAvg?: string;
     unrealizedPL?: string;
+    liquidationPrice?: string;
+    marginMode?: string;
+    leverage?: string;
 }
 export declare const BITGET_SUCCESS_CODE = "00000";
 export declare function isRecord(value: unknown): value is Record<string, unknown>;

@@ -1,5 +1,5 @@
 import KrakenStreams from './KrakenStreams.js';
-import { IExchangeClient } from '../core/IExchangeClient.js';
+import { IFuturesExchangeClient } from '../core/IExchangeClient.js';
 import {
     FormattedResponse,
     ExtractedInfo,
@@ -26,7 +26,10 @@ import {
     ReduceOrderParams,
     ReducePositionParams,
     TrailingStopOrderParams,
-    OrderInput
+    OrderInput,
+    SymbolLeverageData,
+    SymbolMarginModeData,
+    MarginMode
 } from '../core/types.js';
 import {
     KrakenFuturesInstrumentsResponse,
@@ -57,7 +60,7 @@ type KrakenSpotTickerResult = Record<string, {
     c?: [string, string];
 }>;
 
-export default class KrakenFutures extends KrakenStreams implements IExchangeClient {
+export default class KrakenFutures extends KrakenStreams implements IFuturesExchangeClient {
     constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false) {
         super(apiKey, apiSecret, isTest);
     }
@@ -206,6 +209,28 @@ export default class KrakenFutures extends KrakenStreams implements IExchangeCli
             });
         }
         return this.formattedResponse({ errors: res.errors });
+    }
+
+    async getSymbolLeverage({ symbol }: { symbol: string }): Promise<FormattedResponse<SymbolLeverageData>> {
+        const positions = await this.getPositionRisk();
+        if (!positions.success || !positions.data) return this.formattedResponse({ errors: positions.errors });
+        const position = positions.data.find(item => item.symbol === symbol);
+        return this.formattedResponse({ data: { symbol, leverage: position?.leverage ?? 0, maxLeverage: 0 } });
+    }
+
+    async updateSymbolLeverage({ symbol }: { symbol: string; leverage: number }): Promise<FormattedResponse<SymbolLeverageData>> {
+        return this.formattedResponse({ errors: `Kraken Futures does not expose symbol-level leverage updates for ${symbol}` });
+    }
+
+    async getSymbolMarginMode({ symbol }: { symbol: string }): Promise<FormattedResponse<SymbolMarginModeData>> {
+        const positions = await this.getPositionRisk();
+        if (!positions.success || !positions.data) return this.formattedResponse({ errors: positions.errors });
+        const position = positions.data.find(item => item.symbol === symbol);
+        return this.formattedResponse({ data: { symbol, marginMode: position?.marginType ?? 'cross' } });
+    }
+
+    async updateSymbolMarginMode({ symbol }: { symbol: string; marginMode: MarginMode }): Promise<FormattedResponse<SymbolMarginModeData>> {
+        return this.formattedResponse({ errors: `Kraken Futures does not expose symbol-level margin-mode updates for ${symbol}` });
     }
 
     async getPositionRisk(): Promise<FormattedResponse<PositionRiskData[]>> {

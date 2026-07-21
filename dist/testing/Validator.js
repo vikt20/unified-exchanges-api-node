@@ -152,6 +152,9 @@ export const PositionSchema = {
         symbol: { type: 'string', required: true },
         positionAmount: { type: 'number', required: true },
         entryPrice: { type: 'number', required: true },
+        liquidationPrice: { type: 'number', required: true },
+        leverage: { type: 'number', required: true },
+        marginMode: { type: 'string', required: true, enum: ['cross', 'isolated'] },
         positionDirection: { type: 'string', required: true, enum: ['LONG', 'SHORT', 'BOTH'] },
         isInPosition: { type: 'boolean', required: true },
         unrealizedPnL: { type: 'number', required: true }

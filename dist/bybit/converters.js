@@ -155,6 +155,9 @@ export function convertBybitPosition(item) {
         symbol: item.symbol,
         positionAmount: size,
         entryPrice: parseFloat(item.avgPrice || '0'),
+        liquidationPrice: parseFloat(item.liqPrice || '0'),
+        leverage: parseFloat(item.leverage || '0'),
+        marginMode: item.tradeMode === 1 ? 'isolated' : 'cross',
         positionDirection: direction,
         isInPosition: size > 0,
         unrealizedPnL: parseFloat(item.unrealisedPnl || '0')

@@ -257,16 +257,18 @@ async function main(config) {
 // ─────────────────────────────────────────────────────────────────
 const RUN_CONFIG = {
     exchanges: [
-        // 'okx',
-        'bitget'
+        'okx',
+        'bitget',
+        'binance',
+        'bybit',
     ], // Options: 'binance', 'bybit', 'okx', 'kraken', 'bitget' or ['all']
     target: {
-        spot: true, // Set to true to test Spot
+        spot: false, // Set to true to test Spot
         futures: true, // Set to true to test Futures
     },
     mode: {
-        public: true, // Set to true to test Public Data
-        authenticated: false // Set to true to test Order Flow/Private Data (Set to true when you have added OKX keys to .env)
+        public: false, // Set to true to test Public Data
+        authenticated: true // Set to true to test Order Flow/Private Data (Set to true when you have added OKX keys to .env)
     }
 };
 // Execute

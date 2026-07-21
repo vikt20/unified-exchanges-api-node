@@ -5,7 +5,7 @@
  * All exchanges must implement this interface.
  */
 import { IStreamManager } from './IStreamManager.js';
-import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData, PositionData, PositionRiskData, ExtractedInfo, OrderData, OrderRequestResponse, GetOpenOrdersBySymbolParams, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, KlineData, OrderInput } from './types.js';
+import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData, PositionData, PositionRiskData, ExtractedInfo, OrderData, OrderRequestResponse, GetOpenOrdersBySymbolParams, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, KlineData, OrderInput, SymbolLeverageData, SymbolMarginModeData, MarginMode } from './types.js';
 import { AbstractExchangeBase } from './AbstractExchangeBase.js';
 /**
  * Unified Exchange Client Interface
@@ -53,5 +53,21 @@ export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
     trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
     getLatestPnlBySymbol(symbol: string, startTime?: number, endTime?: number): Promise<FormattedResponse<number>>;
+}
+export interface IFuturesExchangeClient extends IExchangeClient {
+    getSymbolLeverage(params: {
+        symbol: string;
+    }): Promise<FormattedResponse<SymbolLeverageData>>;
+    updateSymbolLeverage(params: {
+        symbol: string;
+        leverage: number;
+    }): Promise<FormattedResponse<SymbolLeverageData>>;
+    getSymbolMarginMode(params: {
+        symbol: string;
+    }): Promise<FormattedResponse<SymbolMarginModeData>>;
+    updateSymbolMarginMode(params: {
+        symbol: string;
+        marginMode: MarginMode;
+    }): Promise<FormattedResponse<SymbolMarginModeData>>;
 }
 //# sourceMappingURL=IExchangeClient.d.ts.map

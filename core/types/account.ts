@@ -6,11 +6,27 @@
 
 import { PositionDirection, PositionSide } from './common.js';
 
+export type MarginMode = 'cross' | 'isolated';
+
+export interface SymbolLeverageData {
+    symbol: string;
+    leverage: number;
+    maxLeverage: number;
+}
+
+export interface SymbolMarginModeData {
+    symbol: string;
+    marginMode: MarginMode;
+}
+
 // ━━ Position Data ━━
 export interface PositionData {
     symbol: string;
     positionAmount: number;
     entryPrice: number;
+    liquidationPrice: number;
+    leverage: number;
+    marginMode: MarginMode;
     positionDirection: PositionDirection;
     isInPosition: boolean;
     unrealizedPnL: number;
@@ -26,7 +42,7 @@ export interface PositionRiskData {
     unrealizedPnL: number;
     liquidationPrice: number;
     leverage: number;
-    marginType: 'cross' | 'isolated';
+    marginType: MarginMode;
     isolatedMargin: number;
     positionSide: PositionSide;
     notionalValue: number;

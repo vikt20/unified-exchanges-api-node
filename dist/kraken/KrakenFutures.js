@@ -129,6 +129,26 @@ export default class KrakenFutures extends KrakenStreams {
         }
         return this.formattedResponse({ errors: res.errors });
     }
+    async getSymbolLeverage({ symbol }) {
+        const positions = await this.getPositionRisk();
+        if (!positions.success || !positions.data)
+            return this.formattedResponse({ errors: positions.errors });
+        const position = positions.data.find(item => item.symbol === symbol);
+        return this.formattedResponse({ data: { symbol, leverage: position?.leverage ?? 0, maxLeverage: 0 } });
+    }
+    async updateSymbolLeverage({ symbol }) {
+        return this.formattedResponse({ errors: `Kraken Futures does not expose symbol-level leverage updates for ${symbol}` });
+    }
+    async getSymbolMarginMode({ symbol }) {
+        const positions = await this.getPositionRisk();
+        if (!positions.success || !positions.data)
+            return this.formattedResponse({ errors: positions.errors });
+        const position = positions.data.find(item => item.symbol === symbol);
+        return this.formattedResponse({ data: { symbol, marginMode: position?.marginType ?? 'cross' } });
+    }
+    async updateSymbolMarginMode({ symbol }) {
+        return this.formattedResponse({ errors: `Kraken Futures does not expose symbol-level margin-mode updates for ${symbol}` });
+    }
     async getPositionRisk() {
         const res = await this.signedRequest('futures', 'GET', '/openpositions');
         if (res.success && res.data?.openPositions) {

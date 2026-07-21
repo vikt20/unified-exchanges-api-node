@@ -220,9 +220,14 @@ export default class OkxBase extends AbstractExchangeBase {
             return this.formattedResponse({ data: response.data });
         }
         catch (error) {
-            console.log(`Error: ${endpoint}`, error.response.status);
+            if (error.response?.status)
+                console.log(`Error: ${endpoint} ${error.response.status}`);
             if (error.response?.data) {
-                return this.formattedResponse({ errors: error.response.data.msg });
+                const data = error.response.data;
+                const message = data.msg
+                    ? `${data.code ?? error.response.status}: ${data.msg}`
+                    : JSON.stringify(data);
+                return this.formattedResponse({ errors: message });
             }
             return this.handleRequestError(error);
         }

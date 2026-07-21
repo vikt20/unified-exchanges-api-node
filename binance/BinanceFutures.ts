@@ -16,7 +16,7 @@ import {
     ExchangeInfo
 } from './BinanceBase.js';
 import type { PositionRiskData, IWebsocketApiClient, WebsocketApiOption } from '../core/types.js';
-import { IExchangeClient } from '../core/IExchangeClient.js';
+import { IFuturesExchangeClient } from '../core/IExchangeClient.js';
 import type { FundingHistoryData, GetFundingHistoryParams } from '../core/types.js';
 
 type OrderInput = {
@@ -160,7 +160,7 @@ export type LongShortRatioDataByRequest = {
     getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
 } */
 
-export default class BinanceFutures extends BinanceStreams implements IExchangeClient {
+export default class BinanceFutures extends BinanceStreams implements IFuturesExchangeClient {
     constructor(
         apiKey?: string,
         apiSecret?: string,
@@ -222,8 +222,34 @@ export default class BinanceFutures extends BinanceStreams implements IExchangeC
     async getBalance(): Promise<FormattedResponse<AccountData['balances']>> {
         return await this.signedRequest('futures', 'GET', '/fapi/v2/balance');
     }
-    async getPositionRisk(): Promise<FormattedResponse<PositionRiskData[]>> {
-        const request = await this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk');
+    async getSymbolLeverage({ symbol }: { symbol: string }) {
+        const [positions, brackets] = await Promise.all([
+            this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk', { symbol }),
+            this.signedRequest('futures', 'GET', '/fapi/v1/leverageBracket', { symbol })
+        ]);
+        if (positions.errors || brackets.errors) return this.formattedResponse({ errors: positions.errors ?? brackets.errors });
+        const position = Array.isArray(positions.data) ? positions.data[0] : positions.data;
+        const bracket = Array.isArray(brackets.data) ? brackets.data[0] : brackets.data;
+        return this.formattedResponse({ data: { symbol, leverage: Number(position?.leverage ?? 0), maxLeverage: Number(bracket?.brackets?.[0]?.initialLeverage ?? 0) } });
+    }
+    async updateSymbolLeverage({ symbol, leverage }: { symbol: string; leverage: number }) {
+        const res = await this.signedRequest('futures', 'POST', '/fapi/v1/leverage', { symbol, leverage });
+        if (res.errors) return this.formattedResponse({ errors: res.errors });
+        const current = await this.getSymbolLeverage({ symbol });
+        return current.success ? this.formattedResponse({ data: { ...current.data!, leverage: Number(res.data?.leverage ?? leverage) } }) : current;
+    }
+    async getSymbolMarginMode({ symbol }: { symbol: string }) {
+        const res = await this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk', { symbol });
+        if (res.errors) return this.formattedResponse({ errors: res.errors });
+        const position = Array.isArray(res.data) ? res.data[0] : res.data;
+        return this.formattedResponse({ data: { symbol, marginMode: position?.marginType?.toLowerCase() === 'isolated' ? 'isolated' : 'cross' } as const });
+    }
+    async updateSymbolMarginMode({ symbol, marginMode }: { symbol: string; marginMode: import('../core/types.js').MarginMode }) {
+        const res = await this.signedRequest('futures', 'POST', '/fapi/v1/marginType', { symbol, marginType: marginMode === 'cross' ? 'CROSSED' : 'ISOLATED' });
+        return res.errors ? this.formattedResponse({ errors: res.errors }) : this.formattedResponse({ data: { symbol, marginMode } });
+    }
+    async getPositionRisk(params: { symbol?: string } = {}): Promise<FormattedResponse<PositionRiskData[]>> {
+        const request = await this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk', params);
         if (request.errors) return this.formattedResponse({ errors: request.errors });
         if (!request.data) return this.formattedResponse({ data: [] });
 

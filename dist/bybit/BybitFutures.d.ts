@@ -1,7 +1,7 @@
 import BybitStreams from "./BybitStreams.js";
-import { IExchangeClient } from "../core/IExchangeClient.js";
-import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo } from "../core/types.js";
-export default class BybitFutures extends BybitStreams implements IExchangeClient {
+import { IFuturesExchangeClient } from "../core/IExchangeClient.js";
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo, SymbolLeverageData, SymbolMarginModeData, MarginMode } from "../core/types.js";
+export default class BybitFutures extends BybitStreams implements IFuturesExchangeClient {
     constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
     closeListenKey(): Promise<FormattedResponse<unknown>>;
     getExchangeInfo(): Promise<FormattedResponse<{
@@ -18,6 +18,20 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
     getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>>;
     getFundingHistory(params: GetFundingHistoryParams): Promise<FormattedResponse<FundingHistoryData[]>>;
     getBalance(): Promise<FormattedResponse<AccountData['balances']>>;
+    getSymbolLeverage({ symbol }: {
+        symbol: string;
+    }): Promise<FormattedResponse<SymbolLeverageData>>;
+    updateSymbolLeverage({ symbol, leverage }: {
+        symbol: string;
+        leverage: number;
+    }): Promise<FormattedResponse<SymbolLeverageData>>;
+    getSymbolMarginMode({ symbol }: {
+        symbol: string;
+    }): Promise<FormattedResponse<SymbolMarginModeData>>;
+    updateSymbolMarginMode({ symbol, marginMode }: {
+        symbol: string;
+        marginMode: MarginMode;
+    }): Promise<FormattedResponse<SymbolMarginModeData>>;
     getPositionRisk(): Promise<FormattedResponse<PositionRiskData[]>>;
     getOpenPositions(): Promise<FormattedResponse<AccountData['positions']>>;
     getOpenPositionBySymbol(params: {

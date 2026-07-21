@@ -1,5 +1,5 @@
 
-import { IExchangeClient } from '../core/IExchangeClient.js';
+import { IExchangeClient, IFuturesExchangeClient } from '../core/IExchangeClient.js';
 import { IStreamManager } from '../core/IStreamManager.js';
 import { UserData, HandleWebSocket } from '../core/types/streams.js';
 import {
@@ -79,10 +79,13 @@ export class ExchangeTester {
         // Step 3: Query Orders and Positions
         await this.testOrderQueryMethods();
 
-        // Step 4: Cancel Orders
+        // Step 4: Query and safely reapply futures account configuration
+        await this.testFuturesConfiguration();
+
+        // Step 5: Cancel Orders
         await this.testOrderCancellation();
 
-        // Step 5: Cleanup
+        // Step 6: Cleanup
         await this.testCleanup();
 
         // Summary of user data events received
@@ -600,6 +603,60 @@ export class ExchangeTester {
             console.log(`      [SKIP] Method not found for ${task.suffix}`);
         } else {
             this.validateObject(task.name, received, task.schema);
+        }
+    }
+
+    private async testFuturesConfiguration() {
+        const futures = this.client as Partial<IFuturesExchangeClient>;
+        if (typeof futures.getSymbolLeverage !== 'function'
+            || typeof futures.updateSymbolLeverage !== 'function'
+            || typeof futures.getSymbolMarginMode !== 'function'
+            || typeof futures.updateSymbolMarginMode !== 'function') return;
+
+        console.log(`[${this.name}] Testing Futures Leverage and Margin Mode...`);
+
+        try {
+            const leverage = await futures.getSymbolLeverage({ symbol: this.symbol });
+            this.assert(leverage.success && !!leverage.data, 'getSymbolLeverage');
+            if (leverage.data) {
+                this.assert(Number.isFinite(leverage.data.leverage), 'current leverage is numeric');
+                this.assert(Number.isFinite(leverage.data.maxLeverage), 'max leverage is numeric');
+
+                // Reapply the current value so the mutation endpoint is exercised without changing configuration.
+                if (leverage.data.leverage > 0) {
+                    const updated = await futures.updateSymbolLeverage({ symbol: this.symbol, leverage: leverage.data.leverage });
+                    this.reportConfigurationUpdate('updateSymbolLeverage', updated.success, updated.errors);
+                }
+            }
+        } catch (e) {
+            this.fail('symbol leverage methods exception', e);
+        }
+
+        try {
+            const margin = await futures.getSymbolMarginMode({ symbol: this.symbol });
+            this.assert(margin.success && !!margin.data, 'getSymbolMarginMode');
+            if (margin.data) {
+                this.assert(margin.data.marginMode === 'cross' || margin.data.marginMode === 'isolated', 'margin mode is standardized');
+
+                // Reapply the current value so the mutation endpoint is exercised without changing configuration.
+                const updated = await futures.updateSymbolMarginMode({ symbol: this.symbol, marginMode: margin.data.marginMode });
+                this.reportConfigurationUpdate('updateSymbolMarginMode', updated.success, updated.errors);
+            }
+        } catch (e) {
+            this.fail('symbol margin mode methods exception', e);
+        }
+    }
+
+    private reportConfigurationUpdate(method: string, success: boolean, errors?: string) {
+        if (success) {
+            this.assert(true, method);
+        } else if (errors?.includes('does not support')
+            || errors?.includes('does not expose')
+            || errors?.includes('No need to change margin type')
+            || errors?.includes('not modified')) {
+            console.log(`   [SKIP] ${method}: ${errors}`);
+        } else {
+            this.assert(false, `${method}${errors ? ` (${errors})` : ''}`);
         }
     }
 

@@ -25,6 +25,8 @@ export declare class ExchangeTester {
     private testPrivateAccountData;
     private testStreams;
     private runStreamTest;
+    private testFuturesConfiguration;
+    private reportConfigurationUpdate;
     private closeAllStreams;
     private assert;
     private fail;

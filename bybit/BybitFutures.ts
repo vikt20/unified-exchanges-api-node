@@ -1,5 +1,5 @@
 import BybitStreams from "./BybitStreams.js";
-import { IExchangeClient } from "../core/IExchangeClient.js";
+import { IFuturesExchangeClient } from "../core/IExchangeClient.js";
 import {
     FormattedResponse,
     ExchangeInfoData,
@@ -30,11 +30,11 @@ import {
     OrderType,
     TimeInForce,
     PositionDirection,
-    ExtractedInfo
+    ExtractedInfo, SymbolLeverageData, SymbolMarginModeData, MarginMode
 } from "../core/types.js";
 import { convertBybitKline, convertBybitOrder, convertBybitPosition, convertExchangeInfo } from "./converters.js";
 
-export default class BybitFutures extends BybitStreams implements IExchangeClient {
+export default class BybitFutures extends BybitStreams implements IFuturesExchangeClient {
 
     constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false) {
         super(apiKey, apiSecret, isTest);
@@ -169,6 +169,38 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
         return this.formattedResponse({ errors: res.errors });
     }
 
+    async getSymbolLeverage({ symbol }: { symbol: string }): Promise<FormattedResponse<SymbolLeverageData>> {
+        const [positions, instruments] = await Promise.all([
+            this.signedRequest('linear', 'GET', '/v5/position/list', { category: 'linear', symbol }),
+            this.publicRequest('linear', 'GET', '/v5/market/instruments-info', { category: 'linear', symbol })
+        ]);
+        if (positions.errors || instruments.errors) return this.formattedResponse({ errors: positions.errors ?? instruments.errors });
+        const position = positions.data?.list?.[0];
+        const instrument = (instruments.data as any)?.list?.[0];
+        return this.formattedResponse({ data: { symbol, leverage: Number(position?.leverage ?? 0), maxLeverage: Number(instrument?.leverageFilter?.maxLeverage ?? 0) } });
+    }
+
+    async updateSymbolLeverage({ symbol, leverage }: { symbol: string; leverage: number }): Promise<FormattedResponse<SymbolLeverageData>> {
+        const res = await this.signedRequest('linear', 'POST', '/v5/position/set-leverage', { category: 'linear', symbol, buyLeverage: String(leverage), sellLeverage: String(leverage) });
+        if (res.errors) return this.formattedResponse({ errors: res.errors });
+        const current = await this.getSymbolLeverage({ symbol });
+        return current.success ? this.formattedResponse({ data: { ...current.data!, leverage } }) : current;
+    }
+
+    async getSymbolMarginMode({ symbol }: { symbol: string }): Promise<FormattedResponse<SymbolMarginModeData>> {
+        const res = await this.signedRequest('linear', 'GET', '/v5/position/list', { category: 'linear', symbol });
+        if (res.errors) return this.formattedResponse({ errors: res.errors });
+        return this.formattedResponse({ data: { symbol, marginMode: res.data?.list?.[0]?.tradeMode === 1 ? 'isolated' : 'cross' } as const });
+    }
+
+    async updateSymbolMarginMode({ symbol, marginMode }: { symbol: string; marginMode: MarginMode }): Promise<FormattedResponse<SymbolMarginModeData>> {
+        const leverage = await this.getSymbolLeverage({ symbol });
+        if (!leverage.success || !leverage.data) return this.formattedResponse({ errors: leverage.errors });
+        const value = String(leverage.data.leverage || 1);
+        const res = await this.signedRequest('linear', 'POST', '/v5/position/switch-isolated', { category: 'linear', symbol, tradeMode: marginMode === 'isolated' ? 1 : 0, buyLeverage: value, sellLeverage: value });
+        return res.errors ? this.formattedResponse({ errors: res.errors }) : this.formattedResponse({ data: { symbol, marginMode } });
+    }
+
     async getPositionRisk(): Promise<FormattedResponse<PositionRiskData[]>> {
         const res = await this.signedRequest('linear', 'GET', '/v5/position/list', { category: 'linear', settleCoin: 'USDT' });
         const data = res.data as any;
@@ -184,7 +216,7 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
                     entryPrice: parseFloat(p.avgPrice),
                     markPrice: parseFloat(p.markPrice),
                     unrealizedPnL: parseFloat(p.unrealisedPnl),
-                    liquidationPrice: parseFloat(p.liqPrice),
+                    liquidationPrice: parseFloat(p.liqPrice || '0'),
                     leverage: parseFloat(p.leverage),
                     marginType: p.tradeMode === 1 ? 'isolated' : 'cross',
                     isolatedMargin: parseFloat(p.positionBalance),
@@ -209,6 +241,9 @@ export default class BybitFutures extends BybitStreams implements IExchangeClien
                     symbol: p.symbol,
                     positionAmount: p.positionSide === 'LONG' ? p.positionAmount : -p.positionAmount,
                     entryPrice: p.entryPrice,
+                    liquidationPrice: p.liquidationPrice,
+                    leverage: p.leverage,
+                    marginMode: p.marginType,
                     positionDirection: p.positionSide as PositionDirection,
                     isInPosition: true,
                     unrealizedPnL: p.unrealizedPnL

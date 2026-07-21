@@ -1,5 +1,5 @@
 import OkxStreams from "./OkxStreams.js";
-import { IExchangeClient } from "../core/IExchangeClient.js";
+import { IFuturesExchangeClient } from "../core/IExchangeClient.js";
 import Decimal from "decimal.js";
 
 import {
@@ -27,11 +27,11 @@ import {
     ReducePositionParams,
     TrailingStopOrderParams,
     OrderInput,
-    ExtractedInfo
+    ExtractedInfo, SymbolLeverageData, SymbolMarginModeData, MarginMode
 } from "../core/types.js";
 import { convertExchangeInfo, convertOkxKline, convertOkxOrder } from "./converters.js";
 
-export default class OkxFutures extends OkxStreams implements IExchangeClient {
+export default class OkxFutures extends OkxStreams implements IFuturesExchangeClient {
 
     constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false, exchangeInfoFutures?: ExtractedInfo[]) {
         super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures);
@@ -163,6 +163,37 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
         return this.formattedResponse({ errors: res.errors });
     }
 
+    async getSymbolLeverage({ symbol }: { symbol: string }): Promise<FormattedResponse<SymbolLeverageData>> {
+        const mode = await this.getSymbolMarginMode({ symbol });
+        if (!mode.success || !mode.data) return this.formattedResponse({ errors: mode.errors });
+        const [info, tiers] = await Promise.all([
+            this.signedRequest('private', 'GET', '/api/v5/account/leverage-info', { instId: symbol, mgnMode: mode.data.marginMode }),
+            this.publicRequest('public', 'GET', '/api/v5/public/position-tiers', { instType: 'SWAP', tdMode: mode.data.marginMode, instFamily: symbol.replace(/-SWAP$/, '') })
+        ]);
+        if (info.errors || tiers.errors) return this.formattedResponse({ errors: info.errors ?? tiers.errors });
+        const maxLeverage = Math.max(0, ...((tiers.data ?? []) as any[]).map(item => Number(item.maxLever ?? 0)));
+        return this.formattedResponse({ data: { symbol, leverage: Number(info.data?.[0]?.lever ?? 0), maxLeverage } });
+    }
+
+    async updateSymbolLeverage({ symbol, leverage }: { symbol: string; leverage: number }): Promise<FormattedResponse<SymbolLeverageData>> {
+        const mode = await this.getSymbolMarginMode({ symbol });
+        if (!mode.success || !mode.data) return this.formattedResponse({ errors: mode.errors });
+        const res = await this.signedRequest('private', 'POST', '/api/v5/account/set-leverage', { instId: symbol, lever: String(leverage), mgnMode: mode.data.marginMode });
+        if (res.errors) return this.formattedResponse({ errors: res.errors });
+        const current = await this.getSymbolLeverage({ symbol });
+        return current.success ? this.formattedResponse({ data: { ...current.data!, leverage } }) : current;
+    }
+
+    async getSymbolMarginMode({ symbol }: { symbol: string }): Promise<FormattedResponse<SymbolMarginModeData>> {
+        const res = await this.signedRequest('private', 'GET', '/api/v5/account/positions', { instId: symbol });
+        if (res.errors) return this.formattedResponse({ errors: res.errors });
+        return this.formattedResponse({ data: { symbol, marginMode: res.data?.[0]?.mgnMode === 'isolated' ? 'isolated' : 'cross' } as const });
+    }
+
+    async updateSymbolMarginMode({ symbol }: { symbol: string; marginMode: MarginMode }): Promise<FormattedResponse<SymbolMarginModeData>> {
+        return this.formattedResponse({ errors: `OKX does not support changing margin mode by symbol; pass tdMode when placing an order for ${symbol}` });
+    }
+
     async getPositionRisk(): Promise<FormattedResponse<PositionRiskData[]>> {
         const res = await this.signedRequest('private', 'GET', '/api/v5/account/positions', { instType: 'SWAP' });
 
@@ -210,6 +241,9 @@ export default class OkxFutures extends OkxStreams implements IExchangeClient {
                     symbol: p.symbol,
                     positionAmount: p.positionSide === 'LONG' ? p.positionAmount : -p.positionAmount,
                     entryPrice: p.entryPrice,
+                    liquidationPrice: p.liquidationPrice,
+                    leverage: p.leverage,
+                    marginMode: p.marginType,
                     positionDirection: p.positionSide as any,
                     isInPosition: true,
                     unrealizedPnL: p.unrealizedPnL
