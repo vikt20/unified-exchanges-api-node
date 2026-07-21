@@ -1,8 +1,9 @@
-import { IUserDataManager, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
-import { OrderData, PositionData } from "./BinanceBase.js";
+import { IUserDataManager, BalanceUpdateCallback, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
+import { BalanceData, OrderData, PositionData } from "./BinanceBase.js";
 import BinanceFutures from "./BinanceFutures.js";
 import { SocketStatus, UserData } from "../core/types.js";
 export type CustomUserData = {
+    balances: BalanceData[];
     positions: PositionData[];
     orders: OrderData[];
 };
@@ -36,6 +37,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      * Private storage for multiple position update callbacks
      */
     private positionCallbacks;
+    private balanceCallbacks;
     /**
      * Private storage for multiple order update callbacks
      */
@@ -49,6 +51,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      * @returns Unsubscribe function to remove this callback
      */
     onPositionUpdate(callback: PositionUpdateCallback): Unsubscribe;
+    onBalanceUpdate(callback: BalanceUpdateCallback): Unsubscribe;
     /**
      * Register a callback to receive order updates
      * @returns Unsubscribe function to remove this callback
@@ -67,7 +70,8 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      * Manually trigger order update callback for a specific symbol
      */
     triggerOrderUpdate(symbol: string): void;
-    init(): Promise<[import("./BinanceStreams.js").HandleWebSocket, void, void]>;
+    triggerBalanceUpdate(asset: string): void;
+    init(): Promise<[import("./BinanceStreams.js").HandleWebSocket, void, void, void]>;
     destroy(): void;
     /**
      * Internal method to emit position update via callbacks
@@ -77,10 +81,13 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      * Internal method to emit order update via callbacks
      */
     private emitOrders;
+    private emitBalance;
     handleUserData: (data: UserData) => void;
     handleUserStatus: (status: SocketStatus) => void;
     requestAllOrders(): Promise<void>;
     requestAllPositions(): Promise<void>;
+    requestAllBalances(): Promise<void>;
+    setBalance: (data: BalanceData) => void;
     setOrders: (data: OrderData) => Promise<void>;
     setPosition: (data: PositionData) => Promise<void>;
     private schedulePositionRiskRefresh;

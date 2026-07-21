@@ -14,6 +14,7 @@ export default class OkxUserData extends OkxFutures {
      * Continuously updated by the WebSocket stream.
      */
     userData = {
+        balances: [],
         positions: [],
         orders: []
     };
@@ -21,6 +22,7 @@ export default class OkxUserData extends OkxFutures {
      * Private storage for multiple position update callbacks
      */
     positionCallbacks = new Set();
+    balanceCallbacks = new Set();
     /**
      * Private storage for multiple order update callbacks
      */
@@ -38,6 +40,10 @@ export default class OkxUserData extends OkxFutures {
         return () => {
             this.positionCallbacks.delete(callback);
         };
+    }
+    onBalanceUpdate(callback) {
+        this.balanceCallbacks.add(callback);
+        return () => this.balanceCallbacks.delete(callback);
     }
     /**
      * Register a callback to receive order updates
@@ -82,12 +88,14 @@ export default class OkxUserData extends OkxFutures {
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
-            this.requestAllPositions()
+            this.requestAllPositions(),
+            this.requestAllBalances()
         ]);
     }
     destroy() {
         this.closeAllSockets();
         this.positionCallbacks.clear();
+        this.balanceCallbacks.clear();
         this.orderCallbacks.clear();
         this.statusCallbacks.clear();
     }
@@ -113,6 +121,12 @@ export default class OkxUserData extends OkxFutures {
         // handle incoming ws events
         switch (data.event) {
             case "ACCOUNT_UPDATE":
+                if (data.accountData?.balances) {
+                    if (data.updateType === 'SNAPSHOT')
+                        this.replaceBalances(data.accountData.balances);
+                    else
+                        data.accountData.balances.forEach(this.setBalance);
+                }
                 if (data.accountData && data.accountData.positions) {
                     data.accountData.positions.forEach(this.setPosition);
                 }
@@ -150,6 +164,33 @@ export default class OkxUserData extends OkxFutures {
         else {
             console.error("OkxUserData: Failed to fetch open positions", res.errors);
         }
+    }
+    async requestAllBalances() {
+        const res = await this.getBalance();
+        if (res.success && res.data)
+            this.userData.balances = res.data;
+        else
+            console.error("OkxUserData: Failed to fetch balances", res.errors);
+    }
+    triggerBalanceUpdate(asset) { this.emitBalance(asset); }
+    setBalance = (data) => {
+        const index = this.userData.balances.findIndex(balance => balance.asset === data.asset);
+        if (index === -1)
+            this.userData.balances.push(data);
+        else
+            this.userData.balances[index] = data;
+        this.emitBalance(data.asset);
+    };
+    emitBalance(asset) {
+        const balance = this.userData.balances.find(item => item.asset === asset);
+        for (const callback of this.balanceCallbacks)
+            callback(asset, balance);
+    }
+    replaceBalances(balances) {
+        const assets = new Set([...this.userData.balances.map(item => item.asset), ...balances.map(item => item.asset)]);
+        this.userData.balances = balances;
+        for (const asset of assets)
+            this.emitBalance(asset);
     }
     setPosition = async (data) => {
         const symbol = data.symbol;

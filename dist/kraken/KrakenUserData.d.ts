@@ -1,4 +1,4 @@
-import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from '../core/IUserDataManager.js';
+import { IUserDataManager, IUserDataState, BalanceUpdateCallback, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from '../core/IUserDataManager.js';
 import KrakenFutures from './KrakenFutures.js';
 import { PositionData, OrderData, SocketStatus, UserData } from '../core/types.js';
 /**
@@ -11,9 +11,11 @@ export default class KrakenUserData extends KrakenFutures implements IUserDataMa
     constructor(apiKey: string, apiSecret: string, isTest?: boolean);
     userData: IUserDataState;
     private positionCallbacks;
+    private balanceCallbacks;
     private orderCallbacks;
     private statusCallbacks;
     onPositionUpdate(callback: PositionUpdateCallback): Unsubscribe;
+    onBalanceUpdate(callback: BalanceUpdateCallback): Unsubscribe;
     onOrderUpdate(callback: OrderUpdateCallback): Unsubscribe;
     onStatusUpdate(callback: StatusUpdateCallback): Unsubscribe;
     triggerPositionUpdate(symbol: string): void;
@@ -24,6 +26,11 @@ export default class KrakenUserData extends KrakenFutures implements IUserDataMa
     handleUserStatus: (status: SocketStatus) => void;
     requestAllOrders(): Promise<void>;
     requestAllPositions(): Promise<void>;
+    requestAllBalances(): Promise<void>;
+    triggerBalanceUpdate(asset: string): void;
+    private setBalance;
+    private emitBalance;
+    private replaceBalances;
     setPosition: (data: PositionData) => Promise<void>;
     setOrders: (data: OrderData) => Promise<void>;
     private replacePositionsSnapshot;

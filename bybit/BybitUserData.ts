@@ -1,6 +1,6 @@
-import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
+import { IUserDataManager, IUserDataState, BalanceUpdateCallback, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import BybitFutures from "./BybitFutures.js";
-import { PositionData, OrderData, SocketStatus, UserData } from "../core/types.js";
+import { BalanceData, PositionData, OrderData, SocketStatus, UserData } from "../core/types.js";
 
 /**
  * BybitUserData - Implementation of IUserDataManager for Bybit
@@ -19,6 +19,7 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
      * Continuously updated by the WebSocket stream.
      */
     userData: IUserDataState = {
+        balances: [],
         positions: [],
         orders: []
     }
@@ -27,6 +28,7 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
      * Private storage for multiple position update callbacks
      */
     private positionCallbacks = new Set<PositionUpdateCallback>();
+    private balanceCallbacks = new Set<BalanceUpdateCallback>();
 
     /**
      * Private storage for multiple order update callbacks
@@ -48,6 +50,11 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
         return () => {
             this.positionCallbacks.delete(callback);
         };
+    }
+
+    onBalanceUpdate(callback: BalanceUpdateCallback): Unsubscribe {
+        this.balanceCallbacks.add(callback);
+        return () => this.balanceCallbacks.delete(callback);
     }
 
     /**
@@ -99,13 +106,15 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
-            this.requestAllPositions()
+            this.requestAllPositions(),
+            this.requestAllBalances()
         ]);
     }
 
     public destroy(): void {
         this.closeAllSockets();
         this.positionCallbacks.clear();
+        this.balanceCallbacks.clear();
         this.orderCallbacks.clear();
         this.statusCallbacks.clear();
     }
@@ -134,6 +143,10 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
         // handle incoming ws events
         switch (data.event) {
             case "ACCOUNT_UPDATE":
+                if (data.accountData?.balances) {
+                    if (data.updateType === 'SNAPSHOT') this.replaceBalances(data.accountData.balances);
+                    else data.accountData.balances.forEach(this.setBalance);
+                }
                 if (data.accountData && data.accountData.positions) {
                     data.accountData.positions.forEach(this.setPosition);
                 }
@@ -172,6 +185,32 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
         } else {
             console.error("BybitUserData: Failed to fetch open positions", res.errors);
         }
+    }
+
+    async requestAllBalances(): Promise<void> {
+        const res = await this.getBalance();
+        if (res.success && res.data) this.userData.balances = res.data;
+        else console.error("BybitUserData: Failed to fetch balances", res.errors);
+    }
+
+    triggerBalanceUpdate(asset: string): void { this.emitBalance(asset); }
+
+    private setBalance = (data: BalanceData): void => {
+        const index = this.userData.balances.findIndex(balance => balance.asset === data.asset);
+        if (index === -1) this.userData.balances.push(data);
+        else this.userData.balances[index] = data;
+        this.emitBalance(data.asset);
+    }
+
+    private emitBalance(asset: string): void {
+        const balance = this.userData.balances.find(item => item.asset === asset);
+        for (const callback of this.balanceCallbacks) callback(asset, balance);
+    }
+
+    private replaceBalances(balances: BalanceData[]): void {
+        const assets = new Set([...this.userData.balances.map(item => item.asset), ...balances.map(item => item.asset)]);
+        this.userData.balances = balances;
+        for (const asset of assets) this.emitBalance(asset);
     }
 
     setPosition = async (data: PositionData): Promise<void> => {

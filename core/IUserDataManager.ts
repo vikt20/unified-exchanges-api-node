@@ -1,19 +1,20 @@
 /**
  * IUserDataManager - Unified User Data Manager Interface
  * 
- * This interface defines how user-specific data (positions, open orders) should be 
+ * This interface defines how user-specific data (balances, positions, open orders) should be 
  * tracked and synchronized across different exchange implementations.
  * 
  * REFERENCE IMPLEMENTATION: BinanceUserData.ts
  * 
  * CORE ARCHITECTURE PRINCIPLES:
  * 1. SINGLE SOURCE OF TRUTH (userData)
- *    The manager maintains a local `userData` object containing all active positions 
+ *    The manager maintains a local `userData` object containing balances, active positions 
  *    and open orders. This state must be kept in sync using a combination of REST 
  *    snapshots and WebSocket updates.
  * 
  * 2. SNAPSHOT + STREAM SYNC
- *    - On `init()`, the manager fetches initial snapshots via REST (requestAllOrders, requestAllPositions).
+ *    - On `init()`, the manager fetches initial snapshots via REST
+ *      (requestAllBalances, requestAllOrders, requestAllPositions).
  *    - It simultaneously opens a User Data WebSocket stream to receive real-time updates.
  *    - All incoming WebSocket data MUST update the local `userData` state before calling callbacks.
  * 
@@ -32,7 +33,7 @@
  */
 
 import { IExchangeClient } from './IExchangeClient.js';
-import type { OrderData, PositionData, SocketStatus } from './types.js';
+import type { BalanceData, OrderData, PositionData, SocketStatus } from './types.js';
 
 /**
  * User data state structure
@@ -40,6 +41,8 @@ import type { OrderData, PositionData, SocketStatus } from './types.js';
  *  start with init() to fetch initial snapshots and start WebSocket stream
  */
 export interface IUserDataState {
+    /** List of the user's current exchange assets */
+    balances: BalanceData[];
     /** List of currently open positions */
     positions: PositionData[];
     /** List of currently open (active) orders */
@@ -58,6 +61,9 @@ export type Unsubscribe = () => void;
  * @param position - The updated position data, or undefined if no position exists
  */
 export type PositionUpdateCallback = (symbol: string, position: PositionData | undefined) => void;
+
+/** Callback invoked when an asset balance changes. */
+export type BalanceUpdateCallback = (asset: string, balance: BalanceData | undefined) => void;
 
 /**
  * Callback function type for status updates
@@ -87,7 +93,7 @@ export interface IUserDataManager extends IExchangeClient {
     /**
      * Initialize the user data manager.
      * 1. Start WebSocket User Data stream.
-     * 2. Fetch initial REST snapshots of orders and positions.
+     * 2. Fetch initial REST snapshots of balances, orders and positions.
      */
     init(): Promise<unknown>;
 
@@ -102,6 +108,12 @@ export interface IUserDataManager extends IExchangeClient {
      * This is typically used for the initial snapshot or manual resync.
      */
     requestAllPositions(): Promise<void>;
+
+    /**
+     * Fetch all balances from the exchange and update local `userData.balances`.
+     * This is typically used for the initial snapshot or manual resync.
+     */
+    requestAllBalances(): Promise<void>;
 
     /**
      * Register a callback to receive position updates.
@@ -125,6 +137,9 @@ export interface IUserDataManager extends IExchangeClient {
      * ```
      */
     onPositionUpdate(callback: PositionUpdateCallback): Unsubscribe;
+
+    /** Register a callback to receive balance updates. */
+    onBalanceUpdate(callback: BalanceUpdateCallback): Unsubscribe;
 
     /**
      * Register a callback to receive order updates.
@@ -172,6 +187,9 @@ export interface IUserDataManager extends IExchangeClient {
      * ```
      */
     triggerPositionUpdate(symbol: string): void;
+
+    /** Manually emit the current balance state for an asset. */
+    triggerBalanceUpdate(asset: string): void;
 
     /**
      * Manually trigger an order update callback for a specific symbol.

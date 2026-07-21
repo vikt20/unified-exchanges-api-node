@@ -1,4 +1,4 @@
-import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
+import { IUserDataManager, IUserDataState, BalanceUpdateCallback, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
 import BybitFutures from "./BybitFutures.js";
 import { PositionData, OrderData, SocketStatus, UserData } from "../core/types.js";
 /**
@@ -18,6 +18,7 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
      * Private storage for multiple position update callbacks
      */
     private positionCallbacks;
+    private balanceCallbacks;
     /**
      * Private storage for multiple order update callbacks
      */
@@ -31,6 +32,7 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
      * @returns Unsubscribe function to remove this callback
      */
     onPositionUpdate(callback: PositionUpdateCallback): Unsubscribe;
+    onBalanceUpdate(callback: BalanceUpdateCallback): Unsubscribe;
     /**
      * Register a callback to receive order updates
      * @returns Unsubscribe function to remove this callback
@@ -63,6 +65,11 @@ export default class BybitUserData extends BybitFutures implements IUserDataMana
     handleUserStatus: (status: SocketStatus) => void;
     requestAllOrders(): Promise<void>;
     requestAllPositions(): Promise<void>;
+    requestAllBalances(): Promise<void>;
+    triggerBalanceUpdate(asset: string): void;
+    private setBalance;
+    private emitBalance;
+    private replaceBalances;
     setPosition: (data: PositionData) => Promise<void>;
     setOrders: (data: OrderData) => Promise<void>;
 }

@@ -1,9 +1,10 @@
-import { IUserDataManager, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
-import { OrderData, PositionData } from "./BinanceBase.js";
+import { IUserDataManager, BalanceUpdateCallback, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from "../core/IUserDataManager.js";
+import { BalanceData, OrderData, PositionData } from "./BinanceBase.js";
 import BinanceFutures from "./BinanceFutures.js";
 import { SocketStatus, UserData } from "../core/types.js";
 
 export type CustomUserData = {
+    balances: BalanceData[],
     positions: PositionData[],
     orders: OrderData[]
 }
@@ -41,6 +42,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      * Continuously updated by the WebSocket stream.
      */
     userData: CustomUserData = {
+        balances: [],
         positions: [],
         orders: []
     }
@@ -49,6 +51,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
      * Private storage for multiple position update callbacks
      */
     private positionCallbacks = new Set<PositionUpdateCallback>();
+    private balanceCallbacks = new Set<BalanceUpdateCallback>();
 
     /**
      * Private storage for multiple order update callbacks
@@ -70,6 +73,11 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
         return () => {
             this.positionCallbacks.delete(callback);
         };
+    }
+
+    onBalanceUpdate(callback: BalanceUpdateCallback): Unsubscribe {
+        this.balanceCallbacks.add(callback);
+        return () => this.balanceCallbacks.delete(callback);
     }
 
     /**
@@ -116,11 +124,16 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
         }
     }
 
+    triggerBalanceUpdate(asset: string): void {
+        this.emitBalance(asset);
+    }
+
     async init() {
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
-            this.requestAllPositions()
+            this.requestAllPositions(),
+            this.requestAllBalances()
         ])
     }
 
@@ -134,6 +147,7 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
         this.positionRiskLastRequestAt.clear();
         // Clear all registered callbacks
         this.positionCallbacks.clear();
+        this.balanceCallbacks.clear();
         this.orderCallbacks.clear();
         this.statusCallbacks.clear();
     }
@@ -158,11 +172,19 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
         }
     }
 
+    private emitBalance = (asset: string): void => {
+        const balance = this.userData.balances.find(item => item.asset === asset);
+        for (const cb of this.balanceCallbacks) cb(asset, balance);
+    }
+
     handleUserData = (data: UserData) => {
 
         switch (data.event) {
             case "ACCOUNT_UPDATE":
-                if (data.accountData) data.accountData.positions?.forEach(this.setPosition)
+                if (data.accountData) {
+                    data.accountData.positions?.forEach(this.setPosition)
+                    data.accountData.balances?.forEach(this.setBalance)
+                }
                 break;
             case "ORDER_TRADE_UPDATE":
                 // console.log(data.orderData)
@@ -202,6 +224,19 @@ export default class BinanceUserData extends BinanceFutures implements IUserData
         }
 
         this.userData.positions = request.data
+    }
+
+    async requestAllBalances(): Promise<void> {
+        const request = await this.getBalance();
+        if (!request.success || !request.data) throw new Error(`getBalance() - ${request.errors}`);
+        this.userData.balances = request.data;
+    }
+
+    setBalance = (data: BalanceData): void => {
+        const index = this.userData.balances.findIndex(balance => balance.asset === data.asset);
+        if (index === -1) this.userData.balances.push(data);
+        else this.userData.balances[index] = data;
+        this.emitBalance(data.asset);
     }
 
     setOrders = async (data: OrderData): Promise<void> => {

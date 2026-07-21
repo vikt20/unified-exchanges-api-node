@@ -1,19 +1,20 @@
 /**
  * IUserDataManager - Unified User Data Manager Interface
  *
- * This interface defines how user-specific data (positions, open orders) should be
+ * This interface defines how user-specific data (balances, positions, open orders) should be
  * tracked and synchronized across different exchange implementations.
  *
  * REFERENCE IMPLEMENTATION: BinanceUserData.ts
  *
  * CORE ARCHITECTURE PRINCIPLES:
  * 1. SINGLE SOURCE OF TRUTH (userData)
- *    The manager maintains a local `userData` object containing all active positions
+ *    The manager maintains a local `userData` object containing balances, active positions
  *    and open orders. This state must be kept in sync using a combination of REST
  *    snapshots and WebSocket updates.
  *
  * 2. SNAPSHOT + STREAM SYNC
- *    - On `init()`, the manager fetches initial snapshots via REST (requestAllOrders, requestAllPositions).
+ *    - On `init()`, the manager fetches initial snapshots via REST
+ *      (requestAllBalances, requestAllOrders, requestAllPositions).
  *    - It simultaneously opens a User Data WebSocket stream to receive real-time updates.
  *    - All incoming WebSocket data MUST update the local `userData` state before calling callbacks.
  *

@@ -10,10 +10,12 @@ export default class KrakenUserData extends KrakenFutures {
         super(apiKey, apiSecret, isTest);
     }
     userData = {
+        balances: [],
         positions: [],
         orders: []
     };
     positionCallbacks = new Set();
+    balanceCallbacks = new Set();
     orderCallbacks = new Set();
     statusCallbacks = new Set();
     onPositionUpdate(callback) {
@@ -21,6 +23,10 @@ export default class KrakenUserData extends KrakenFutures {
         return () => {
             this.positionCallbacks.delete(callback);
         };
+    }
+    onBalanceUpdate(callback) {
+        this.balanceCallbacks.add(callback);
+        return () => this.balanceCallbacks.delete(callback);
     }
     onOrderUpdate(callback) {
         this.orderCallbacks.add(callback);
@@ -50,18 +56,26 @@ export default class KrakenUserData extends KrakenFutures {
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
-            this.requestAllPositions()
+            this.requestAllPositions(),
+            this.requestAllBalances()
         ]);
     }
     destroy() {
         this.closeAllSockets();
         this.positionCallbacks.clear();
+        this.balanceCallbacks.clear();
         this.orderCallbacks.clear();
         this.statusCallbacks.clear();
     }
     handleUserData = (data) => {
         switch (data.event) {
             case 'ACCOUNT_UPDATE':
+                if (data.accountData?.balances !== undefined) {
+                    if (data.updateType === 'SNAPSHOT')
+                        this.replaceBalances(data.accountData.balances);
+                    else
+                        data.accountData.balances.forEach(this.setBalance);
+                }
                 if (data.accountData?.positions !== undefined) {
                     if (data.updateType === 'SNAPSHOT') {
                         this.replacePositionsSnapshot(data.accountData.positions);
@@ -110,6 +124,33 @@ export default class KrakenUserData extends KrakenFutures {
         else {
             console.error('KrakenUserData: Failed to fetch open positions', res.errors);
         }
+    }
+    async requestAllBalances() {
+        const res = await this.getBalance();
+        if (res.success && res.data)
+            this.userData.balances = res.data;
+        else
+            console.error('KrakenUserData: Failed to fetch balances', res.errors);
+    }
+    triggerBalanceUpdate(asset) { this.emitBalance(asset); }
+    setBalance = (data) => {
+        const index = this.userData.balances.findIndex(balance => balance.asset === data.asset);
+        if (index === -1)
+            this.userData.balances.push(data);
+        else
+            this.userData.balances[index] = data;
+        this.emitBalance(data.asset);
+    };
+    emitBalance(asset) {
+        const balance = this.userData.balances.find(item => item.asset === asset);
+        for (const callback of this.balanceCallbacks)
+            callback(asset, balance);
+    }
+    replaceBalances(balances) {
+        const assets = new Set([...this.userData.balances.map(item => item.asset), ...balances.map(item => item.asset)]);
+        this.userData.balances = balances;
+        for (const asset of assets)
+            this.emitBalance(asset);
     }
     setPosition = async (data) => {
         const symbol = data.symbol;

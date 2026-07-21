@@ -1,6 +1,6 @@
-import { IUserDataManager, IUserDataState, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from '../core/IUserDataManager.js';
+import { IUserDataManager, IUserDataState, BalanceUpdateCallback, PositionUpdateCallback, OrderUpdateCallback, StatusUpdateCallback, Unsubscribe } from '../core/IUserDataManager.js';
 import KrakenFutures from './KrakenFutures.js';
-import { PositionData, OrderData, SocketStatus, UserData } from '../core/types.js';
+import { BalanceData, PositionData, OrderData, SocketStatus, UserData } from '../core/types.js';
 
 /**
  * KrakenUserData - Implementation of IUserDataManager for Kraken Futures.
@@ -14,11 +14,13 @@ export default class KrakenUserData extends KrakenFutures implements IUserDataMa
     }
 
     userData: IUserDataState = {
+        balances: [],
         positions: [],
         orders: []
     };
 
     private positionCallbacks = new Set<PositionUpdateCallback>();
+    private balanceCallbacks = new Set<BalanceUpdateCallback>();
     private orderCallbacks = new Set<OrderUpdateCallback>();
     private statusCallbacks = new Set<StatusUpdateCallback>();
 
@@ -27,6 +29,11 @@ export default class KrakenUserData extends KrakenFutures implements IUserDataMa
         return () => {
             this.positionCallbacks.delete(callback);
         };
+    }
+
+    onBalanceUpdate(callback: BalanceUpdateCallback): Unsubscribe {
+        this.balanceCallbacks.add(callback);
+        return () => this.balanceCallbacks.delete(callback);
     }
 
     onOrderUpdate(callback: OrderUpdateCallback): Unsubscribe {
@@ -61,13 +68,15 @@ export default class KrakenUserData extends KrakenFutures implements IUserDataMa
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
-            this.requestAllPositions()
+            this.requestAllPositions(),
+            this.requestAllBalances()
         ]);
     }
 
     destroy(): void {
         this.closeAllSockets();
         this.positionCallbacks.clear();
+        this.balanceCallbacks.clear();
         this.orderCallbacks.clear();
         this.statusCallbacks.clear();
     }
@@ -75,6 +84,10 @@ export default class KrakenUserData extends KrakenFutures implements IUserDataMa
     handleUserData = (data: UserData): void => {
         switch (data.event) {
             case 'ACCOUNT_UPDATE':
+                if (data.accountData?.balances !== undefined) {
+                    if (data.updateType === 'SNAPSHOT') this.replaceBalances(data.accountData.balances);
+                    else data.accountData.balances.forEach(this.setBalance);
+                }
                 if (data.accountData?.positions !== undefined) {
                     if (data.updateType === 'SNAPSHOT') {
                         this.replacePositionsSnapshot(data.accountData.positions);
@@ -122,6 +135,32 @@ export default class KrakenUserData extends KrakenFutures implements IUserDataMa
         } else {
             console.error('KrakenUserData: Failed to fetch open positions', res.errors);
         }
+    }
+
+    async requestAllBalances(): Promise<void> {
+        const res = await this.getBalance();
+        if (res.success && res.data) this.userData.balances = res.data;
+        else console.error('KrakenUserData: Failed to fetch balances', res.errors);
+    }
+
+    triggerBalanceUpdate(asset: string): void { this.emitBalance(asset); }
+
+    private setBalance = (data: BalanceData): void => {
+        const index = this.userData.balances.findIndex(balance => balance.asset === data.asset);
+        if (index === -1) this.userData.balances.push(data);
+        else this.userData.balances[index] = data;
+        this.emitBalance(data.asset);
+    };
+
+    private emitBalance(asset: string): void {
+        const balance = this.userData.balances.find(item => item.asset === asset);
+        for (const callback of this.balanceCallbacks) callback(asset, balance);
+    }
+
+    private replaceBalances(balances: BalanceData[]): void {
+        const assets = new Set([...this.userData.balances.map(item => item.asset), ...balances.map(item => item.asset)]);
+        this.userData.balances = balances;
+        for (const asset of assets) this.emitBalance(asset);
     }
 
     setPosition = async (data: PositionData): Promise<void> => {

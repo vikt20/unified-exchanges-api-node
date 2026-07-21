@@ -28,6 +28,7 @@ export default class BinanceUserData extends BinanceFutures {
      * Continuously updated by the WebSocket stream.
      */
     userData = {
+        balances: [],
         positions: [],
         orders: []
     };
@@ -35,6 +36,7 @@ export default class BinanceUserData extends BinanceFutures {
      * Private storage for multiple position update callbacks
      */
     positionCallbacks = new Set();
+    balanceCallbacks = new Set();
     /**
      * Private storage for multiple order update callbacks
      */
@@ -52,6 +54,10 @@ export default class BinanceUserData extends BinanceFutures {
         return () => {
             this.positionCallbacks.delete(callback);
         };
+    }
+    onBalanceUpdate(callback) {
+        this.balanceCallbacks.add(callback);
+        return () => this.balanceCallbacks.delete(callback);
     }
     /**
      * Register a callback to receive order updates
@@ -91,11 +97,15 @@ export default class BinanceUserData extends BinanceFutures {
             cb(symbol, orders);
         }
     }
+    triggerBalanceUpdate(asset) {
+        this.emitBalance(asset);
+    }
     async init() {
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
-            this.requestAllPositions()
+            this.requestAllPositions(),
+            this.requestAllBalances()
         ]);
     }
     destroy() {
@@ -109,6 +119,7 @@ export default class BinanceUserData extends BinanceFutures {
         this.positionRiskLastRequestAt.clear();
         // Clear all registered callbacks
         this.positionCallbacks.clear();
+        this.balanceCallbacks.clear();
         this.orderCallbacks.clear();
         this.statusCallbacks.clear();
     }
@@ -130,11 +141,18 @@ export default class BinanceUserData extends BinanceFutures {
             cb(symbol, orders);
         }
     };
+    emitBalance = (asset) => {
+        const balance = this.userData.balances.find(item => item.asset === asset);
+        for (const cb of this.balanceCallbacks)
+            cb(asset, balance);
+    };
     handleUserData = (data) => {
         switch (data.event) {
             case "ACCOUNT_UPDATE":
-                if (data.accountData)
+                if (data.accountData) {
                     data.accountData.positions?.forEach(this.setPosition);
+                    data.accountData.balances?.forEach(this.setBalance);
+                }
                 break;
             case "ORDER_TRADE_UPDATE":
                 // console.log(data.orderData)
@@ -169,6 +187,20 @@ export default class BinanceUserData extends BinanceFutures {
         }
         this.userData.positions = request.data;
     }
+    async requestAllBalances() {
+        const request = await this.getBalance();
+        if (!request.success || !request.data)
+            throw new Error(`getBalance() - ${request.errors}`);
+        this.userData.balances = request.data;
+    }
+    setBalance = (data) => {
+        const index = this.userData.balances.findIndex(balance => balance.asset === data.asset);
+        if (index === -1)
+            this.userData.balances.push(data);
+        else
+            this.userData.balances[index] = data;
+        this.emitBalance(data.asset);
+    };
     setOrders = async (data) => {
         const symbol = data.symbol;
         // console.log(data);

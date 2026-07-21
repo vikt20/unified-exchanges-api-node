@@ -1,15 +1,21 @@
 import BitgetFutures from './BitgetFutures.js';
 export default class BitgetUserData extends BitgetFutures {
     userData = {
+        balances: [],
         positions: [],
         orders: []
     };
     positionCallbacks = new Set();
+    balanceCallbacks = new Set();
     orderCallbacks = new Set();
     statusCallbacks = new Set();
     onPositionUpdate(callback) {
         this.positionCallbacks.add(callback);
         return () => this.positionCallbacks.delete(callback);
+    }
+    onBalanceUpdate(callback) {
+        this.balanceCallbacks.add(callback);
+        return () => this.balanceCallbacks.delete(callback);
     }
     onOrderUpdate(callback) {
         this.orderCallbacks.add(callback);
@@ -33,12 +39,14 @@ export default class BitgetUserData extends BitgetFutures {
         return Promise.all([
             this.futuresUserDataStream(this.handleUserData, this.handleUserStatus),
             this.requestAllOrders(),
-            this.requestAllPositions()
+            this.requestAllPositions(),
+            this.requestAllBalances()
         ]);
     }
     destroy() {
         this.closeAllSockets();
         this.positionCallbacks.clear();
+        this.balanceCallbacks.clear();
         this.orderCallbacks.clear();
         this.statusCallbacks.clear();
     }
@@ -60,11 +68,25 @@ export default class BitgetUserData extends BitgetFutures {
             console.error('BitgetUserData: Failed to fetch open positions', res.errors);
         }
     }
+    async requestAllBalances() {
+        const res = await this.getBalance();
+        if (res.success && res.data)
+            this.userData.balances = res.data;
+        else
+            console.error('BitgetUserData: Failed to fetch balances', res.errors);
+    }
+    triggerBalanceUpdate(asset) { this.emitBalance(asset); }
     handleUserStatus = (status) => {
         for (const callback of this.statusCallbacks)
             callback(status);
     };
     handleUserData = (data) => {
+        if (data.event === 'ACCOUNT_UPDATE' && data.accountData?.balances) {
+            if (data.updateType === 'SNAPSHOT')
+                this.replaceBalances(data.accountData.balances);
+            else
+                data.accountData.balances.forEach(this.setBalance);
+        }
         if (data.event === 'ACCOUNT_UPDATE' && data.accountData?.positions) {
             if (data.updateType === 'SNAPSHOT') {
                 this.replacePositions(data.accountData.positions);
@@ -85,6 +107,25 @@ export default class BitgetUserData extends BitgetFutures {
             void this.init();
         }
     };
+    setBalance = (data) => {
+        const index = this.userData.balances.findIndex(balance => balance.asset === data.asset);
+        if (index === -1)
+            this.userData.balances.push(data);
+        else
+            this.userData.balances[index] = data;
+        this.emitBalance(data.asset);
+    };
+    emitBalance(asset) {
+        const balance = this.userData.balances.find(item => item.asset === asset);
+        for (const callback of this.balanceCallbacks)
+            callback(asset, balance);
+    }
+    replaceBalances(balances) {
+        const assets = new Set([...this.userData.balances.map(item => item.asset), ...balances.map(item => item.asset)]);
+        this.userData.balances = balances;
+        for (const asset of assets)
+            this.emitBalance(asset);
+    }
     setPosition = (position) => {
         const index = this.userData.positions.findIndex(item => item.symbol === position.symbol);
         if (!position.isInPosition || position.positionAmount === 0) {
