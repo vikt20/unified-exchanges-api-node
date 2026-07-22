@@ -22,6 +22,7 @@ export default class KrakenStreams extends KrakenBase {
         return () => undefined; // BybitStreams does not use BinanceWebsocketApiClient, so we return undefined
     }
     handleWebSocket(url, subscribeMessage, parser, callback, title, statusCallback) {
+        title = `${this.exchange_id}:${title}`;
         const id = Math.random().toString(36).slice(2);
         let isActive = true;
         let currentWs = null;
@@ -236,7 +237,7 @@ export default class KrakenStreams extends KrakenBase {
                 snapshot: true
             }
         };
-        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotBook.bind(this), callback, 'kraken:spotDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotBook.bind(this), callback, 'spotDepthStream', statusCallback);
     }
     spotCandleStickStream(symbols, interval, callback, statusCallback) {
         const wsSymbols = symbols.map(s => this.normalizeSpotWsSymbol(s));
@@ -249,7 +250,7 @@ export default class KrakenStreams extends KrakenBase {
                 snapshot: true
             }
         };
-        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotOhlc.bind(this), callback, 'kraken:spotCandleStickStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotOhlc.bind(this), callback, 'spotCandleStickStream', statusCallback);
     }
     spotBookTickerStream(symbols, callback, statusCallback) {
         const wsSymbols = symbols.map(s => this.normalizeSpotWsSymbol(s));
@@ -261,7 +262,7 @@ export default class KrakenStreams extends KrakenBase {
                 snapshot: true
             }
         };
-        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotTicker.bind(this), callback, 'kraken:spotBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotTicker.bind(this), callback, 'spotBookTickerStream', statusCallback);
     }
     spotTradeStream(symbols, callback, statusCallback) {
         const wsSymbols = symbols.map(s => this.normalizeSpotWsSymbol(s));
@@ -273,7 +274,7 @@ export default class KrakenStreams extends KrakenBase {
                 snapshot: true
             }
         };
-        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotTrade.bind(this), callback, 'kraken:spotTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotTrade.bind(this), callback, 'spotTradeStream', statusCallback);
     }
     // --- Futures Streams ---
     futuresDepthStream(symbols, callback, statusCallback, _levels) {
@@ -282,7 +283,7 @@ export default class KrakenStreams extends KrakenBase {
             feed: 'book',
             product_ids: symbols
         };
-        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesBook.bind(this), callback, 'kraken:futuresDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesBook.bind(this), callback, 'futuresDepthStream', statusCallback);
     }
     futuresCandleStickStream(symbols, interval, callback, statusCallback) {
         const intervalMs = this.normalizeFuturesIntervalMs(interval);
@@ -326,7 +327,7 @@ export default class KrakenStreams extends KrakenBase {
             candles.set(key, candle);
             return [candle];
         };
-        return this.handleWebSocket(this.getStreamUrl('futures'), message, parseCandle, callback, 'kraken:futuresCandleStickStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('futures'), message, parseCandle, callback, 'futuresCandleStickStream', statusCallback);
     }
     futuresBookTickerStream(symbols, callback, statusCallback) {
         const message = {
@@ -334,7 +335,7 @@ export default class KrakenStreams extends KrakenBase {
             feed: 'ticker',
             product_ids: symbols
         };
-        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTicker.bind(this), callback, 'kraken:futuresBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTicker.bind(this), callback, 'futuresBookTickerStream', statusCallback);
     }
     futuresTradeStream(symbols, callback, statusCallback) {
         const message = {
@@ -342,7 +343,7 @@ export default class KrakenStreams extends KrakenBase {
             feed: 'trade',
             product_ids: symbols
         };
-        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTrade.bind(this), callback, 'kraken:futuresTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTrade.bind(this), callback, 'futuresTradeStream', statusCallback);
     }
     fundingStream(symbols, callback, statusCallback) {
         const message = {
@@ -350,7 +351,7 @@ export default class KrakenStreams extends KrakenBase {
             feed: 'ticker',
             product_ids: symbols
         };
-        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesFunding.bind(this), callback, 'kraken:fundingStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesFunding.bind(this), callback, 'fundingStream', statusCallback);
     }
     futuresUserDataStream(callback, statusCallback) {
         if (!this.apiKey || !this.apiSecret) {

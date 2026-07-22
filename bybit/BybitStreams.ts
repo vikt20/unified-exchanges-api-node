@@ -32,6 +32,7 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
         statusCallback?: (status: SocketStatus) => void,
         auth: boolean = false
     ): Promise<HandleWebSocket> {
+        title = `${this.exchange_id}:${title}`;
         const RECONNECT_DELAY = 3000;
         const PING_INTERVAL = 20000; // Bybit needs ping every 20s
 

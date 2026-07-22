@@ -2,6 +2,7 @@ import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 import * as crypto from 'crypto';
 import { convertObjectIntoUrlEncoded } from './converters.js';
 export default class BybitBase extends AbstractExchangeBase {
+    exchange_id = 'BYBIT';
     static BASE_URL_MAINNET = 'https://api.bybit.com';
     static BASE_URL_TESTNET = 'https://api-testnet.bybit.com';
     // Bybit V5 Websocket URLs

@@ -13,6 +13,7 @@ export default class BybitStreams extends BybitBase {
     }
     // --- Base WebSocket Handler ---
     handleWebSocket(url, topics, callback, parser, title, statusCallback, auth = false) {
+        title = `${this.exchange_id}:${title}`;
         const RECONNECT_DELAY = 3000;
         const PING_INTERVAL = 20000; // Bybit needs ping every 20s
         const id = Math.random().toString(36).substring(7);

@@ -11,6 +11,7 @@ type KrakenParamValue = string | number | boolean;
 type KrakenRequestParams = Record<string, KrakenParamValue | undefined>;
 
 export default class KrakenBase extends AbstractExchangeBase {
+    public readonly exchange_id = 'KRAKEN';
     public static SPOT_BASE_URL = 'https://api.kraken.com';
     public static FUTURES_BASE_URL = 'https://futures.kraken.com/derivatives/api/v3';
     public static FUTURES_CHARTS_BASE_URL = 'https://futures.kraken.com/api/charts/v1';

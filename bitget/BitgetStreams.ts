@@ -85,6 +85,7 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
         statusCallback?: (status: SocketStatus) => void,
         auth: boolean = false
     ): Promise<HandleWebSocket> {
+        title = `${this.exchange_id}:${title}`;
         const id = `bitget-${Math.random().toString(36).slice(2)}`;
         const reconnectDelay = 3000;
         const pingIntervalMs = 20000;
@@ -275,40 +276,40 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
 
     spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void, levels: number = 51): Promise<HandleWebSocket> {
         const channel = levels <= 5 ? 'books5' : levels <= 50 ? 'books50' : 'books';
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', channel, symbols), this.parseDepth, callback, 'bitget:spotDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', channel, symbols), this.parseDepth, callback, 'spotDepthStream', statusCallback);
     }
 
     futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void, levels: number = 51): Promise<HandleWebSocket> {
         const channel = levels <= 5 ? 'books5' : levels <= 50 ? 'books50' : 'books';
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, channel, symbols), this.parseDepth, callback, 'bitget:futuresDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, channel, symbols), this.parseDepth, callback, 'futuresDepthStream', statusCallback);
     }
 
     spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', `candle${this.normalizeInterval(interval)}`, symbols), this.parseKline, callback, 'bitget:spotCandleStickStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', `candle${this.normalizeInterval(interval)}`, symbols), this.parseKline, callback, 'spotCandleStickStream', statusCallback);
     }
 
     futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, `candle${this.normalizeInterval(interval)}`, symbols), this.parseKline, callback, 'bitget:futuresCandleStickStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, `candle${this.normalizeInterval(interval)}`, symbols), this.parseKline, callback, 'futuresCandleStickStream', statusCallback);
     }
 
     spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', 'books1', symbols), this.parseBookTicker, callback, 'bitget:spotBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', 'books1', symbols), this.parseBookTicker, callback, 'spotBookTickerStream', statusCallback);
     }
 
     futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'books1', symbols), this.parseBookTicker, callback, 'bitget:futuresBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'books1', symbols), this.parseBookTicker, callback, 'futuresBookTickerStream', statusCallback);
     }
 
     spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', 'trade', symbols), this.parseTrade, callback, 'bitget:spotTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', 'trade', symbols), this.parseTrade, callback, 'spotTradeStream', statusCallback);
     }
 
     futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'trade', symbols), this.parseTrade, callback, 'bitget:futuresTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'trade', symbols), this.parseTrade, callback, 'futuresTradeStream', statusCallback);
     }
 
     fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'ticker', symbols), this.parseFunding, callback, 'bitget:fundingStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'ticker', symbols), this.parseFunding, callback, 'fundingStream', statusCallback);
     }
 
     futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
@@ -328,7 +329,7 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
             args,
             this.parseUserData,
             callback,
-            'bitget:futuresUserDataStream',
+            'futuresUserDataStream',
             statusCallback,
             true
         );

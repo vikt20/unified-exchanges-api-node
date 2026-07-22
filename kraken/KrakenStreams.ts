@@ -69,6 +69,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
         title: string,
         statusCallback?: (status: SocketStatus) => void
     ): Promise<HandleWebSocket> {
+        title = `${this.exchange_id}:${title}`;
         const id = Math.random().toString(36).slice(2);
         let isActive = true;
         let currentWs: ws | null = null;
@@ -290,7 +291,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
                 snapshot: true
             }
         };
-        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotBook.bind(this), callback, 'kraken:spotDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotBook.bind(this), callback, 'spotDepthStream', statusCallback);
     }
 
     spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
@@ -304,7 +305,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
                 snapshot: true
             }
         };
-        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotOhlc.bind(this), callback, 'kraken:spotCandleStickStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotOhlc.bind(this), callback, 'spotCandleStickStream', statusCallback);
     }
 
     spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
@@ -317,7 +318,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
                 snapshot: true
             }
         };
-        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotTicker.bind(this), callback, 'kraken:spotBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotTicker.bind(this), callback, 'spotBookTickerStream', statusCallback);
     }
 
     spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
@@ -330,7 +331,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
                 snapshot: true
             }
         };
-        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotTrade.bind(this), callback, 'kraken:spotTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('spot'), message, this.parseSpotTrade.bind(this), callback, 'spotTradeStream', statusCallback);
     }
 
     // --- Futures Streams ---
@@ -341,7 +342,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
             feed: 'book',
             product_ids: symbols
         };
-        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesBook.bind(this), callback, 'kraken:futuresDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesBook.bind(this), callback, 'futuresDepthStream', statusCallback);
     }
 
     futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
@@ -392,7 +393,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
             message,
             parseCandle,
             callback,
-            'kraken:futuresCandleStickStream',
+            'futuresCandleStickStream',
             statusCallback
         );
     }
@@ -403,7 +404,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
             feed: 'ticker',
             product_ids: symbols
         };
-        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTicker.bind(this), callback, 'kraken:futuresBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTicker.bind(this), callback, 'futuresBookTickerStream', statusCallback);
     }
 
     futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
@@ -412,7 +413,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
             feed: 'trade',
             product_ids: symbols
         };
-        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTrade.bind(this), callback, 'kraken:futuresTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTrade.bind(this), callback, 'futuresTradeStream', statusCallback);
     }
 
     fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
@@ -421,7 +422,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
             feed: 'ticker',
             product_ids: symbols
         };
-        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesFunding.bind(this), callback, 'kraken:fundingStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesFunding.bind(this), callback, 'fundingStream', statusCallback);
     }
 
     futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {

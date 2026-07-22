@@ -76,6 +76,7 @@ export type AlgoOrderResponse = {
     goodTillDate: number;
 };
 export default class BinanceBase extends AbstractExchangeBase {
+    readonly exchange_id = "BINANCE";
     static FUTURES_PUBLIC_STREAM_URL: string;
     static FUTURES_MARKET_STREAM_URL: string;
     static FUTURES_PRIVATE_STREAM_URL: string;

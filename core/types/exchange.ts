@@ -68,6 +68,7 @@ export type ExtractedInfoType = 'COIN' | 'STOCK' | 'TRADFI' | 'PRE_IPO' | 'UNKNO
 
 export type ExtractedInfo = {
     symbol: string;
+    rawData: unknown;
     status: string;
     type: ExtractedInfoType;
     minPrice: number;

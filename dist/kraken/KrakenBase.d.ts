@@ -5,6 +5,7 @@ export type KrakenMarketType = 'spot' | 'futures' | 'futures-charts';
 type KrakenParamValue = string | number | boolean;
 type KrakenRequestParams = Record<string, KrakenParamValue | undefined>;
 export default class KrakenBase extends AbstractExchangeBase {
+    readonly exchange_id = "KRAKEN";
     static SPOT_BASE_URL: string;
     static FUTURES_BASE_URL: string;
     static FUTURES_CHARTS_BASE_URL: string;

@@ -2,6 +2,7 @@ import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 import { FormattedResponse } from '../core/types.js';
 import { ExtractedInfo } from '../core/types.js';
 export default class OkxBase extends AbstractExchangeBase {
+    readonly exchange_id = "OKX";
     static BASE_URL: string;
     static BASE_URL_TESTNET: string;
     static WS_PUBLIC: string;

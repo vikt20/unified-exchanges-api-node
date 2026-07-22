@@ -35,6 +35,7 @@ export function convertKrakenAssetPairsToExtractedInfo(pairs) {
         const minNotional = pair.costmin ? parseFloat(pair.costmin) : 0;
         info[symbol] = {
             symbol,
+            rawData: pair,
             status: pair.status ? (pair.status.startsWith('online') ? 'TRADING' : 'BREAK') : 'TRADING',
             type: pair.aclass_base === 'tokenized_asset' || pair.aclass_quote === 'tokenized_asset' ? 'STOCK' : 'COIN',
             minPrice: 0,
@@ -336,6 +337,7 @@ export function mapKrakenFuturesInstrumentToExtractedInfo(instrument) {
     const quoteAsset = instrument.quote ?? parseFuturesSymbolParts(symbol).quote;
     return {
         symbol,
+        rawData: instrument,
         status: instrument.status && instrument.status !== 'online' ? 'BREAK' : 'TRADING',
         type: instrument.tradfi === true ? 'TRADFI' : 'COIN',
         minPrice: 0,

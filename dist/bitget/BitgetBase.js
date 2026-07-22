@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 import { BITGET_SUCCESS_CODE, isRecord, isString } from './converters.js';
 export default class BitgetBase extends AbstractExchangeBase {
+    exchange_id = 'BITGET';
     static BASE_URL = 'https://api.bitget.com';
     static PUBLIC_WS_URL = 'wss://ws.bitget.com/v2/ws/public';
     static PRIVATE_WS_URL = 'wss://ws.bitget.com/v2/ws/private';

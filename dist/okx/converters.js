@@ -7,6 +7,7 @@ export function convertExchangeInfo(data) {
                 continue;
             info[item.instId] = {
                 symbol: item.instId,
+                rawData: item,
                 status: item.state === 'live' ? 'TRADING' : 'BREAK',
                 type: parseFloat(item.instCategory || '0') === 1 && item.ruleType === 'normal' ? 'COIN' : 'UNKNOWN',
                 baseAsset: item.baseCcy || item.settleCcy,

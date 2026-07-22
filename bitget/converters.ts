@@ -452,6 +452,7 @@ export function convertSpotExchangeInfo(items: BitgetSpotSymbol[]): { [key: stri
         if (item.status !== 'online') continue;
         info[item.symbol] = {
             symbol: item.symbol,
+            rawData: item,
             status: 'TRADING',
             type: 'COIN',
             baseAsset: item.baseCoin,
@@ -475,6 +476,7 @@ export function convertFuturesExchangeInfo(items: BitgetFuturesContract[]): { [k
         if (item.symbolStatus !== 'normal') continue;
         info[item.symbol] = {
             symbol: item.symbol,
+            rawData: item,
             status: 'TRADING',
             type: item.isRwa == "NO" ? 'COIN' : 'UNKNOWN',
             baseAsset: item.baseCoin,

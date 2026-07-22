@@ -10,6 +10,7 @@ export type BitgetParamValue = string | number | boolean | undefined;
 export type BitgetParams = Record<string, BitgetParamValue>;
 
 export default class BitgetBase extends AbstractExchangeBase {
+    public readonly exchange_id = 'BITGET';
     public static BASE_URL = 'https://api.bitget.com';
     public static PUBLIC_WS_URL = 'wss://ws.bitget.com/v2/ws/public';
     public static PRIVATE_WS_URL = 'wss://ws.bitget.com/v2/ws/private';
@@ -175,4 +176,3 @@ export default class BitgetBase extends AbstractExchangeBase {
         return this.formattedResponse({ errors: 'Failed to make Bitget request' });
     }
 }
-

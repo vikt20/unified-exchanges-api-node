@@ -30,6 +30,7 @@ export function extractInfo(data) {
         filters.baseAsset = obj.baseAsset;
         filters.quoteAsset = obj.quoteAsset;
         filters.symbol = obj.symbol;
+        filters.rawData = obj;
         info[obj.symbol] = filters;
     }
     return info;

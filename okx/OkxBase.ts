@@ -5,6 +5,7 @@ import { FormattedResponse } from '../core/types.js';
 import { ExtractedInfo } from '../core/types.js';
 
 export default class OkxBase extends AbstractExchangeBase {
+    public readonly exchange_id = 'OKX';
     public static BASE_URL = 'https://www.okx.com';
     public static BASE_URL_TESTNET = 'https://www.okx.com'; // OKX testnet is driven by a header usually, but there is no pure testnet URL? Wait, AWS OKX testnet URL is sometimes different, but they use the "x-simulated-trading" header. Let's use standard URL and maybe pass header later. Actually OKX uses the same endpoint, just specific headers or different accounts. Wait, their manual says testnet uses either a testnet API key or a specific flag. Let's just use `https://www.okx.com` for now.
 

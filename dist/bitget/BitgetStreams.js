@@ -18,6 +18,7 @@ export default class BitgetStreams extends BitgetBase {
         }
     }
     handleWebSocket(url, args, parser, callback, title, statusCallback, auth = false) {
+        title = `${this.exchange_id}:${title}`;
         const id = `bitget-${Math.random().toString(36).slice(2)}`;
         const reconnectDelay = 3000;
         const pingIntervalMs = 20000;
@@ -200,32 +201,32 @@ export default class BitgetStreams extends BitgetBase {
     }
     spotDepthStream(symbols, callback, statusCallback, levels = 51) {
         const channel = levels <= 5 ? 'books5' : levels <= 50 ? 'books50' : 'books';
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', channel, symbols), this.parseDepth, callback, 'bitget:spotDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', channel, symbols), this.parseDepth, callback, 'spotDepthStream', statusCallback);
     }
     futuresDepthStream(symbols, callback, statusCallback, levels = 51) {
         const channel = levels <= 5 ? 'books5' : levels <= 50 ? 'books50' : 'books';
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, channel, symbols), this.parseDepth, callback, 'bitget:futuresDepthStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, channel, symbols), this.parseDepth, callback, 'futuresDepthStream', statusCallback);
     }
     spotCandleStickStream(symbols, interval, callback, statusCallback) {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', `candle${this.normalizeInterval(interval)}`, symbols), this.parseKline, callback, 'bitget:spotCandleStickStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', `candle${this.normalizeInterval(interval)}`, symbols), this.parseKline, callback, 'spotCandleStickStream', statusCallback);
     }
     futuresCandleStickStream(symbols, interval, callback, statusCallback) {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, `candle${this.normalizeInterval(interval)}`, symbols), this.parseKline, callback, 'bitget:futuresCandleStickStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, `candle${this.normalizeInterval(interval)}`, symbols), this.parseKline, callback, 'futuresCandleStickStream', statusCallback);
     }
     spotBookTickerStream(symbols, callback, statusCallback) {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', 'books1', symbols), this.parseBookTicker, callback, 'bitget:spotBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', 'books1', symbols), this.parseBookTicker, callback, 'spotBookTickerStream', statusCallback);
     }
     futuresBookTickerStream(symbols, callback, statusCallback) {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'books1', symbols), this.parseBookTicker, callback, 'bitget:futuresBookTickerStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'books1', symbols), this.parseBookTicker, callback, 'futuresBookTickerStream', statusCallback);
     }
     spotTradeStream(symbols, callback, statusCallback) {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', 'trade', symbols), this.parseTrade, callback, 'bitget:spotTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs('SPOT', 'trade', symbols), this.parseTrade, callback, 'spotTradeStream', statusCallback);
     }
     futuresTradeStream(symbols, callback, statusCallback) {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'trade', symbols), this.parseTrade, callback, 'bitget:futuresTradeStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'trade', symbols), this.parseTrade, callback, 'futuresTradeStream', statusCallback);
     }
     fundingStream(symbols, callback, statusCallback) {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'ticker', symbols), this.parseFunding, callback, 'bitget:fundingStream', statusCallback);
+        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'ticker', symbols), this.parseFunding, callback, 'fundingStream', statusCallback);
     }
     futuresUserDataStream(callback, statusCallback) {
         if (!this.apiKey || !this.apiSecret || !this.apiPassphrase) {
@@ -237,7 +238,7 @@ export default class BitgetStreams extends BitgetBase {
             { instType: this.productType, channel: 'positions' },
             { instType: this.productType, channel: 'account' }
         ];
-        return this.handleWebSocket(this.getStreamUrl('private'), args, this.parseUserData, callback, 'bitget:futuresUserDataStream', statusCallback, true);
+        return this.handleWebSocket(this.getStreamUrl('private'), args, this.parseUserData, callback, 'futuresUserDataStream', statusCallback, true);
     }
     parseUserData = (message) => {
         const channel = message.arg?.channel;

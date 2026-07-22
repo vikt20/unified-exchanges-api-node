@@ -11,6 +11,7 @@ export default class OkxStreams extends OkxBase {
         return () => undefined; // OkxStreams does not use BinanceWebsocketApiClient, so we return undefined
     }
     handleWebSocket(url, args, callback, parser, title, statusCallback, auth = false) {
+        title = `${this.exchange_id}:${title}`;
         // ── OKX WebSocket spec constants ──
         const INITIAL_RECONNECT_DELAY = 3000;
         const MAX_RECONNECT_DELAY = 60000;
@@ -499,7 +500,7 @@ export default class OkxStreams extends OkxBase {
         const CombinedHandleWebSocketResponse = {
             disconnect: () => {
                 this.subscriptions.forEach(sub => {
-                    if (sub.title === 'futuresUserDataStream-business' || sub.title === 'futuresUserDataStream') {
+                    if (sub.title === `${this.exchange_id}:futuresUserDataStream-business` || sub.title === `${this.exchange_id}:futuresUserDataStream`) {
                         sub.disconnect();
                     }
                 });

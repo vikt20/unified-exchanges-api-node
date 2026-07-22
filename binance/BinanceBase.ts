@@ -134,6 +134,7 @@ export type AlgoOrderResponse = {
 
 
 export default class BinanceBase extends AbstractExchangeBase {
+    public readonly exchange_id = 'BINANCE';
     public static FUTURES_PUBLIC_STREAM_URL: string = 'wss://fstream.binance.com/public/ws/';
     public static FUTURES_MARKET_STREAM_URL: string = 'wss://fstream.binance.com/market/ws/';
     public static FUTURES_PRIVATE_STREAM_URL: string = 'wss://fstream.binance.com/private/ws';

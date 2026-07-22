@@ -328,6 +328,7 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
         title: string,
         statusCallback?: (status: SocketStatus) => void
     ): Promise<HandleWebSocket> {
+        title = `${this.exchange_id}:${title}`;
         const RECONNECT_DELAY = 3000;
 
         const id = Math.random().toString(36).substring(7);
@@ -494,7 +495,7 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
 
         this.keepAliveListenKeyByInterval('futures');
         const createWs = () => new ws(`${this.getStreamUrl('futures', 'private')}?listenKey=${encodeURIComponent(listenKey.data!.listenKey)}&events=ORDER_TRADE_UPDATE/ACCOUNT_UPDATE/ALGO_UPDATE/listenKeyExpired`);
-        return this.handleWebSocket(createWs, convertUserData, callback, 'futuresUserDataStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertUserData, callback, 'futuresUserDataStream', statusCallback);
     }
 
     async fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {

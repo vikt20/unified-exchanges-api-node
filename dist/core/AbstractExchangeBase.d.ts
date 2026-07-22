@@ -22,6 +22,7 @@ import { FormattedResponse } from './types.js';
  * class and implement abstract methods for authentication and URL patterns.
  */
 export declare abstract class AbstractExchangeBase {
+    abstract readonly exchange_id: string;
     protected apiKey: string;
     protected apiSecret: string;
     protected isTest: boolean;

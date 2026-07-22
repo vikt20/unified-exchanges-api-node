@@ -8,6 +8,7 @@ import { convertObjectIntoUrlEncoded } from './converters.js';
 
 
 export default class BybitBase extends AbstractExchangeBase {
+    public readonly exchange_id = 'BYBIT';
     public static BASE_URL_MAINNET = 'https://api.bybit.com';
     public static BASE_URL_TESTNET = 'https://api-testnet.bybit.com';
 

@@ -35,6 +35,7 @@ export function extractInfo(data: ExchangeInfo['symbols']): { [key: string]: Ext
         filters.baseAsset = obj.baseAsset;
         filters.quoteAsset = obj.quoteAsset;
         filters.symbol = obj.symbol;
+        filters.rawData = obj;
         info[obj.symbol] = filters;
     }
     return info

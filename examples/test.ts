@@ -12,7 +12,7 @@ dotenv.config({
 
 // const info = await okxFutures.getExchangeInfo().then(request => request.success && request.data ? Object.values(request.data) : [] );
 
-// const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
+const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
 const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
 const krakenApi = ExchangeFactory.create(ExchangeList.KRAKEN, process.env.KRAKEN_API_KEY, process.env.KRAKEN_API_SECRET);
 const bitgetApi = ExchangeFactory.create(ExchangeList.BITGET, process.env.BITGET_API_KEY, process.env.BITGET_API_SECRET, process.env.BITGET_TESTNET_PASSPHRASE, false);
@@ -52,8 +52,8 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
     return symbols;
 }
 // filter by s.type === 'COIN'
-const exchangeInfo = await bitgetApi.futures.getExchangeInfo().then(data => data.success && data.data ? Object.values(data.data) : [])
-console.log(exchangeInfo.find((s: ExtractedInfo) => s.symbol === "OPENAIUSDT"));
+const exchangeInfo = await bybitApi.futures.getExchangeInfo().then(data => data.success && data.data ? Object.values(data.data) : [])
+console.log(exchangeInfo.find((s: ExtractedInfo) => s.symbol === "SPCXUSDT"));
 // const res = await bitgetApi.futures.publicRequest('futures', 'GET', '/api/v2/mix/market/contracts', {
 //             productType: 'USDT-FUTURES'
 //         }).then(data => data.success && Array.isArray(data.data) ? data.data : [])

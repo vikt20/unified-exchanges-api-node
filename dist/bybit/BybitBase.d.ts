@@ -1,6 +1,7 @@
 import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 import { FormattedResponse } from '../core/types.js';
 export default class BybitBase extends AbstractExchangeBase {
+    readonly exchange_id = "BYBIT";
     static BASE_URL_MAINNET: string;
     static BASE_URL_TESTNET: string;
     static WS_PUBLIC_LINEAR_MAINNET: string;

@@ -6,6 +6,7 @@ export type BitgetHttpMethod = 'GET' | 'POST';
 export type BitgetParamValue = string | number | boolean | undefined;
 export type BitgetParams = Record<string, BitgetParamValue>;
 export default class BitgetBase extends AbstractExchangeBase {
+    readonly exchange_id = "BITGET";
     static BASE_URL: string;
     static PUBLIC_WS_URL: string;
     static PRIVATE_WS_URL: string;

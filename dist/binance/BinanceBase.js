@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import { convertObjectIntoUrlEncoded } from './converters.js';
 import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 export default class BinanceBase extends AbstractExchangeBase {
+    exchange_id = 'BINANCE';
     static FUTURES_PUBLIC_STREAM_URL = 'wss://fstream.binance.com/public/ws/';
     static FUTURES_MARKET_STREAM_URL = 'wss://fstream.binance.com/market/ws/';
     static FUTURES_PRIVATE_STREAM_URL = 'wss://fstream.binance.com/private/ws';

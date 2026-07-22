@@ -2,6 +2,7 @@ import { AbstractExchangeBase } from '../core/AbstractExchangeBase.js';
 import axios from 'axios';
 import crypto from 'crypto';
 export default class KrakenBase extends AbstractExchangeBase {
+    exchange_id = 'KRAKEN';
     static SPOT_BASE_URL = 'https://api.kraken.com';
     static FUTURES_BASE_URL = 'https://futures.kraken.com/derivatives/api/v3';
     static FUTURES_CHARTS_BASE_URL = 'https://futures.kraken.com/api/charts/v1';
