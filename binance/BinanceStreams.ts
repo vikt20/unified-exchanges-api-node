@@ -2,8 +2,9 @@ import { IStreamManager } from "../core/IStreamManager.js";
 import BinanceBase, { AccountData, FormattedResponse, OrderData, OrderStatus, OrderType, OrderWorkingType, PositionDirection, TimeInForce, Type } from "./BinanceBase.js";
 import { convertBookTickerData, convertDepthData, convertFundingData, convertKlineData, convertTradeDataWebSocket, convertUserData } from "./converters.js";
 import ws from 'ws';
-import type { UserData, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
+import type { FundingData, FundingStreamOptions, UserData, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
 import { BinanceWebsocketApiClient, BinanceWsUnavailableError } from "./BinanceWebsocketApi.js";
+import { createFundingIntervalCallback } from "../core/fundingInterval.js";
 
 export type UserDataWebSocket = {
     e: UserData['event'],
@@ -498,9 +499,63 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
         return this.handleWebSocket(createWs, convertUserData, callback, 'futuresUserDataStream', statusCallback);
     }
 
-    async fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
+    private fundingInfoHour?: number;
+    private fundingInfoRequest?: Promise<Map<string, number>>;
+
+    private async fetchFundingInterval(symbol: string): Promise<number | undefined> {
+        const hour = Math.floor(Date.now() / (60 * 60 * 1000));
+        if (this.fundingInfoHour !== hour || !this.fundingInfoRequest) {
+            this.fundingInfoHour = hour;
+            this.fundingInfoRequest = this.publicRequest('futures', 'GET', '/fapi/v1/fundingInfo')
+                .then(response => {
+                    if (!response.success || !Array.isArray(response.data)) {
+                        throw new Error(response.errors || 'Failed to fetch Binance funding information');
+                    }
+                    const intervals = new Map<string, number>();
+                    for (const item of response.data) {
+                        const interval = Number(item.fundingIntervalHours);
+                        if (typeof item.symbol === 'string' && Number.isFinite(interval) && interval > 0) {
+                            intervals.set(item.symbol, interval);
+                        }
+                    }
+                    return intervals;
+                })
+                .catch(error => {
+                    this.fundingInfoRequest = undefined;
+                    throw error;
+                });
+        }
+
+        const intervals = await this.fundingInfoRequest;
+        // fundingInfo lists adjusted symbols; symbols absent from it use Binance's standard 8-hour interval.
+        return intervals.get(symbol) ?? 8;
+    }
+
+    async fundingStream(
+        symbols: string[],
+        callback: (data: FundingData) => void,
+        statusCallback?: (status: SocketStatus) => void,
+        options?: FundingStreamOptions
+    ): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@markPrice`);
         const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'market') + streams.join('/'));
-        return this.handleWebSocket(createWs, convertFundingData, callback, 'fundingStream()', statusCallback);
+        let isActive = true;
+        const fundingCallback = createFundingIntervalCallback(
+            callback,
+            options?.fetchInterval === true,
+            symbol => this.fetchFundingInterval(symbol),
+            () => isActive
+        );
+        const handle = await this.handleWebSocket(createWs, convertFundingData, fundingCallback, 'fundingStream()', statusCallback);
+        const disconnect = () => {
+            isActive = false;
+            handle.disconnect();
+        };
+        const subscription = this.subscriptions.find(item => item.id === handle.id);
+        if (subscription) subscription.disconnect = disconnect;
+        return {
+            ...handle,
+            disconnect
+        };
     }
 }

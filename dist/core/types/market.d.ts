@@ -41,6 +41,7 @@ export interface FundingData {
     symbol: string;
     nextFundingTime?: number;
     rate?: number;
+    /** Funding settlement interval in hours. */
     interval?: number;
 }
 export interface FundingHistoryData {

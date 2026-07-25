@@ -10,6 +10,13 @@ export interface HandleWebSocket {
     id: string;
 }
 export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG' | 'AUTH_FAILED';
+export interface FundingStreamOptions {
+    /**
+     * Fetch the funding interval when the stream cannot provide it.
+     * Initialized on the first event and refreshed during minute 00 UTC.
+     */
+    fetchInterval?: boolean;
+}
 export interface UserData {
     event: 'ACCOUNT_UPDATE' | 'ORDER_TRADE_UPDATE' | 'ALGO_UPDATE' | 'listenKeyExpired';
     accountData: AccountData | undefined;

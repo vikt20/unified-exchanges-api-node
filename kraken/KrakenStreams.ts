@@ -7,6 +7,7 @@ import {
     TradeData,
     BookTickerData,
     FundingData,
+    FundingStreamOptions,
     UserData,
     HandleWebSocket,
     SocketStatus,
@@ -416,7 +417,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
         return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTrade.bind(this), callback, 'futuresTradeStream', statusCallback);
     }
 
-    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
+    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void, _options?: FundingStreamOptions): Promise<HandleWebSocket> {
         const message = {
             event: 'subscribe',
             feed: 'ticker',

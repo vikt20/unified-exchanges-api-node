@@ -18,7 +18,7 @@ const krakenApi = ExchangeFactory.create(ExchangeList.KRAKEN, process.env.KRAKEN
 const bitgetApi = ExchangeFactory.create(ExchangeList.BITGET, process.env.BITGET_API_KEY, process.env.BITGET_API_SECRET, process.env.BITGET_TESTNET_PASSPHRASE, false);
 
 // console.log(`starting okx api instance...`)
-// const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false);
+const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false);
 
 // api.spot.signedRequest('spot', 'GET', '/v5/order/spot-borrow-check', { category: 'spot', symbol: 'ETHUSDT', side: 'Sell' }).then(console.log);
 
@@ -52,8 +52,8 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
     return symbols;
 }
 // filter by s.type === 'COIN'
-const exchangeInfo = await bybitApi.futures.getExchangeInfo().then(data => data.success && data.data ? Object.values(data.data) : [])
-console.log(exchangeInfo.find((s: ExtractedInfo) => s.symbol === "SPCXUSDT"));
+// const exchangeInfo = await bybitApi.futures.getExchangeInfo().then(data => data.success && data.data ? Object.values(data.data) : [])
+// console.log(exchangeInfo.find((s: ExtractedInfo) => s.symbol === "SPCXUSDT"));
 // const res = await bitgetApi.futures.publicRequest('futures', 'GET', '/api/v2/mix/market/contracts', {
 //             productType: 'USDT-FUTURES'
 //         }).then(data => data.success && Array.isArray(data.data) ? data.data : [])
@@ -108,12 +108,20 @@ console.log(exchangeInfo.find((s: ExtractedInfo) => s.symbol === "SPCXUSDT"));
 // krakenApi.streams.fundingStream(["PF_XBTUSD"], console.log)
 // krakenApi.futures.getFundingHistory({symbol:"PF_XBTUSD", startTime: 1779970830000, endTime: Date.now()}).then(console.log);
 
-// okxApi.streams.fundingStream(["KAT-USDT-SWAP", "ENJ-USDT-SWAP"], (data) => {
-//     const symbol = data.symbol;
-//     const fundingRate = data.rate ? (data.rate * 100).toFixed(4) + "%" : "N/A";
-//     const nextFundingTime = new Date(data.nextFundingTime!).toLocaleString();
-//     console.log(symbol, fundingRate, nextFundingTime);
-// })
+okxApi.streams.fundingStream(["BERA-USDT-SWAP"], (data) => {
+    const symbol = data.symbol;
+    const fundingRate = data.rate ? (data.rate * 100).toFixed(4) + "%" : "N/A";
+    const nextFundingTime = new Date(data.nextFundingTime!).toLocaleString();
+    console.log('OKX Funding Stream:', data);
+})
+binanceApi.streams.fundingStream(
+    ["BERAUSDT"],
+    d => console.log('Binance Funding Stream:', d),
+    undefined,
+    { fetchInterval: true }
+);
+bybitApi.streams.fundingStream(["BERAUSDT"], d => console.log('Bybit Funding Stream:', d));
+// bitgetApi.streams.fundingStream(["BERAUSDT"], d => console.log('Bitget Funding Stream:', d));
 
 // let bestAskBinance: number;
 // let bestBidBinance: number;

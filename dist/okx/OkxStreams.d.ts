@@ -1,7 +1,7 @@
 import OkxBase from "./OkxBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, ExtractedInfo } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions } from "../core/types.js";
 export default class OkxStreams extends OkxBase implements IStreamManager {
     protected subscriptions: {
         id: string;
@@ -33,6 +33,6 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
     spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
-    fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void, _options?: FundingStreamOptions): Promise<HandleWebSocket>;
 }
 //# sourceMappingURL=OkxStreams.d.ts.map

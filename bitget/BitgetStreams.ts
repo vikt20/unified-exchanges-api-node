@@ -6,6 +6,7 @@ import type {
     BookTickerData,
     DepthData,
     FundingData,
+    FundingStreamOptions,
     HandleWebSocket,
     KlineData,
     OrderData,
@@ -13,6 +14,7 @@ import type {
     TradeData,
     UserData
 } from '../core/types.js';
+import { createFundingIntervalCallback } from '../core/fundingInterval.js';
 import {
     BitgetInstType,
     BitgetWsArg,
@@ -308,8 +310,41 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
         return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'trade', symbols), this.parseTrade, callback, 'futuresTradeStream', statusCallback);
     }
 
-    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'ticker', symbols), this.parseFunding, callback, 'fundingStream', statusCallback);
+    private async fetchFundingInterval(symbol: string): Promise<number | undefined> {
+        const response = await this.publicRequest<Array<{ ratePeriod?: string }>>(
+            this.productType,
+            'GET',
+            '/api/v2/mix/market/funding-time',
+            { symbol, productType: this.productType }
+        );
+        const interval = Number(response.data?.[0]?.ratePeriod);
+        return Number.isFinite(interval) && interval > 0 ? interval : undefined;
+    }
+
+    async fundingStream(
+        symbols: string[],
+        callback: (data: FundingData) => void,
+        statusCallback?: (status: SocketStatus) => void,
+        options?: FundingStreamOptions
+    ): Promise<HandleWebSocket> {
+        let isActive = true;
+        const fundingCallback = createFundingIntervalCallback(
+            callback,
+            options?.fetchInterval === true,
+            symbol => this.fetchFundingInterval(symbol),
+            () => isActive
+        );
+        const handle = await this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'ticker', symbols), this.parseFunding, fundingCallback, 'fundingStream', statusCallback);
+        const disconnect = () => {
+            isActive = false;
+            handle.disconnect();
+        };
+        const subscription = this.subscriptions.find(item => item.id === handle.id);
+        if (subscription) subscription.disconnect = disconnect;
+        return {
+            ...handle,
+            disconnect
+        };
     }
 
     futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {

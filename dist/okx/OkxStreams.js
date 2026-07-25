@@ -369,11 +369,28 @@ export default class OkxStreams extends OkxBase {
             return undefined;
         const data = msg.data[0];
         const symbol = msg.arg?.instId || '';
+        const prevFundingTime = Number(data.prevFundingTime);
+        const fundingTime = Number(data.fundingTime);
+        const nextFundingTime = Number(data.nextFundingTime);
+        const currentPeriodInterval = Number.isFinite(prevFundingTime)
+            && Number.isFinite(fundingTime)
+            && fundingTime > prevFundingTime
+            ? (fundingTime - prevFundingTime) / (60 * 60 * 1000)
+            : undefined;
+        const nextPeriodInterval = Number.isFinite(fundingTime)
+            && Number.isFinite(nextFundingTime)
+            && nextFundingTime > fundingTime
+            ? (nextFundingTime - fundingTime) / (60 * 60 * 1000)
+            : undefined;
         return {
             symbol: symbol,
             rate: parseFloat(data.fundingRate || '0'),
-            nextFundingTime: parseInt(data.fundingTime || '0'),
-            interval: undefined
+            // OKX fundingTime is the settlement time for the currently reported rate.
+            // nextFundingTime is the settlement boundary of the following period.
+            nextFundingTime: Number.isFinite(fundingTime) && fundingTime > 0
+                ? fundingTime
+                : undefined,
+            interval: currentPeriodInterval ?? nextPeriodInterval
         };
     }
     // --- Futures Streams (SWAP) ---
@@ -532,7 +549,7 @@ export default class OkxStreams extends OkxBase {
         const args = symbols.map(s => ({ channel: 'trades', instId: s }));
         return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseTrade, 'spotTradeStream', statusCallback);
     }
-    fundingStream(symbols, callback, statusCallback) {
+    fundingStream(symbols, callback, statusCallback, _options) {
         const args = symbols.map(s => ({ channel: 'funding-rate', instId: s }));
         return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseFunding, 'fundingStream', statusCallback);
     }

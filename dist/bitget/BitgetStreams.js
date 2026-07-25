@@ -1,5 +1,6 @@
 import ws from 'ws';
 import BitgetBase from './BitgetBase.js';
+import { createFundingIntervalCallback } from '../core/fundingInterval.js';
 import { convertBookTickerFromDepth, convertFunding, convertCandle, convertOrder, convertPosition, convertTicker, convertWsCandle, convertWsDepth, convertWsTrade, isBitgetOrder, isBitgetWsAccount, isBitgetWsCandle, isBitgetWsDepth, isBitgetWsEvent, isBitgetWsPosition, isBitgetWsTicker, isBitgetWsTrade, isRecord, isBitgetCandle, toNumber } from './converters.js';
 export default class BitgetStreams extends BitgetBase {
     subscriptions = [];
@@ -225,8 +226,26 @@ export default class BitgetStreams extends BitgetBase {
     futuresTradeStream(symbols, callback, statusCallback) {
         return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'trade', symbols), this.parseTrade, callback, 'futuresTradeStream', statusCallback);
     }
-    fundingStream(symbols, callback, statusCallback) {
-        return this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'ticker', symbols), this.parseFunding, callback, 'fundingStream', statusCallback);
+    async fetchFundingInterval(symbol) {
+        const response = await this.publicRequest(this.productType, 'GET', '/api/v2/mix/market/funding-time', { symbol, productType: this.productType });
+        const interval = Number(response.data?.[0]?.ratePeriod);
+        return Number.isFinite(interval) && interval > 0 ? interval : undefined;
+    }
+    async fundingStream(symbols, callback, statusCallback, options) {
+        let isActive = true;
+        const fundingCallback = createFundingIntervalCallback(callback, options?.fetchInterval === true, symbol => this.fetchFundingInterval(symbol), () => isActive);
+        const handle = await this.handleWebSocket(this.getStreamUrl('public'), this.publicArgs(this.productType, 'ticker', symbols), this.parseFunding, fundingCallback, 'fundingStream', statusCallback);
+        const disconnect = () => {
+            isActive = false;
+            handle.disconnect();
+        };
+        const subscription = this.subscriptions.find(item => item.id === handle.id);
+        if (subscription)
+            subscription.disconnect = disconnect;
+        return {
+            ...handle,
+            disconnect
+        };
     }
     futuresUserDataStream(callback, statusCallback) {
         if (!this.apiKey || !this.apiSecret || !this.apiPassphrase) {

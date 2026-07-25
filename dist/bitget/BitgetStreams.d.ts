@@ -1,7 +1,7 @@
 import BitgetBase from './BitgetBase.js';
 import type { IStreamManager } from '../core/IStreamManager.js';
 import type { IBinanceWebsocketApiClient } from '../binance/BinanceWebsocketApi.js';
-import type { BookTickerData, DepthData, FundingData, HandleWebSocket, KlineData, SocketStatus, TradeData, UserData } from '../core/types.js';
+import type { BookTickerData, DepthData, FundingData, FundingStreamOptions, HandleWebSocket, KlineData, SocketStatus, TradeData, UserData } from '../core/types.js';
 import { BitgetInstType, BitgetWsArg, BitgetWsEvent } from './converters.js';
 type BitgetParser<T> = (message: BitgetWsEvent) => T | T[] | undefined;
 export default class BitgetStreams extends BitgetBase implements IStreamManager {
@@ -30,7 +30,8 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
     futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
-    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    private fetchFundingInterval;
+    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void, options?: FundingStreamOptions): Promise<HandleWebSocket>;
     futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     private parseUserData;
     private normalizeInterval;

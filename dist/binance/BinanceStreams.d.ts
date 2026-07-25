@@ -1,7 +1,7 @@
 import { IStreamManager } from "../core/IStreamManager.js";
 import BinanceBase, { FormattedResponse, OrderStatus, OrderType, OrderWorkingType, PositionDirection, TimeInForce, Type } from "./BinanceBase.js";
 import ws from 'ws';
-import type { UserData, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
+import type { FundingData, FundingStreamOptions, UserData, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
 export type UserDataWebSocket = {
     e: UserData['event'];
     o?: OrderDataWebSocket | AlgoOrderDataWebSocket;
@@ -226,6 +226,9 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
     futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
-    fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    private fundingInfoHour?;
+    private fundingInfoRequest?;
+    private fetchFundingInterval;
+    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void, options?: FundingStreamOptions): Promise<HandleWebSocket>;
 }
 //# sourceMappingURL=BinanceStreams.d.ts.map

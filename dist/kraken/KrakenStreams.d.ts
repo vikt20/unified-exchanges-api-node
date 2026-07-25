@@ -1,6 +1,6 @@
 import { IStreamManager } from '../core/IStreamManager.js';
 import KrakenBase from './KrakenBase.js';
-import { DepthData, KlineData, TradeData, BookTickerData, FundingData, UserData, HandleWebSocket, SocketStatus, IWebsocketApiClient } from '../core/types.js';
+import { DepthData, KlineData, TradeData, BookTickerData, FundingData, FundingStreamOptions, UserData, HandleWebSocket, SocketStatus, IWebsocketApiClient } from '../core/types.js';
 export default class KrakenStreams extends KrakenBase implements IStreamManager {
     protected subscriptions: {
         id: string;
@@ -27,7 +27,7 @@ export default class KrakenStreams extends KrakenBase implements IStreamManager 
     futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
-    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void, _options?: FundingStreamOptions): Promise<HandleWebSocket>;
     futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     private normalizeSpotInterval;
     private normalizeSpotWsSymbol;

@@ -2,7 +2,7 @@ import OkxBase from "./OkxBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import ws from 'ws';
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, IWebsocketApiClient, ExtractedInfo } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions } from "../core/types.js";
 import { convertOkxKline, convertOkxOrder, convertOkxPosition, OkxWsMessage } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
 import crypto from 'crypto';
@@ -401,11 +401,29 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
         if (!msg.data || msg.data.length === 0) return undefined;
         const data = msg.data[0];
         const symbol = msg.arg?.instId || '';
+        const prevFundingTime = Number(data.prevFundingTime);
+        const fundingTime = Number(data.fundingTime);
+        const nextFundingTime = Number(data.nextFundingTime);
+        const currentPeriodInterval = Number.isFinite(prevFundingTime)
+            && Number.isFinite(fundingTime)
+            && fundingTime > prevFundingTime
+            ? (fundingTime - prevFundingTime) / (60 * 60 * 1000)
+            : undefined;
+        const nextPeriodInterval = Number.isFinite(fundingTime)
+            && Number.isFinite(nextFundingTime)
+            && nextFundingTime > fundingTime
+            ? (nextFundingTime - fundingTime) / (60 * 60 * 1000)
+            : undefined;
+
         return {
             symbol: symbol,
             rate: parseFloat(data.fundingRate || '0'),
-            nextFundingTime: parseInt(data.fundingTime || '0'),
-            interval: undefined
+            // OKX fundingTime is the settlement time for the currently reported rate.
+            // nextFundingTime is the settlement boundary of the following period.
+            nextFundingTime: Number.isFinite(fundingTime) && fundingTime > 0
+                ? fundingTime
+                : undefined,
+            interval: currentPeriodInterval ?? nextPeriodInterval
         };
     }
 
@@ -600,7 +618,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
         return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseTrade, 'spotTradeStream', statusCallback);
     }
 
-    public fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
+    public fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void, _options?: FundingStreamOptions): Promise<HandleWebSocket> {
         const args = symbols.map(s => ({ channel: 'funding-rate', instId: s }));
         return this.handleWebSocket(this.getStreamUrl('public'), args, callback, this.parseFunding, 'fundingStream', statusCallback);
     }

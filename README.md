@@ -145,7 +145,7 @@ Implements `IStreamManager`. Handles real-time WebSocket connections.
 *   `futuresCandleStickStream(symbols, interval, callback)`: Subscribe to candlestick/kline updates (Futures).
 *   `futuresBookTickerStream(symbols, callback)`: Subscribe to best bid/ask (book ticker) updates (Futures).
 *   `futuresTradeStream(symbols, callback)`: Subscribe to real-time trade execution updates (Futures).
-*   `fundingStream(symbols, callback)`: Subscribe to funding rate updates.
+*   `fundingStream(symbols, callback, statusCallback?, options?)`: Subscribe to funding rate updates. Set `options.fetchInterval` to enrich exchanges whose stream does not include the funding interval. The interval is expressed in hours, initialized on the first event, and refreshed at most once per symbol during minute `00` UTC.
 *   `futuresUserDataStream(callback)`: Subscribe to private account updates (order status, balance updates, etc.).
 
 ---

@@ -2,6 +2,7 @@ import BinanceBase from "./BinanceBase.js";
 import { convertBookTickerData, convertDepthData, convertFundingData, convertKlineData, convertTradeDataWebSocket, convertUserData } from "./converters.js";
 import ws from 'ws';
 import { BinanceWebsocketApiClient, BinanceWsUnavailableError } from "./BinanceWebsocketApi.js";
+import { createFundingIntervalCallback } from "../core/fundingInterval.js";
 export default class BinanceStreams extends BinanceBase {
     constructor(apiKey, apiSecret, isTest = false, useWebsocketApi = false) {
         super(apiKey, apiSecret, isTest);
@@ -230,9 +231,51 @@ export default class BinanceStreams extends BinanceBase {
         const createWs = () => new ws(`${this.getStreamUrl('futures', 'private')}?listenKey=${encodeURIComponent(listenKey.data.listenKey)}&events=ORDER_TRADE_UPDATE/ACCOUNT_UPDATE/ALGO_UPDATE/listenKeyExpired`);
         return this.handleWebSocket(createWs, convertUserData, callback, 'futuresUserDataStream', statusCallback);
     }
-    async fundingStream(symbols, callback, statusCallback) {
+    fundingInfoHour;
+    fundingInfoRequest;
+    async fetchFundingInterval(symbol) {
+        const hour = Math.floor(Date.now() / (60 * 60 * 1000));
+        if (this.fundingInfoHour !== hour || !this.fundingInfoRequest) {
+            this.fundingInfoHour = hour;
+            this.fundingInfoRequest = this.publicRequest('futures', 'GET', '/fapi/v1/fundingInfo')
+                .then(response => {
+                if (!response.success || !Array.isArray(response.data)) {
+                    throw new Error(response.errors || 'Failed to fetch Binance funding information');
+                }
+                const intervals = new Map();
+                for (const item of response.data) {
+                    const interval = Number(item.fundingIntervalHours);
+                    if (typeof item.symbol === 'string' && Number.isFinite(interval) && interval > 0) {
+                        intervals.set(item.symbol, interval);
+                    }
+                }
+                return intervals;
+            })
+                .catch(error => {
+                this.fundingInfoRequest = undefined;
+                throw error;
+            });
+        }
+        const intervals = await this.fundingInfoRequest;
+        // fundingInfo lists adjusted symbols; symbols absent from it use Binance's standard 8-hour interval.
+        return intervals.get(symbol) ?? 8;
+    }
+    async fundingStream(symbols, callback, statusCallback, options) {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@markPrice`);
         const createWs = () => new ws(this.getCombinedStreamUrl('futures', 'market') + streams.join('/'));
-        return this.handleWebSocket(createWs, convertFundingData, callback, 'fundingStream()', statusCallback);
+        let isActive = true;
+        const fundingCallback = createFundingIntervalCallback(callback, options?.fetchInterval === true, symbol => this.fetchFundingInterval(symbol), () => isActive);
+        const handle = await this.handleWebSocket(createWs, convertFundingData, fundingCallback, 'fundingStream()', statusCallback);
+        const disconnect = () => {
+            isActive = false;
+            handle.disconnect();
+        };
+        const subscription = this.subscriptions.find(item => item.id === handle.id);
+        if (subscription)
+            subscription.disconnect = disconnect;
+        return {
+            ...handle,
+            disconnect
+        };
     }
 }

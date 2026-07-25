@@ -312,7 +312,7 @@ export function toFundingFromTicker(message) {
         symbol: message.product_id,
         rate: message.relative_funding_rate,
         nextFundingTime: nextTime,
-        interval: undefined
+        interval: 1
     };
 }
 export function parseFuturesSymbolParts(symbol) {

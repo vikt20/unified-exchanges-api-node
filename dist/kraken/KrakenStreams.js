@@ -345,7 +345,7 @@ export default class KrakenStreams extends KrakenBase {
         };
         return this.handleWebSocket(this.getStreamUrl('futures'), message, this.parseFuturesTrade.bind(this), callback, 'futuresTradeStream', statusCallback);
     }
-    fundingStream(symbols, callback, statusCallback) {
+    fundingStream(symbols, callback, statusCallback, _options) {
         const message = {
             event: 'subscribe',
             feed: 'ticker',

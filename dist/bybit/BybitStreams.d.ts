@@ -1,7 +1,7 @@
 import BybitBase from "./BybitBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, FundingStreamOptions } from "../core/types.js";
 export default class BybitStreams extends BybitBase implements IStreamManager {
     protected subscriptions: {
         id: string;
@@ -34,6 +34,6 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
     spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     private parseFunding;
-    fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    fundingStream(symbols: string[], callback: (data: import("../core/types.js").FundingData) => void, statusCallback?: (status: SocketStatus) => void, _options?: FundingStreamOptions): Promise<HandleWebSocket>;
 }
 //# sourceMappingURL=BybitStreams.d.ts.map

@@ -441,7 +441,7 @@ export default class BybitStreams extends BybitBase {
         }
         return undefined;
     }
-    fundingStream(symbols, callback, statusCallback) {
+    fundingStream(symbols, callback, statusCallback, _options) {
         const topics = symbols.map(s => `tickers.${s}`);
         return this.handleWebSocket(this.getStreamUrl('linear'), topics, callback, this.parseFunding, 'fundingStream', statusCallback);
     }

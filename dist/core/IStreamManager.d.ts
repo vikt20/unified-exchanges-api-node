@@ -5,7 +5,7 @@
  * All exchanges must implement this interface for WebSocket streams.
  */
 import { IBinanceWebsocketApiClient } from '../binance/BinanceWebsocketApi.js';
-import type { KlineData, DepthData, BookTickerData, TradeData, FundingData, UserData, HandleWebSocket, SocketStatus } from './types.js';
+import type { KlineData, DepthData, BookTickerData, TradeData, FundingData, FundingStreamOptions, UserData, HandleWebSocket, SocketStatus } from './types.js';
 /**
  * Unified Stream Manager Interface
  *
@@ -24,7 +24,7 @@ export interface IStreamManager {
     futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
-    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    fundingStream(symbols: string[], callback: (data: FundingData) => void, statusCallback?: (status: SocketStatus) => void, options?: FundingStreamOptions): Promise<HandleWebSocket>;
     futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
 }
 //# sourceMappingURL=IStreamManager.d.ts.map
