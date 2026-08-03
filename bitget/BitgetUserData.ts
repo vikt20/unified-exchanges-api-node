@@ -115,9 +115,9 @@ export default class BitgetUserData extends BitgetFutures implements IUserDataMa
             }
         }
 
-        if (data.event === 'ORDER_TRADE_UPDATE' && data.orderData) {
+        if ((data.event === 'ORDER_TRADE_UPDATE' || data.event === 'ALGO_UPDATE') && data.orderData) {
             if (data.updateType === 'SNAPSHOT') {
-                this.replaceOrders(data.orderData);
+                this.replaceOrders(data.orderData, data.event === 'ALGO_UPDATE');
             } else {
                 data.orderData.forEach(this.setOrder);
             }
@@ -157,7 +157,7 @@ export default class BitgetUserData extends BitgetFutures implements IUserDataMa
     };
 
     private setOrder = (order: OrderData): void => {
-        if (order.orderType === "MARKET") return
+        if (order.orderType === "MARKET" && !order.isAlgoOrder) return
 
         const terminal = ['FILLED', 'CANCELED', 'REJECTED', 'EXPIRED', 'FINISHED'].includes(order.orderStatus);
         const index = this.userData.orders.findIndex(item => item.clientOrderId === order.clientOrderId);
@@ -185,9 +185,11 @@ export default class BitgetUserData extends BitgetFutures implements IUserDataMa
         for (const symbol of symbols) this.emitPosition(symbol);
     }
 
-    private replaceOrders(orders: OrderData[]): void {
-        const symbols = new Set([...this.userData.orders.map(item => item.symbol), ...orders.map(item => item.symbol)]);
-        this.userData.orders = orders.filter(item => !this.isTerminal(item));
+    private replaceOrders(orders: OrderData[], isAlgoSnapshot: boolean): void {
+        const previousSnapshotOrders = this.userData.orders.filter(item => item.isAlgoOrder === isAlgoSnapshot);
+        const preservedOrders = this.userData.orders.filter(item => item.isAlgoOrder !== isAlgoSnapshot);
+        const symbols = new Set([...previousSnapshotOrders.map(item => item.symbol), ...orders.map(item => item.symbol)]);
+        this.userData.orders = [...preservedOrders, ...orders.filter(item => !this.isTerminal(item))];
         for (const symbol of symbols) this.emitOrders(symbol);
     }
 

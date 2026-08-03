@@ -35,8 +35,10 @@ import {
     BitgetFuturesContract,
     BitgetFundingHistoryItem,
     BitgetOrder,
+    BitgetAlgoOrder,
     BitgetOrderBook,
     BitgetPendingOrders,
+    BitgetPendingAlgoOrders,
     BitgetPlaceOrderResponse,
     convertCandle,
     convertDepth,
@@ -44,6 +46,7 @@ import {
     convertFuturesAccount,
     convertFuturesExchangeInfo,
     convertOrder,
+    convertAlgoOrder,
     convertPosition,
     convertPositionRisk,
     convertTrade,
@@ -52,9 +55,11 @@ import {
     isBitgetFuturesAccount,
     isBitgetFuturesContract,
     isBitgetFundingHistoryItem,
+    isBitgetAlgoOrder,
     isBitgetOrder,
     isBitgetOrderBook,
     isBitgetPendingOrders,
+    isBitgetPendingAlgoOrders,
     isBitgetPlaceOrderResponse,
     isBitgetPosition,
     isBitgetTrade,
@@ -244,18 +249,35 @@ export default class BitgetFutures extends BitgetStreams implements IFuturesExch
     }
 
     async getOpenOrders(symbol?: string): Promise<FormattedResponse<OrderData[]>> {
-        const query: BitgetParams = {
+        const regularQuery: BitgetParams = {
             productType: this.productType,
             limit: 100
         };
-        if (symbol) query.symbol = symbol;
+        if (symbol) regularQuery.symbol = symbol;
 
-        const res = await this.signedRequest<unknown>('futures', 'GET', '/api/v2/mix/order/orders-pending', query);
-        if (res.success) {
-            const orders = this.extractOrders(res.data).map(convertOrder);
-            return this.formattedResponse({ data: orders });
+        const planTypes = ['normal_plan', 'track_plan', 'profit_loss'] as const;
+        const [regularResponse, ...algoResponses] = await Promise.all([
+            this.signedRequest<unknown>('futures', 'GET', '/api/v2/mix/order/orders-pending', regularQuery),
+            ...planTypes.map(planType => this.signedRequest<unknown>('futures', 'GET', '/api/v2/mix/order/orders-plan-pending', {
+                productType: this.productType,
+                planType,
+                symbol,
+                limit: 100
+            }))
+        ]);
+
+        if (!regularResponse.success) {
+            return this.formattedResponse({ errors: regularResponse.errors });
         }
-        return this.formattedResponse({ errors: res.errors });
+
+        const failedAlgoResponse = algoResponses.find(response => !response.success);
+        if (failedAlgoResponse) {
+            return this.formattedResponse({ errors: failedAlgoResponse.errors });
+        }
+
+        const regularOrders = this.extractOrders(regularResponse.data).map(convertOrder);
+        const algoOrders = algoResponses.flatMap(response => this.extractAlgoOrders(response.data).map(convertAlgoOrder));
+        return this.formattedResponse({ data: [...regularOrders, ...algoOrders] });
     }
 
     async getOpenOrdersBySymbol(params: GetOpenOrdersBySymbolParams): Promise<FormattedResponse<OrderData[]>> {
@@ -465,6 +487,12 @@ export default class BitgetFutures extends BitgetStreams implements IFuturesExch
     private extractOrders(data: unknown): BitgetOrder[] {
         if (Array.isArray(data)) return data.filter(isBitgetOrder);
         if (isBitgetPendingOrders(data)) return asArray(data.entrustedList, isBitgetOrder);
+        return [];
+    }
+
+    private extractAlgoOrders(data: unknown): BitgetAlgoOrder[] {
+        if (Array.isArray(data)) return data.filter(isBitgetAlgoOrder);
+        if (isBitgetPendingAlgoOrders(data)) return asArray(data.entrustedList, isBitgetAlgoOrder);
         return [];
     }
 

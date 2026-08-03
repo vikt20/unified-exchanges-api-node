@@ -26,12 +26,12 @@ if(userData) {
         console.log(`user data stream initialized.`);
     })
 
-    userData.onPositionUpdate((symbol, position) => {
-        console.log(`Final Position ${symbol}:`, position);
-    }); 
+    // userData.onPositionUpdate((symbol, position) => {
+    //     console.log(`Final Position ${symbol}:`, position);
+    // }); 
 
     userData.onOrderUpdate((symbol, orders) => {
-        // console.log(`Order update for ${symbol}:`, orders);
+        console.log(`Order update for ${symbol}:`, orders);
     });
 
     

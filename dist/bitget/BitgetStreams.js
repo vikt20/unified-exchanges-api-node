@@ -1,7 +1,7 @@
 import ws from 'ws';
 import BitgetBase from './BitgetBase.js';
 import { createFundingIntervalCallback } from '../core/fundingInterval.js';
-import { convertBookTickerFromDepth, convertFunding, convertCandle, convertOrder, convertPosition, convertTicker, convertWsCandle, convertWsDepth, convertWsTrade, isBitgetOrder, isBitgetWsAccount, isBitgetWsCandle, isBitgetWsDepth, isBitgetWsEvent, isBitgetWsPosition, isBitgetWsTicker, isBitgetWsTrade, isRecord, isBitgetCandle, toNumber } from './converters.js';
+import { convertBookTickerFromDepth, convertAlgoOrder, convertFunding, convertCandle, convertOrder, convertPosition, convertTicker, convertWsCandle, convertWsDepth, convertWsTrade, isBitgetOrder, isBitgetAlgoOrder, isBitgetWsAccount, isBitgetWsCandle, isBitgetWsDepth, isBitgetWsEvent, isBitgetWsPosition, isBitgetWsTicker, isBitgetWsTrade, isRecord, isBitgetCandle, toNumber } from './converters.js';
 export default class BitgetStreams extends BitgetBase {
     subscriptions = [];
     getTradingWsApiClient() {
@@ -254,6 +254,7 @@ export default class BitgetStreams extends BitgetBase {
         }
         const args = [
             { instType: this.productType, channel: 'orders', instId: 'default' },
+            { instType: this.productType, channel: 'orders-algo', instId: 'default' },
             { instType: this.productType, channel: 'positions', instId: 'default' },
             { instType: this.productType, channel: 'account', coin: 'default' }
         ];
@@ -266,9 +267,11 @@ export default class BitgetStreams extends BitgetBase {
         // console.log('RAW User data message:', message);
         if (channel === 'orders') {
             const orderData = message.data.filter(isBitgetOrder).map(convertOrder);
-            return orderData.length > 0
-                ? { event: 'ORDER_TRADE_UPDATE', accountData: undefined, orderData, updateType: message.action === 'snapshot' ? 'SNAPSHOT' : 'DELTA' }
-                : undefined;
+            return { event: 'ORDER_TRADE_UPDATE', accountData: undefined, orderData, updateType: message.action === 'snapshot' ? 'SNAPSHOT' : 'DELTA' };
+        }
+        if (channel === 'orders-algo') {
+            const orderData = message.data.filter(isBitgetAlgoOrder).map(convertAlgoOrder);
+            return { event: 'ALGO_UPDATE', accountData: undefined, orderData, updateType: message.action === 'snapshot' ? 'SNAPSHOT' : 'DELTA' };
         }
         if (channel === 'positions') {
             console.log('Raw Position:', message.data);

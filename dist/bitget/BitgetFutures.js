@@ -1,5 +1,5 @@
 import BitgetStreams from './BitgetStreams.js';
-import { asArray, convertCandle, convertDepth, convertFundingHistory, convertFuturesAccount, convertFuturesExchangeInfo, convertOrder, convertPosition, convertPositionRisk, convertTrade, createOrderResponse, isBitgetCandle, isBitgetFuturesAccount, isBitgetFuturesContract, isBitgetFundingHistoryItem, isBitgetOrder, isBitgetOrderBook, isBitgetPendingOrders, isBitgetPlaceOrderResponse, isBitgetPosition, isBitgetTrade, isRecord, toBitgetForce, toBitgetOrderType, toBitgetSide, toNumber } from './converters.js';
+import { asArray, convertCandle, convertDepth, convertFundingHistory, convertFuturesAccount, convertFuturesExchangeInfo, convertOrder, convertAlgoOrder, convertPosition, convertPositionRisk, convertTrade, createOrderResponse, isBitgetCandle, isBitgetFuturesAccount, isBitgetFuturesContract, isBitgetFundingHistoryItem, isBitgetAlgoOrder, isBitgetOrder, isBitgetOrderBook, isBitgetPendingOrders, isBitgetPendingAlgoOrders, isBitgetPlaceOrderResponse, isBitgetPosition, isBitgetTrade, isRecord, toBitgetForce, toBitgetOrderType, toBitgetSide, toNumber } from './converters.js';
 export default class BitgetFutures extends BitgetStreams {
     async closeListenKey() {
         return this.formattedResponse({ data: 'Not applicable for Bitget V2' });
@@ -163,18 +163,32 @@ export default class BitgetFutures extends BitgetStreams {
         return this.formattedResponse({ errors: res.errors });
     }
     async getOpenOrders(symbol) {
-        const query = {
+        const regularQuery = {
             productType: this.productType,
             limit: 100
         };
         if (symbol)
-            query.symbol = symbol;
-        const res = await this.signedRequest('futures', 'GET', '/api/v2/mix/order/orders-pending', query);
-        if (res.success) {
-            const orders = this.extractOrders(res.data).map(convertOrder);
-            return this.formattedResponse({ data: orders });
+            regularQuery.symbol = symbol;
+        const planTypes = ['normal_plan', 'track_plan', 'profit_loss'];
+        const [regularResponse, ...algoResponses] = await Promise.all([
+            this.signedRequest('futures', 'GET', '/api/v2/mix/order/orders-pending', regularQuery),
+            ...planTypes.map(planType => this.signedRequest('futures', 'GET', '/api/v2/mix/order/orders-plan-pending', {
+                productType: this.productType,
+                planType,
+                symbol,
+                limit: 100
+            }))
+        ]);
+        if (!regularResponse.success) {
+            return this.formattedResponse({ errors: regularResponse.errors });
         }
-        return this.formattedResponse({ errors: res.errors });
+        const failedAlgoResponse = algoResponses.find(response => !response.success);
+        if (failedAlgoResponse) {
+            return this.formattedResponse({ errors: failedAlgoResponse.errors });
+        }
+        const regularOrders = this.extractOrders(regularResponse.data).map(convertOrder);
+        const algoOrders = algoResponses.flatMap(response => this.extractAlgoOrders(response.data).map(convertAlgoOrder));
+        return this.formattedResponse({ data: [...regularOrders, ...algoOrders] });
     }
     async getOpenOrdersBySymbol(params) {
         return this.getOpenOrders(params.symbol);
@@ -368,6 +382,13 @@ export default class BitgetFutures extends BitgetStreams {
             return data.filter(isBitgetOrder);
         if (isBitgetPendingOrders(data))
             return asArray(data.entrustedList, isBitgetOrder);
+        return [];
+    }
+    extractAlgoOrders(data) {
+        if (Array.isArray(data))
+            return data.filter(isBitgetAlgoOrder);
+        if (isBitgetPendingAlgoOrders(data))
+            return asArray(data.entrustedList, isBitgetAlgoOrder);
         return [];
     }
     createClientOid(prefix) {

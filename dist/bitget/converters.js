@@ -142,7 +142,18 @@ export function isBitgetOrder(value) {
         && isString(value.orderId)
         && isString(value.side);
 }
+export function isBitgetAlgoOrder(value) {
+    return isRecord(value)
+        && (isString(value.instId) || isString(value.symbol))
+        && isString(value.orderId)
+        && isString(value.size)
+        && isString(value.side)
+        && (isString(value.status) || isString(value.planStatus));
+}
 export function isBitgetPendingOrders(value) {
+    return isRecord(value);
+}
+export function isBitgetPendingAlgoOrders(value) {
     return isRecord(value);
 }
 export function isBitgetPlaceOrderResponse(value) {
@@ -392,6 +403,84 @@ export function convertOrder(item) {
         callbackRate: '',
         realizedProfit: item.totalProfits ?? '',
         isAlgoOrder: false
+    };
+}
+export function convertAlgoOrder(item) {
+    const isMarket = item.orderType === 'market';
+    let orderType;
+    if (['tp', 'ptp', 'profit_plan', 'pos_profit'].includes(item.planType ?? '')) {
+        orderType = isMarket ? 'TAKE_PROFIT_MARKET' : 'TAKE_PROFIT_LIMIT';
+    }
+    else if (['sl', 'psl', 'loss_plan', 'pos_loss'].includes(item.planType ?? '')) {
+        orderType = isMarket ? 'STOP_MARKET' : 'STOP_LOSS_LIMIT';
+    }
+    else if (['track', 'track_plan', 'mtpsl', 'moving_plan'].includes(item.planType ?? '')) {
+        orderType = 'TRAILING_STOP_MARKET';
+    }
+    else {
+        orderType = isMarket ? 'STOP_MARKET' : 'STOP';
+    }
+    const isTakeProfit = ['tp', 'ptp', 'profit_plan', 'pos_profit'].includes(item.planType ?? '');
+    const isStopLoss = ['sl', 'psl', 'loss_plan', 'pos_loss'].includes(item.planType ?? '');
+    const triggerPrice = isTakeProfit
+        ? item.stopSurplusTriggerPrice ?? item.triggerPrice
+        : isStopLoss
+            ? item.stopLossTriggerPrice ?? item.triggerPrice
+            : item.triggerPrice;
+    const triggerType = isTakeProfit
+        ? item.stopSurplusTriggerType ?? item.triggerType
+        : isStopLoss
+            ? item.stopLossTriggerType ?? item.triggerType
+            : item.triggerType;
+    const executionPrice = isTakeProfit
+        ? item.stopSurplusPrice ?? item.stopSurplusExecutePrice ?? item.executePrice ?? item.price
+        : isStopLoss
+            ? item.stopLossPrice ?? item.stopLossExecutePrice ?? item.executePrice ?? item.price
+            : item.executePrice ?? item.price;
+    const sourceStatus = item.status ?? item.planStatus ?? 'live';
+    const normalizedStatus = sourceStatus.toLowerCase();
+    const orderStatus = normalizedStatus === 'executed'
+        ? 'FINISHED'
+        : normalizedStatus === 'fail_execute'
+            ? 'REJECTED'
+            : normalizedStatus === 'cancelled' || normalizedStatus === 'canceled'
+                ? 'CANCELED'
+                : normalizedStatus === 'executing'
+                    ? 'TRIGGERED'
+                    : 'NEW';
+    const protectivePlan = ['tp', 'sl', 'ptp', 'psl', 'mtpsl', 'profit_plan', 'loss_plan', 'pos_profit', 'pos_loss', 'moving_plan'].includes(item.planType ?? '');
+    return {
+        symbol: (item.instId ?? item.symbol ?? '').toUpperCase(),
+        clientOrderId: item.clientOid || item.orderId,
+        side: toUnifiedSide(item.side),
+        orderType,
+        timeInForce: 'GTC',
+        originalQuantity: toNumber(item.size),
+        originalPrice: toNumber(executionPrice),
+        averagePrice: toNumber(executionPrice),
+        stopPrice: toNumber(triggerPrice),
+        executionType: sourceStatus,
+        orderStatus,
+        orderId: item.orderId,
+        orderLastFilledQuantity: toNumber(item.actualSize),
+        orderFilledAccumulatedQuantity: toNumber(item.actualSize),
+        lastFilledPrice: toNumber(executionPrice),
+        commissionAsset: '',
+        commission: '0',
+        orderTradeTime: toNumber(item.uTime ?? item.triggerTime ?? item.cTime),
+        tradeId: 0,
+        bidsNotional: undefined,
+        askNotional: undefined,
+        isMakerSide: false,
+        isReduceOnly: item.reduceOnly?.toUpperCase() === 'YES' || item.tradeSide === 'close' || protectivePlan,
+        workingType: triggerType === 'mark_price' ? 'MARK_PRICE' : 'CONTRACT_PRICE',
+        originalOrderType: orderType,
+        positionSide: toUnifiedPositionSide(item.posSide),
+        closeAll: ['ptp', 'psl', 'pos_profit', 'pos_loss'].includes(item.planType ?? ''),
+        activationPrice: item.planType === 'track' || item.planType === 'track_plan' ? (triggerPrice ?? '') : '',
+        callbackRate: item.callbackRatio ?? '',
+        realizedProfit: '',
+        isAlgoOrder: true
     };
 }
 export function createOrderResponse(input) {

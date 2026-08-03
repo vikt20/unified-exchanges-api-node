@@ -101,6 +101,10 @@ export interface BitgetPendingOrders {
     entrustedList?: BitgetOrder[];
     endId?: string;
 }
+export interface BitgetPendingAlgoOrders {
+    entrustedList?: BitgetAlgoOrder[];
+    endId?: string;
+}
 export interface BitgetOrder {
     symbol?: string;
     instId?: string;
@@ -119,6 +123,38 @@ export interface BitgetOrder {
     reduceOnly?: 'YES' | 'NO' | string;
     orderType?: BitgetOrderType | string;
     orderSource?: string;
+    cTime?: string;
+    uTime?: string;
+}
+export interface BitgetAlgoOrder {
+    instId?: string;
+    symbol?: string;
+    orderId: string;
+    clientOid?: string;
+    triggerPrice?: string;
+    triggerType?: BitgetTriggerType | string;
+    triggerTime?: string;
+    planType?: 'pl' | 'tp' | 'sl' | 'ptp' | 'psl' | 'track' | 'mtpsl' | string;
+    price?: string;
+    executePrice?: string;
+    size: string;
+    actualSize?: string;
+    orderType?: BitgetOrderType | string;
+    side: BitgetOrderSide | string;
+    tradeSide?: string;
+    posSide?: 'long' | 'short' | 'net' | string;
+    status?: string;
+    planStatus?: string;
+    reduceOnly?: 'YES' | 'NO' | 'yes' | 'no' | string;
+    stopSurplusPrice?: string;
+    stopSurplusExecutePrice?: string;
+    stopSurplusTriggerPrice?: string;
+    stopSurplusTriggerType?: BitgetTriggerType | string;
+    stopLossPrice?: string;
+    stopLossExecutePrice?: string;
+    stopLossTriggerPrice?: string;
+    stopLossTriggerType?: BitgetTriggerType | string;
+    callbackRatio?: string;
     cTime?: string;
     uTime?: string;
 }
@@ -219,7 +255,9 @@ export declare function isBitgetSpotAsset(value: unknown): value is BitgetSpotAs
 export declare function isBitgetFuturesAccount(value: unknown): value is BitgetFuturesAccount;
 export declare function isBitgetPosition(value: unknown): value is BitgetPosition;
 export declare function isBitgetOrder(value: unknown): value is BitgetOrder;
+export declare function isBitgetAlgoOrder(value: unknown): value is BitgetAlgoOrder;
 export declare function isBitgetPendingOrders(value: unknown): value is BitgetPendingOrders;
+export declare function isBitgetPendingAlgoOrders(value: unknown): value is BitgetPendingAlgoOrders;
 export declare function isBitgetPlaceOrderResponse(value: unknown): value is BitgetPlaceOrderResponse;
 export declare function isBitgetWsEvent(value: unknown): value is BitgetWsEvent;
 export declare function isBitgetWsDepth(value: unknown): value is BitgetWsDepth;
@@ -252,6 +290,7 @@ export declare function convertFuturesAccount(item: BitgetFuturesAccount): Balan
 export declare function convertPositionRisk(item: BitgetPosition): PositionRiskData;
 export declare function convertPosition(item: BitgetPosition | BitgetWsPosition): PositionData;
 export declare function convertOrder(item: BitgetOrder): OrderData;
+export declare function convertAlgoOrder(item: BitgetAlgoOrder): OrderData;
 export declare function createOrderResponse(input: {
     symbol: string;
     side: OrderSide;

@@ -52,6 +52,7 @@ export default class BitgetFutures extends BitgetStreams implements IFuturesExch
     trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     getLatestPnlBySymbol(symbol: string, startTime?: number, endTime?: number): Promise<FormattedResponse<number>>;
     private extractOrders;
+    private extractAlgoOrders;
     private createClientOid;
     private normalizeRestInterval;
 }

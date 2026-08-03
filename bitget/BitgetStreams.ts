@@ -20,6 +20,7 @@ import {
     BitgetWsArg,
     BitgetWsEvent,
     convertBookTickerFromDepth,
+    convertAlgoOrder,
     convertFunding,
     convertCandle,
     convertOrder,
@@ -29,6 +30,7 @@ import {
     convertWsDepth,
     convertWsTrade,
     isBitgetOrder,
+    isBitgetAlgoOrder,
     isBitgetWsAccount,
     isBitgetWsCandle,
     isBitgetWsDepth,
@@ -355,6 +357,7 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
 
         const args: BitgetWsArg[] = [
             { instType: this.productType, channel: 'orders', instId: 'default' },
+            { instType: this.productType, channel: 'orders-algo', instId: 'default' },
             { instType: this.productType, channel: 'positions', instId: 'default' },
             { instType: this.productType, channel: 'account', coin: 'default' }
         ];
@@ -378,9 +381,12 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
 
         if (channel === 'orders') {
             const orderData: OrderData[] = message.data.filter(isBitgetOrder).map(convertOrder);
-            return orderData.length > 0
-                ? { event: 'ORDER_TRADE_UPDATE', accountData: undefined, orderData, updateType: message.action === 'snapshot' ? 'SNAPSHOT' : 'DELTA' }
-                : undefined;
+            return { event: 'ORDER_TRADE_UPDATE', accountData: undefined, orderData, updateType: message.action === 'snapshot' ? 'SNAPSHOT' : 'DELTA' };
+        }
+
+        if (channel === 'orders-algo') {
+            const orderData: OrderData[] = message.data.filter(isBitgetAlgoOrder).map(convertAlgoOrder);
+            return { event: 'ALGO_UPDATE', accountData: undefined, orderData, updateType: message.action === 'snapshot' ? 'SNAPSHOT' : 'DELTA' };
         }
 
         if (channel === 'positions') {
