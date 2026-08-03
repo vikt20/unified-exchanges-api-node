@@ -51,11 +51,12 @@ export function toBitgetOrderType(type) {
     return type === 'MARKET' || type === 'STOP_MARKET' || type === 'TAKE_PROFIT_MARKET' ? 'market' : 'limit';
 }
 export function toUnifiedOrderStatus(status) {
-    if (status === 'partially_filled')
+    const normalized = status?.toLowerCase();
+    if (normalized === 'partially_filled')
         return 'PARTIALLY_FILLED';
-    if (status === 'filled')
+    if (normalized === 'filled')
         return 'FILLED';
-    if (status === 'cancelled')
+    if (normalized === 'canceled' || normalized === 'cancelled')
         return 'CANCELED';
     return 'NEW';
 }
@@ -136,7 +137,7 @@ export function isBitgetPosition(value) {
 }
 export function isBitgetOrder(value) {
     return isRecord(value)
-        && isString(value.symbol)
+        && (isString(value.symbol) || isString(value.instId))
         && isString(value.size)
         && isString(value.orderId)
         && isString(value.side);
@@ -360,7 +361,7 @@ export function convertOrder(item) {
     const orderType = item.orderType === 'market' ? 'MARKET' : 'LIMIT';
     const side = toUnifiedSide(item.side);
     return {
-        symbol: item.symbol.toUpperCase(),
+        symbol: (item.symbol ?? item.instId ?? '').toUpperCase(),
         clientOrderId: item.clientOid || item.orderId,
         side,
         orderType,

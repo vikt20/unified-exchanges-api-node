@@ -28,7 +28,7 @@ export type BitgetOrderType = 'limit' | 'market';
 export type BitgetForce = 'gtc' | 'ioc' | 'fok' | 'post_only';
 export type BitgetMarginMode = 'isolated' | 'crossed';
 export type BitgetHoldSide = 'long' | 'short';
-export type BitgetOrderStatus = 'live' | 'partially_filled' | 'filled' | 'cancelled';
+export type BitgetOrderStatus = 'live' | 'partially_filled' | 'filled' | 'canceled' | 'cancelled';
 export type BitgetPlanType = 'normal_plan' | 'track_plan';
 export type BitgetTriggerType = 'mark_price' | 'fill_price';
 
@@ -136,7 +136,8 @@ export interface BitgetPendingOrders {
 }
 
 export interface BitgetOrder {
-    symbol: string;
+    symbol?: string;
+    instId?: string;
     size: string;
     orderId: string;
     clientOid?: string;
@@ -165,11 +166,12 @@ export interface BitgetWsArg {
     instType: BitgetInstType;
     channel: string;
     instId?: string;
+    coin?: string;
 }
 
 export interface BitgetWsEvent {
     event?: string;
-    code?: string;
+    code?: string | number;
     msg?: string;
     arg?: BitgetWsArg;
     action?: 'snapshot' | 'update';
@@ -292,9 +294,10 @@ export function toBitgetOrderType(type: OrderType): BitgetOrderType {
 }
 
 export function toUnifiedOrderStatus(status: string | undefined): OrderStatus {
-    if (status === 'partially_filled') return 'PARTIALLY_FILLED';
-    if (status === 'filled') return 'FILLED';
-    if (status === 'cancelled') return 'CANCELED';
+    const normalized = status?.toLowerCase();
+    if (normalized === 'partially_filled') return 'PARTIALLY_FILLED';
+    if (normalized === 'filled') return 'FILLED';
+    if (normalized === 'canceled' || normalized === 'cancelled') return 'CANCELED';
     return 'NEW';
 }
 
@@ -385,7 +388,7 @@ export function isBitgetPosition(value: unknown): value is BitgetPosition {
 
 export function isBitgetOrder(value: unknown): value is BitgetOrder {
     return isRecord(value)
-        && isString(value.symbol)
+        && (isString(value.symbol) || isString(value.instId))
         && isString(value.size)
         && isString(value.orderId)
         && isString(value.side);
@@ -632,7 +635,7 @@ export function convertOrder(item: BitgetOrder): OrderData {
     const orderType: OrderType = item.orderType === 'market' ? 'MARKET' : 'LIMIT';
     const side = toUnifiedSide(item.side);
     return {
-        symbol: item.symbol.toUpperCase(),
+        symbol: (item.symbol ?? item.instId ?? '').toUpperCase(),
         clientOrderId: item.clientOid || item.orderId,
         side,
         orderType,

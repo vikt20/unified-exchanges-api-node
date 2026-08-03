@@ -12,15 +12,39 @@ dotenv.config({
 
 // const info = await okxFutures.getExchangeInfo().then(request => request.success && request.data ? Object.values(request.data) : [] );
 
-const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
-const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
-const krakenApi = ExchangeFactory.create(ExchangeList.KRAKEN, process.env.KRAKEN_API_KEY, process.env.KRAKEN_API_SECRET);
-const bitgetApi = ExchangeFactory.create(ExchangeList.BITGET, process.env.BITGET_API_KEY, process.env.BITGET_API_SECRET, process.env.BITGET_TESTNET_PASSPHRASE, false);
+// const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
+// const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
+// const krakenApi = ExchangeFactory.create(ExchangeList.KRAKEN, process.env.KRAKEN_API_KEY, process.env.KRAKEN_API_SECRET);
+const bitgetApi = ExchangeFactory.create(ExchangeList.BITGET, process.env.BITGET_API_KEY, process.env.BITGET_API_SECRET, process.env.BITGET_API_PASSPHRASE, false);
 
 // console.log(`starting okx api instance...`)
-const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false);
+// const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false);
 
-// api.spot.signedRequest('spot', 'GET', '/v5/order/spot-borrow-check', { category: 'spot', symbol: 'ETHUSDT', side: 'Sell' }).then(console.log);
+const userData = bitgetApi.userData;
+if(userData) {
+    await userData.init().then(() => {
+        console.log(`user data stream initialized.`);
+    })
+
+    userData.onPositionUpdate((symbol, position) => {
+        console.log(`Final Position ${symbol}:`, position);
+    }); 
+
+    userData.onOrderUpdate((symbol, orders) => {
+        // console.log(`Order update for ${symbol}:`, orders);
+    });
+
+    
+}
+
+// bitgetApi.streams.futuresUserDataStream((data) => {
+//     console.log(`Futures User Data Stream:`, data);
+// }, (status) => {
+//     console.log(`Futures User Data Stream Status:`, status);
+// });
+
+
+
 
 async function getFuturesSymbols(api: any): Promise<Set<string>> {
     const exchangeInfo = await api.futures.getExchangeInfo();
@@ -51,6 +75,9 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
     }
     return symbols;
 }
+
+
+
 // filter by s.type === 'COIN'
 // const exchangeInfo = await bybitApi.futures.getExchangeInfo().then(data => data.success && data.data ? Object.values(data.data) : [])
 // console.log(exchangeInfo.find((s: ExtractedInfo) => s.symbol === "SPCXUSDT"));
@@ -108,19 +135,19 @@ async function getSpotSymbols(api: any): Promise<Set<string>> {
 // krakenApi.streams.fundingStream(["PF_XBTUSD"], console.log)
 // krakenApi.futures.getFundingHistory({symbol:"PF_XBTUSD", startTime: 1779970830000, endTime: Date.now()}).then(console.log);
 
-okxApi.streams.fundingStream(["BERA-USDT-SWAP"], (data) => {
-    const symbol = data.symbol;
-    const fundingRate = data.rate ? (data.rate * 100).toFixed(4) + "%" : "N/A";
-    const nextFundingTime = new Date(data.nextFundingTime!).toLocaleString();
-    console.log('OKX Funding Stream:', data);
-})
-binanceApi.streams.fundingStream(
-    ["BERAUSDT"],
-    d => console.log('Binance Funding Stream:', d),
-    undefined,
-    { fetchInterval: true }
-);
-bybitApi.streams.fundingStream(["BERAUSDT"], d => console.log('Bybit Funding Stream:', d));
+// okxApi.streams.fundingStream(["BERA-USDT-SWAP"], (data) => {
+//     const symbol = data.symbol;
+//     const fundingRate = data.rate ? (data.rate * 100).toFixed(4) + "%" : "N/A";
+//     const nextFundingTime = new Date(data.nextFundingTime!).toLocaleString();
+//     console.log('OKX Funding Stream:', data);
+// })
+// binanceApi.streams.fundingStream(
+//     ["BERAUSDT"],
+//     d => console.log('Binance Funding Stream:', d),
+//     undefined,
+//     { fetchInterval: true }
+// );
+// bybitApi.streams.fundingStream(["TLMUSDT"], d => console.log('Bybit Funding Stream:', d));
 // bitgetApi.streams.fundingStream(["BERAUSDT"], d => console.log('Bitget Funding Stream:', d));
 
 // let bestAskBinance: number;

@@ -187,7 +187,7 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
                         if (!isBitgetWsEvent(parsed)) return;
 
                         if (parsed.event === 'login') {
-                            if (parsed.code === '0') subscribe();
+                            if (String(parsed.code) === '0') subscribe();
                             else statusCallback?.('AUTH_FAILED');
                             return;
                         }
@@ -354,9 +354,9 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
         }
 
         const args: BitgetWsArg[] = [
-            { instType: this.productType, channel: 'orders' },
-            { instType: this.productType, channel: 'positions' },
-            { instType: this.productType, channel: 'account' }
+            { instType: this.productType, channel: 'orders', instId: 'default' },
+            { instType: this.productType, channel: 'positions', instId: 'default' },
+            { instType: this.productType, channel: 'account', coin: 'default' }
         ];
 
         return this.handleWebSocket(
@@ -374,6 +374,8 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
         const channel = message.arg?.channel;
         if (!Array.isArray(message.data)) return undefined;
 
+        // console.log('RAW User data message:', message);
+
         if (channel === 'orders') {
             const orderData: OrderData[] = message.data.filter(isBitgetOrder).map(convertOrder);
             return orderData.length > 0
@@ -382,10 +384,9 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
         }
 
         if (channel === 'positions') {
+            console.log('Raw Position:', message.data);
             const positions = message.data.filter(isBitgetWsPosition).map(convertPosition);
-            return positions.length > 0
-                ? { event: 'ACCOUNT_UPDATE', accountData: { balances: undefined, positions }, orderData: undefined, updateType: message.action === 'snapshot' ? 'SNAPSHOT' : 'DELTA' }
-                : undefined;
+            return { event: 'ACCOUNT_UPDATE', accountData: { balances: undefined, positions }, orderData: undefined, updateType: message.action === 'snapshot' ? 'SNAPSHOT' : 'DELTA' }
         }
 
         if (channel === 'account') {

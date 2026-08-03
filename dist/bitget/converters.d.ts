@@ -6,7 +6,7 @@ export type BitgetOrderType = 'limit' | 'market';
 export type BitgetForce = 'gtc' | 'ioc' | 'fok' | 'post_only';
 export type BitgetMarginMode = 'isolated' | 'crossed';
 export type BitgetHoldSide = 'long' | 'short';
-export type BitgetOrderStatus = 'live' | 'partially_filled' | 'filled' | 'cancelled';
+export type BitgetOrderStatus = 'live' | 'partially_filled' | 'filled' | 'canceled' | 'cancelled';
 export type BitgetPlanType = 'normal_plan' | 'track_plan';
 export type BitgetTriggerType = 'mark_price' | 'fill_price';
 export interface BitgetEnvelope<T> {
@@ -102,7 +102,8 @@ export interface BitgetPendingOrders {
     endId?: string;
 }
 export interface BitgetOrder {
-    symbol: string;
+    symbol?: string;
+    instId?: string;
     size: string;
     orderId: string;
     clientOid?: string;
@@ -129,10 +130,11 @@ export interface BitgetWsArg {
     instType: BitgetInstType;
     channel: string;
     instId?: string;
+    coin?: string;
 }
 export interface BitgetWsEvent {
     event?: string;
-    code?: string;
+    code?: string | number;
     msg?: string;
     arg?: BitgetWsArg;
     action?: 'snapshot' | 'update';

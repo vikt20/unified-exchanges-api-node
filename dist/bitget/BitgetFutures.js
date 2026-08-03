@@ -25,21 +25,49 @@ export default class BitgetFutures extends BitgetStreams {
         return this.formattedResponse({ errors: res.errors ?? 'Invalid Bitget depth response' });
     }
     async getKlines(params) {
-        const query = {
-            productType: this.productType,
-            symbol: params.symbol,
-            granularity: this.normalizeRestInterval(params.interval),
-            limit: params.limit ?? 100
-        };
-        if (params.startTime !== undefined)
-            query.startTime = params.startTime;
-        if (params.endTime !== undefined)
-            query.endTime = params.endTime;
-        const res = await this.publicRequest('futures', 'GET', '/api/v2/mix/market/candles', query);
-        if (res.success && res.data) {
-            return this.formattedResponse({ data: res.data.filter(isBitgetCandle).map(item => convertCandle(item, params.symbol)) });
+        const requestedLimit = Math.max(0, Math.floor(params.limit ?? 100));
+        if (requestedLimit === 0)
+            return this.formattedResponse({ data: [] });
+        const maxWindowMs = 90 * 24 * 60 * 60 * 1000;
+        const candlesByTimestamp = new Map();
+        const rangeStart = params.startTime;
+        const rangeEnd = params.endTime ?? Date.now();
+        let pageEnd = rangeEnd;
+        let previousOldestTimestamp;
+        while (candlesByTimestamp.size < requestedLimit) {
+            const pageStart = Math.max(rangeStart ?? Number.NEGATIVE_INFINITY, pageEnd - maxWindowMs);
+            const query = {
+                productType: this.productType,
+                symbol: params.symbol,
+                granularity: this.normalizeRestInterval(params.interval),
+                startTime: pageStart,
+                endTime: pageEnd,
+                limit: Math.min(1000, requestedLimit - candlesByTimestamp.size)
+            };
+            const res = await this.publicRequest('futures', 'GET', '/api/v2/mix/market/candles', query);
+            if (!res.success || !res.data) {
+                return this.formattedResponse({ errors: res.errors ?? 'Invalid Bitget candles response' });
+            }
+            const page = res.data
+                .filter(isBitgetCandle)
+                .map(item => convertCandle(item, params.symbol))
+                .filter(candle => candle.time >= (rangeStart ?? Number.NEGATIVE_INFINITY) && candle.time <= rangeEnd);
+            if (page.length === 0)
+                break;
+            for (const candle of page)
+                candlesByTimestamp.set(candle.time, candle);
+            const oldestTimestamp = Math.min(...page.map(candle => candle.time));
+            if (oldestTimestamp === previousOldestTimestamp || oldestTimestamp >= pageEnd)
+                break;
+            if (rangeStart !== undefined && oldestTimestamp <= rangeStart)
+                break;
+            previousOldestTimestamp = oldestTimestamp;
+            pageEnd = oldestTimestamp - 1;
         }
-        return this.formattedResponse({ errors: res.errors });
+        const candles = [...candlesByTimestamp.values()]
+            .sort((left, right) => left.time - right.time)
+            .slice(-requestedLimit);
+        return this.formattedResponse({ data: candles });
     }
     async getAggTrades(params) {
         const res = await this.publicRequest('futures', 'GET', '/api/v2/mix/market/fills', {
@@ -183,14 +211,39 @@ export default class BitgetFutures extends BitgetStreams {
             reduceOnly: reduceOnly ? 'YES' : 'NO'
         };
         const endpoint = orderInput.triggerPrice !== undefined
-            ? '/api/v2/mix/order/place-plan-order'
+            ? '/api/v2/mix/order/place-tpsl-order'
             : '/api/v2/mix/order/place-order';
         if (orderInput.triggerPrice !== undefined) {
             payload.triggerPrice = orderInput.triggerPrice.toString();
             payload.triggerType = orderInput.workingType === 'MARK_PRICE' ? 'mark_price' : 'fill_price';
-            payload.planType = 'normal_plan';
-            payload.executePrice = orderInput.price?.toString() ?? '0';
+            // if sl or tp
+            if (reduceOnly && orderInput.closePosition) {
+                if (orderInput.type === 'STOP_MARKET') {
+                    payload.planType = 'pos_loss';
+                }
+                else if (orderInput.type === 'TAKE_PROFIT_MARKET') {
+                    payload.planType = 'pos_profit';
+                }
+                if (orderInput.type === 'STOP_MARKET' && orderInput.side === 'BUY') {
+                    payload.holdSide = 'sell';
+                }
+                else if (orderInput.type === 'STOP_MARKET' && orderInput.side === 'SELL') {
+                    payload.holdSide = 'buy';
+                }
+                if (orderInput.type === 'TAKE_PROFIT_MARKET' && orderInput.side === 'BUY') {
+                    payload.holdSide = 'sell';
+                }
+                else if (orderInput.type === 'TAKE_PROFIT_MARKET' && orderInput.side === 'SELL') {
+                    payload.holdSide = 'buy';
+                }
+                payload.executePrice = '0';
+            }
+            else {
+                payload.planType = 'normal_plan';
+                payload.executePrice = orderInput.price?.toString() ?? '0';
+            }
         }
+        console.log('Bitget Order Payload:', payload);
         const res = await this.signedRequest('futures', 'POST', endpoint, payload);
         if (res.success && res.data && isBitgetPlaceOrderResponse(res.data)) {
             return this.formattedResponse({
@@ -224,6 +277,7 @@ export default class BitgetFutures extends BitgetStreams {
     async limitSell(params) {
         return this.customOrder({ symbol: params.symbol, side: 'SELL', type: 'LIMIT', quantity: params.quantity, price: params.price, timeInForce: 'GTC' });
     }
+    // Stop loss or take profit order
     async stopOrder(params) {
         return this.customOrder({
             symbol: params.symbol,
@@ -233,11 +287,19 @@ export default class BitgetFutures extends BitgetStreams {
             price: params.price,
             triggerPrice: params.price,
             workingType: params.workingType,
-            closePosition: true
+            closePosition: true,
+            reduceOnly: true,
+            triggerDirection: params.triggerDirection // 1 for stop loss, 2 for take profit
         });
     }
     async stopMarketOrder(params) {
-        return this.customOrder({ symbol: params.symbol, side: params.side, type: 'MARKET', quantity: params.quantity, triggerPrice: params.price });
+        return this.customOrder({
+            symbol: params.symbol,
+            side: params.side,
+            type: 'MARKET',
+            quantity: params.quantity,
+            triggerPrice: params.price
+        });
     }
     async reduceLimitOrder(params) {
         return this.customOrder({ symbol: params.symbol, side: params.side, type: 'LIMIT', quantity: params.quantity, price: params.price, reduceOnly: true, workingType: params.workingType });

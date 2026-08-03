@@ -89,9 +89,11 @@ export default class BitgetUserData extends BitgetFutures {
         }
         if (data.event === 'ACCOUNT_UPDATE' && data.accountData?.positions) {
             if (data.updateType === 'SNAPSHOT') {
+                console.log('Income Position Snapshot:', data.accountData.positions);
                 this.replacePositions(data.accountData.positions);
             }
             else {
+                console.log('Income Position Delta:', data.accountData.positions);
                 data.accountData.positions.forEach(this.setPosition);
             }
         }
@@ -128,11 +130,7 @@ export default class BitgetUserData extends BitgetFutures {
     }
     setPosition = (position) => {
         const index = this.userData.positions.findIndex(item => item.symbol === position.symbol);
-        if (!position.isInPosition || position.positionAmount === 0) {
-            if (index >= 0)
-                this.userData.positions.splice(index, 1);
-        }
-        else if (index >= 0) {
+        if (index >= 0) {
             this.userData.positions[index] = position;
         }
         else {
@@ -141,7 +139,7 @@ export default class BitgetUserData extends BitgetFutures {
         this.emitPosition(position.symbol);
     };
     setOrder = (order) => {
-        if (order.orderType === 'MARKET')
+        if (order.orderType === "MARKET")
             return;
         const terminal = ['FILLED', 'CANCELED', 'REJECTED', 'EXPIRED', 'FINISHED'].includes(order.orderStatus);
         const index = this.userData.orders.findIndex(item => item.clientOrderId === order.clientOrderId);
@@ -158,14 +156,19 @@ export default class BitgetUserData extends BitgetFutures {
         this.emitOrders(order.symbol);
     };
     replacePositions(positions) {
-        const symbols = new Set([...this.userData.positions.map(item => item.symbol), ...positions.map(item => item.symbol)]);
-        this.userData.positions = positions.filter(item => item.isInPosition && item.positionAmount !== 0);
+        const previousPositions = this.userData.positions;
+        const snapshotSymbols = new Set(positions.map(position => position.symbol));
+        const closedPositions = previousPositions
+            .filter(position => !snapshotSymbols.has(position.symbol))
+            .map(position => ({ ...position, isInPosition: false }));
+        const symbols = new Set([...previousPositions.map(item => item.symbol), ...snapshotSymbols]);
+        this.userData.positions = [...positions, ...closedPositions];
         for (const symbol of symbols)
             this.emitPosition(symbol);
     }
     replaceOrders(orders) {
         const symbols = new Set([...this.userData.orders.map(item => item.symbol), ...orders.map(item => item.symbol)]);
-        this.userData.orders = orders.filter(item => item.orderType !== 'MARKET' && !this.isTerminal(item));
+        this.userData.orders = orders.filter(item => !this.isTerminal(item));
         for (const symbol of symbols)
             this.emitOrders(symbol);
     }

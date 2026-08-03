@@ -22,20 +22,48 @@ export default class BitgetSpot extends BitgetStreams {
         return this.formattedResponse({ errors: res.errors ?? 'Invalid Bitget spot depth response' });
     }
     async getKlines(params) {
-        const query = {
-            symbol: params.symbol,
-            granularity: this.normalizeRestInterval(params.interval),
-            limit: params.limit ?? 100
-        };
-        if (params.startTime !== undefined)
-            query.startTime = params.startTime;
-        if (params.endTime !== undefined)
-            query.endTime = params.endTime;
-        const res = await this.publicRequest('spot', 'GET', '/api/v2/spot/market/candles', query);
-        if (res.success && res.data) {
-            return this.formattedResponse({ data: res.data.filter(isBitgetCandle).map(item => convertCandle(item, params.symbol)) });
+        const requestedLimit = Math.max(0, Math.floor(params.limit ?? 100));
+        if (requestedLimit === 0)
+            return this.formattedResponse({ data: [] });
+        const maxWindowMs = 90 * 24 * 60 * 60 * 1000;
+        const candlesByTimestamp = new Map();
+        const rangeStart = params.startTime;
+        const rangeEnd = params.endTime ?? Date.now();
+        let pageEnd = rangeEnd;
+        let previousOldestTimestamp;
+        while (candlesByTimestamp.size < requestedLimit) {
+            const pageStart = Math.max(rangeStart ?? Number.NEGATIVE_INFINITY, pageEnd - maxWindowMs);
+            const query = {
+                symbol: params.symbol,
+                granularity: this.normalizeRestInterval(params.interval),
+                startTime: pageStart,
+                endTime: pageEnd,
+                limit: Math.min(1000, requestedLimit - candlesByTimestamp.size)
+            };
+            const res = await this.publicRequest('spot', 'GET', '/api/v2/spot/market/candles', query);
+            if (!res.success || !res.data) {
+                return this.formattedResponse({ errors: res.errors ?? 'Invalid Bitget spot candles response' });
+            }
+            const page = res.data
+                .filter(isBitgetCandle)
+                .map(item => convertCandle(item, params.symbol))
+                .filter(candle => candle.time >= (rangeStart ?? Number.NEGATIVE_INFINITY) && candle.time <= rangeEnd);
+            if (page.length === 0)
+                break;
+            for (const candle of page)
+                candlesByTimestamp.set(candle.time, candle);
+            const oldestTimestamp = Math.min(...page.map(candle => candle.time));
+            if (oldestTimestamp === previousOldestTimestamp || oldestTimestamp >= pageEnd)
+                break;
+            if (rangeStart !== undefined && oldestTimestamp <= rangeStart)
+                break;
+            previousOldestTimestamp = oldestTimestamp;
+            pageEnd = oldestTimestamp - 1;
         }
-        return this.formattedResponse({ errors: res.errors });
+        const candles = [...candlesByTimestamp.values()]
+            .sort((left, right) => left.time - right.time)
+            .slice(-requestedLimit);
+        return this.formattedResponse({ data: candles });
     }
     async getAggTrades(params) {
         const res = await this.publicRequest('spot', 'GET', '/api/v2/spot/market/fills', {
