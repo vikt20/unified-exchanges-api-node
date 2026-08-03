@@ -107,10 +107,10 @@ export default class BitgetUserData extends BitgetFutures implements IUserDataMa
 
         if (data.event === 'ACCOUNT_UPDATE' && data.accountData?.positions) {
             if (data.updateType === 'SNAPSHOT') {
-                console.log('Income Position Snapshot:', data.accountData.positions);
+                // console.log('Income Position Snapshot:', data.accountData.positions);
                 this.replacePositions(data.accountData.positions);
             } else {
-                console.log('Income Position Delta:', data.accountData.positions);
+                // console.log('Income Position Delta:', data.accountData.positions);
                 data.accountData.positions.forEach(this.setPosition);
             }
         }

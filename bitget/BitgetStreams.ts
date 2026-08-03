@@ -390,12 +390,13 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
         }
 
         if (channel === 'positions') {
-            console.log('Raw Position:', message.data);
+            // console.log('Raw Position:', message.data);
             const positions = message.data.filter(isBitgetWsPosition).map(convertPosition);
             return { event: 'ACCOUNT_UPDATE', accountData: { balances: undefined, positions }, orderData: undefined, updateType: message.action === 'snapshot' ? 'SNAPSHOT' : 'DELTA' }
         }
 
         if (channel === 'account') {
+            // console.log('Raw Account:', message.data);
             const balances = message.data.filter(isBitgetWsAccount).map(item => {
                 const asset = item.marginCoin ?? item.coin ?? this.marginCoin;
                 const balance = item.equity ?? item.available ?? '0';
