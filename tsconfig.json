@@ -17,12 +17,13 @@
     "bybit/**/*",
     "okx/**/*",
     "bitget/**/*",
-    "kraken/**/*",
+    "archive/kraken/**/*",
     "testing/**/*",
     "test.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "archive"
   ]
 }

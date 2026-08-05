@@ -15,11 +15,11 @@ import OkxFutures from '../okx/OkxFutures.js';
 import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
 import OkxUserData from '../okx/OkxUserData.js';
-import KrakenSpot from '../kraken/KrakenSpot.js';
-import KrakenFutures from '../kraken/KrakenFutures.js';
-import KrakenStreams from '../kraken/KrakenStreams.js';
-import KrakenBase from '../kraken/KrakenBase.js';
-import KrakenUserData from '../kraken/KrakenUserData.js';
+import KrakenSpot from '../archive/kraken/KrakenSpot.js';
+import KrakenFutures from '../archive/kraken/KrakenFutures.js';
+import KrakenStreams from '../archive/kraken/KrakenStreams.js';
+import KrakenBase from '../archive/kraken/KrakenBase.js';
+import KrakenUserData from '../archive/kraken/KrakenUserData.js';
 import BitgetSpot from '../bitget/BitgetSpot.js';
 import BitgetFutures from '../bitget/BitgetFutures.js';
 import BitgetStreams from '../bitget/BitgetStreams.js';
@@ -59,16 +59,16 @@ export class ExchangeFactory {
                 }
                 // UserData is not implemented independently, it is handled via streams
                 return connectionOkx;
-            case ExchangeList.KRAKEN:
-                const connectionKraken = {
-                    spot: new KrakenSpot(apiKey, apiSecret, isTestnet),
-                    futures: new KrakenFutures(apiKey, apiSecret, isTestnet),
-                    streams: new KrakenStreams(apiKey, apiSecret, isTestnet),
-                };
-                if (apiKey && apiSecret) {
-                    connectionKraken.userData = new KrakenUserData(apiKey, apiSecret, isTestnet);
-                }
-                return connectionKraken;
+            // case ExchangeList.KRAKEN:
+            //     const connectionKraken: IUnifiedExchange = {
+            //         spot: new KrakenSpot(apiKey, apiSecret, isTestnet),
+            //         futures: new KrakenFutures(apiKey, apiSecret, isTestnet),
+            //         streams: new KrakenStreams(apiKey, apiSecret, isTestnet),
+            //     };
+            //     if (apiKey && apiSecret) {
+            //         connectionKraken.userData = new KrakenUserData(apiKey, apiSecret, isTestnet);
+            //     }
+            //     return connectionKraken;
             case ExchangeList.BITGET:
                 const connectionBitget = {
                     spot: new BitgetSpot(apiKey, apiSecret, apiPassphrase, isTestnet),

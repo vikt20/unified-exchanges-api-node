@@ -5,8 +5,8 @@ import BybitFutures from '../bybit/BybitFutures.js';
 import BybitSpot from '../bybit/BybitSpot.js';
 import OkxFutures from '../okx/OkxFutures.js';
 import OkxSpot from '../okx/OkxSpot.js';
-import KrakenFutures from '../kraken/KrakenFutures.js';
-import KrakenSpot from '../kraken/KrakenSpot.js';
+import KrakenFutures from '../archive/kraken/KrakenFutures.js';
+import KrakenSpot from '../archive/kraken/KrakenSpot.js';
 import BitgetFutures from '../bitget/BitgetFutures.js';
 import BitgetSpot from '../bitget/BitgetSpot.js';
 /**

@@ -11,7 +11,7 @@ import {
     BookTickerData,
     FundingData,
     BalanceData
-} from '../core/types.js';
+} from '../../core/types.js';
 
 // --- Kraken Spot REST Types ---
 
