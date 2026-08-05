@@ -300,6 +300,7 @@ export default class BybitFutures extends BybitStreams {
         }
         else {
             const wsResult = await this.sendTradingWsRequest('order.create', payload);
+            console.log('BYBIT: Sent order via WebSocket API', wsResult);
             res = wsResult.status === 'unavailable'
                 ? await this.signedRequest('linear', 'POST', '/v5/order/create', payload)
                 : wsResult.response;

@@ -14,6 +14,7 @@ export default class OkxBase extends AbstractExchangeBase {
     static WS_BUSINESS_DEMO = 'wss://wspap.okx.com:8443/ws/v5/business?brokerId=9999';
     apiPassphrase;
     ctValBySymbol = new Map();
+    instIdCodeBySymbol = new Map();
     instrumentsLoadPromise;
     instrumentsReady = false;
     instrumentsLoadError;
@@ -37,14 +38,17 @@ export default class OkxBase extends AbstractExchangeBase {
     }
     loadCtValFromExchangeInfo(exchangeInfoFutures) {
         this.ctValBySymbol.clear();
+        this.instIdCodeBySymbol.clear();
         for (const item of exchangeInfoFutures) {
             const symbol = item.symbol;
             const ctVal = item.additionalInfo?.okx_ctVal;
+            const instIdCode = item.additionalInfo?.okx_instIdCode ?? Number(item.rawData?.instIdCode || 0);
             if (!symbol)
                 continue;
-            if (!Number.isFinite(ctVal) || ctVal <= 0)
-                continue;
-            this.ctValBySymbol.set(symbol, ctVal);
+            if (Number.isFinite(ctVal) && ctVal > 0)
+                this.ctValBySymbol.set(symbol, ctVal);
+            if (Number.isFinite(instIdCode) && instIdCode > 0)
+                this.instIdCodeBySymbol.set(symbol, instIdCode);
         }
     }
     getBaseUrl(_marketType) {
@@ -97,6 +101,10 @@ export default class OkxBase extends AbstractExchangeBase {
                     if (symbol && Number.isFinite(ctVal) && ctVal > 0) {
                         this.ctValBySymbol.set(symbol, ctVal);
                     }
+                    const instIdCode = Number(item.instIdCode || 0);
+                    if (symbol && Number.isFinite(instIdCode) && instIdCode > 0) {
+                        this.instIdCodeBySymbol.set(symbol, instIdCode);
+                    }
                 }
                 this.instrumentsReady = true;
                 this.instrumentsLoadError = undefined;
@@ -119,6 +127,12 @@ export default class OkxBase extends AbstractExchangeBase {
     }
     getCtVal(symbol) {
         return this.ctValBySymbol.get(symbol);
+    }
+    getInstIdCode(symbol) {
+        return this.instIdCodeBySymbol.get(symbol);
+    }
+    generateWebsocketSignature(payload) {
+        return crypto.createHmac('sha256', this.apiSecret).update(payload).digest('base64');
     }
     convertAssetSizeToContracts(symbol, assetSize) {
         if (assetSize === undefined)

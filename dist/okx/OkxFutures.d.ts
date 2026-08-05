@@ -1,8 +1,8 @@
 import OkxStreams from "./OkxStreams.js";
 import { IFuturesExchangeClient } from "../core/IExchangeClient.js";
-import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo, SymbolLeverageData, SymbolMarginModeData, MarginMode } from "../core/types.js";
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo, SymbolLeverageData, SymbolMarginModeData, MarginMode, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
 export default class OkxFutures extends OkxStreams implements IFuturesExchangeClient {
-    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean, exchangeInfoFutures?: ExtractedInfo[]);
+    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean, exchangeInfoFutures?: ExtractedInfo[], useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
     closeListenKey(): Promise<FormattedResponse<unknown>>;
     getExchangeInfo(): Promise<FormattedResponse<{
         [key: string]: ExtractedInfo;

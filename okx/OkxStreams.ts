@@ -2,21 +2,99 @@ import OkxBase from "./OkxBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import ws from 'ws';
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions, WebsocketApiOption, FormattedResponse } from "../core/types.js";
 import { convertOkxKline, convertOkxOrder, convertOkxPosition, OkxWsMessage } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
 import crypto from 'crypto';
+import { OkxWebsocketApiClient, OkxWsUnavailableError } from './OkxWebsocketApi.js';
+
+export type TradingWsRequestResult<T> =
+    | { status: 'success'; response: FormattedResponse<T> }
+    | { status: 'unavailable'; error: string };
 
 export default class OkxStreams extends OkxBase implements IStreamManager {
 
     protected subscriptions: { id: string, disconnect: Function, title: string }[] = [];
 
-    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest: boolean = false, exchangeInfoFutures?: ExtractedInfo[] | false ) {
+    constructor(
+        apiKey?: string,
+        apiSecret?: string,
+        apiPassphrase?: string,
+        isTest: boolean = false,
+        exchangeInfoFutures?: ExtractedInfo[] | false,
+        useWebsocketApi: WebsocketApiOption<IWebsocketApiClient> = false
+    ) {
         super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures);
+        this.useWebsocketApi = useWebsocketApi;
+        if (this.useWebsocketApi) this.initTradingWsApiClient();
     }
 
+    protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient> = false;
+    protected tradingWsApiClient: IWebsocketApiClient | undefined = undefined;
+
     public getTradingWsApiClient(): () => IWebsocketApiClient | undefined {
-        return () => undefined; // OkxStreams does not use BinanceWebsocketApiClient, so we return undefined
+        return () => this.tradingWsApiClient;
+    }
+
+    protected isTradingWsApiConfigured(): boolean {
+        return Boolean(this.tradingWsApiClient);
+    }
+
+    protected initTradingWsApiClient(): void {
+        if (this.useWebsocketApi === true) this.tradingWsApiClient = this.createTradingWsApiClient();
+        if (typeof this.useWebsocketApi === 'function') this.tradingWsApiClient = this.useWebsocketApi();
+        if (typeof this.useWebsocketApi === 'object') this.tradingWsApiClient = this.useWebsocketApi;
+    }
+
+    protected async sendTradingWsRequest<T>(
+        method: string,
+        params: Record<string, any>,
+        timeoutMs: number = 5000
+    ): Promise<TradingWsRequestResult<T>> {
+        const client = this.tradingWsApiClient;
+        if (!client) return { status: 'unavailable', error: 'WebSocket API is not configured' };
+
+        try {
+            await client.ensureConnected();
+        } catch (error: any) {
+            return { status: 'unavailable', error: error?.message || 'WebSocket API is unavailable' };
+        }
+
+        if (!client.isOnline()) return { status: 'unavailable', error: 'WebSocket API is not online' };
+
+        try {
+            const response = await client.request<T>(method, params, { timeoutMs });
+            return { status: 'success', response };
+        } catch (error: any) {
+            if (error instanceof OkxWsUnavailableError) {
+                return { status: 'unavailable', error: error.message };
+            }
+            return {
+                status: 'success',
+                response: this.formattedResponse({ errors: error?.message || 'WebSocket API request failed' })
+            };
+        }
+    }
+
+    protected destroyTradingWsApiClient(): void {
+        if (this.useWebsocketApi !== true) {
+            this.tradingWsApiClient = undefined;
+            return;
+        }
+
+        this.tradingWsApiClient?.destroy();
+        this.tradingWsApiClient = undefined;
+    }
+
+    private createTradingWsApiClient(): IWebsocketApiClient {
+        return new OkxWebsocketApiClient({
+            getUrl: () => this.getStreamUrl('private'),
+            getApiKey: () => this.apiKey,
+            getPassphrase: () => this.apiPassphrase || '',
+            getTimestamp: () => Date.now() - this.timeOffset,
+            sign: (payload: string) => this.generateWebsocketSignature(payload),
+            formattedResponse: <T>(object: { data?: T; errors?: string }) => this.formattedResponse(object)
+        });
     }
 
     protected handleWebSocket(
@@ -268,6 +346,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];
+        this.destroyTradingWsApiClient();
     }
 
     closeById(id: string) {

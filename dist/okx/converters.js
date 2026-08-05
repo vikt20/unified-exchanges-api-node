@@ -21,7 +21,8 @@ export function convertExchangeInfo(data) {
                 minNotional: 0,
                 orderTypes: ['LIMIT', 'MARKET', 'STOP_LOSS_LIMIT', 'TAKE_PROFIT_LIMIT'],
                 additionalInfo: {
-                    okx_ctVal: parseFloat(item.ctVal || '0')
+                    okx_ctVal: parseFloat(item.ctVal || '0'),
+                    okx_instIdCode: Number(item.instIdCode || 0)
                 }
             };
         }

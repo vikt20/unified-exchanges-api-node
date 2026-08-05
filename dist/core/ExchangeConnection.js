@@ -16,6 +16,7 @@ import OkxFutures from '../okx/OkxFutures.js';
 import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
 import OkxUserData from '../okx/OkxUserData.js';
+import { OkxWebsocketApiClient } from '../okx/OkxWebsocketApi.js';
 // import KrakenSpot from '../archive/kraken/KrakenSpot.js';
 // import KrakenFutures from '../archive/kraken/KrakenFutures.js';
 // import KrakenStreams from '../archive/kraken/KrakenStreams.js';
@@ -52,7 +53,7 @@ export class ExchangeFactory {
             case ExchangeList.OKX:
                 const connectionOkx = {
                     spot: new OkxSpot(apiKey, apiSecret, apiPassphrase, isTestnet),
-                    futures: new OkxFutures(apiKey, apiSecret, apiPassphrase, isTestnet, connectionOptions?.exchangeInfoFutures),
+                    futures: new OkxFutures(apiKey, apiSecret, apiPassphrase, isTestnet, connectionOptions?.exchangeInfoFutures, connectionOptions?.useWebsocketApi),
                     streams: new OkxStreams(apiKey, apiSecret, apiPassphrase, isTestnet, connectionOptions?.exchangeInfoFutures),
                 };
                 if (apiKey && apiSecret && apiPassphrase) {
@@ -85,10 +86,4 @@ export class ExchangeFactory {
         }
     }
 }
-export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitWebsocketApiClient, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, 
-// KrakenBase,
-// KrakenSpot,
-// KrakenFutures,
-// KrakenStreams,
-// KrakenUserData,
-BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };
+export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitWebsocketApiClient, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, OkxWebsocketApiClient, BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };

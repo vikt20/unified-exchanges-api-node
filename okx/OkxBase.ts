@@ -21,6 +21,7 @@ export default class OkxBase extends AbstractExchangeBase {
 
     protected apiPassphrase?: string;
     protected ctValBySymbol: Map<string, number> = new Map();
+    protected instIdCodeBySymbol: Map<string, number> = new Map();
     private instrumentsLoadPromise?: Promise<void>;
     public instrumentsReady: boolean = false;
     private instrumentsLoadError?: string;
@@ -48,12 +49,14 @@ export default class OkxBase extends AbstractExchangeBase {
 
     private loadCtValFromExchangeInfo(exchangeInfoFutures: ExtractedInfo[]): void {
         this.ctValBySymbol.clear();
+        this.instIdCodeBySymbol.clear();
         for (const item of exchangeInfoFutures) {
             const symbol = item.symbol;
             const ctVal = item.additionalInfo?.okx_ctVal;
+            const instIdCode = item.additionalInfo?.okx_instIdCode ?? Number((item.rawData as any)?.instIdCode || 0);
             if (!symbol) continue;
-            if (!Number.isFinite(ctVal) || (ctVal as number) <= 0) continue;
-            this.ctValBySymbol.set(symbol, ctVal as number);
+            if (Number.isFinite(ctVal) && (ctVal as number) > 0) this.ctValBySymbol.set(symbol, ctVal as number);
+            if (Number.isFinite(instIdCode) && instIdCode > 0) this.instIdCodeBySymbol.set(symbol, instIdCode);
         }
     }
 
@@ -111,6 +114,10 @@ export default class OkxBase extends AbstractExchangeBase {
                     if (symbol && Number.isFinite(ctVal) && ctVal > 0) {
                         this.ctValBySymbol.set(symbol, ctVal);
                     }
+                    const instIdCode = Number(item.instIdCode || 0);
+                    if (symbol && Number.isFinite(instIdCode) && instIdCode > 0) {
+                        this.instIdCodeBySymbol.set(symbol, instIdCode);
+                    }
                 }
                 this.instrumentsReady = true;
                 this.instrumentsLoadError = undefined;
@@ -137,6 +144,14 @@ export default class OkxBase extends AbstractExchangeBase {
 
     protected getCtVal(symbol: string): number | undefined {
         return this.ctValBySymbol.get(symbol);
+    }
+
+    protected getInstIdCode(symbol: string): number | undefined {
+        return this.instIdCodeBySymbol.get(symbol);
+    }
+
+    protected generateWebsocketSignature(payload: string): string {
+        return crypto.createHmac('sha256', this.apiSecret).update(payload).digest('base64');
     }
 
     protected convertAssetSizeToContracts(symbol: string, assetSize?: number): number | undefined {

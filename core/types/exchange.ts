@@ -83,6 +83,7 @@ export type ExtractedInfo = {
     quoteAsset: string;
     additionalInfo?: {
         okx_ctVal?: number; // OKX contract value for futures, if applicable
+        okx_instIdCode?: number; // OKX WebSocket trading instrument identifier
     }
 };
 

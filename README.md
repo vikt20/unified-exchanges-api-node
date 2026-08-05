@@ -57,7 +57,7 @@ async function main() {
 main();
 ```
 
-### WebSocket order entry (Binance and Bybit Futures)
+### WebSocket order entry (Binance, Bybit, and OKX Futures)
 
 Pass `useWebsocketApi: true` in the connection options to send supported futures
 order operations over the exchange's authenticated WebSocket API:
@@ -84,6 +84,10 @@ Bybit uses WebSocket order entry for order creation and single-order cancellatio
 If the WebSocket is unavailable, those calls fall back to signed REST. Bybit does
 not provide a WebSocket `cancel-all` operation, so `cancelAllOpenOrders` continues
 to use REST.
+
+OKX uses WebSocket order entry for regular order creation and single-order
+cancellation. Algo orders such as triggers and trailing stops, along with the
+library's multi-type `cancelAllOpenOrders` workflow, continue to use REST.
 
 ## Architecture Overview
 

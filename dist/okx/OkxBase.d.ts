@@ -13,6 +13,7 @@ export default class OkxBase extends AbstractExchangeBase {
     static WS_BUSINESS_DEMO: string;
     protected apiPassphrase?: string;
     protected ctValBySymbol: Map<string, number>;
+    protected instIdCodeBySymbol: Map<string, number>;
     private instrumentsLoadPromise?;
     instrumentsReady: boolean;
     private instrumentsLoadError?;
@@ -25,6 +26,8 @@ export default class OkxBase extends AbstractExchangeBase {
     protected ensureInstrumentMetadataLoaded(): Promise<void>;
     protected assertInstrumentsReady(): Promise<void>;
     protected getCtVal(symbol: string): number | undefined;
+    protected getInstIdCode(symbol: string): number | undefined;
+    protected generateWebsocketSignature(payload: string): string;
     protected convertAssetSizeToContracts(symbol: string, assetSize?: number): number | undefined;
     protected convertContractsToAssetSize(symbol: string, contracts?: number): number | undefined;
     protected generateSignature(parameters: string): string;

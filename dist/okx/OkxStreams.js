@@ -2,13 +2,74 @@ import OkxBase from "./OkxBase.js";
 import ws from 'ws';
 import { convertOkxKline, convertOkxOrder, convertOkxPosition } from "./converters.js";
 import crypto from 'crypto';
+import { OkxWebsocketApiClient, OkxWsUnavailableError } from './OkxWebsocketApi.js';
 export default class OkxStreams extends OkxBase {
     subscriptions = [];
-    constructor(apiKey, apiSecret, apiPassphrase, isTest = false, exchangeInfoFutures) {
+    constructor(apiKey, apiSecret, apiPassphrase, isTest = false, exchangeInfoFutures, useWebsocketApi = false) {
         super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures);
+        this.useWebsocketApi = useWebsocketApi;
+        if (this.useWebsocketApi)
+            this.initTradingWsApiClient();
     }
+    useWebsocketApi = false;
+    tradingWsApiClient = undefined;
     getTradingWsApiClient() {
-        return () => undefined; // OkxStreams does not use BinanceWebsocketApiClient, so we return undefined
+        return () => this.tradingWsApiClient;
+    }
+    isTradingWsApiConfigured() {
+        return Boolean(this.tradingWsApiClient);
+    }
+    initTradingWsApiClient() {
+        if (this.useWebsocketApi === true)
+            this.tradingWsApiClient = this.createTradingWsApiClient();
+        if (typeof this.useWebsocketApi === 'function')
+            this.tradingWsApiClient = this.useWebsocketApi();
+        if (typeof this.useWebsocketApi === 'object')
+            this.tradingWsApiClient = this.useWebsocketApi;
+    }
+    async sendTradingWsRequest(method, params, timeoutMs = 5000) {
+        const client = this.tradingWsApiClient;
+        if (!client)
+            return { status: 'unavailable', error: 'WebSocket API is not configured' };
+        try {
+            await client.ensureConnected();
+        }
+        catch (error) {
+            return { status: 'unavailable', error: error?.message || 'WebSocket API is unavailable' };
+        }
+        if (!client.isOnline())
+            return { status: 'unavailable', error: 'WebSocket API is not online' };
+        try {
+            const response = await client.request(method, params, { timeoutMs });
+            return { status: 'success', response };
+        }
+        catch (error) {
+            if (error instanceof OkxWsUnavailableError) {
+                return { status: 'unavailable', error: error.message };
+            }
+            return {
+                status: 'success',
+                response: this.formattedResponse({ errors: error?.message || 'WebSocket API request failed' })
+            };
+        }
+    }
+    destroyTradingWsApiClient() {
+        if (this.useWebsocketApi !== true) {
+            this.tradingWsApiClient = undefined;
+            return;
+        }
+        this.tradingWsApiClient?.destroy();
+        this.tradingWsApiClient = undefined;
+    }
+    createTradingWsApiClient() {
+        return new OkxWebsocketApiClient({
+            getUrl: () => this.getStreamUrl('private'),
+            getApiKey: () => this.apiKey,
+            getPassphrase: () => this.apiPassphrase || '',
+            getTimestamp: () => Date.now() - this.timeOffset,
+            sign: (payload) => this.generateWebsocketSignature(payload),
+            formattedResponse: (object) => this.formattedResponse(object)
+        });
     }
     handleWebSocket(url, args, callback, parser, title, statusCallback, auth = false) {
         title = `${this.exchange_id}:${title}`;
@@ -239,6 +300,7 @@ export default class OkxStreams extends OkxBase {
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];
+        this.destroyTradingWsApiClient();
     }
     closeById(id) {
         const index = this.subscriptions.findIndex(i => i.id === id);

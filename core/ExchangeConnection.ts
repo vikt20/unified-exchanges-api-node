@@ -21,6 +21,7 @@ import OkxFutures from '../okx/OkxFutures.js';
 import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
 import OkxUserData from '../okx/OkxUserData.js';
+import { OkxWebsocketApiClient } from '../okx/OkxWebsocketApi.js';
 
 // import KrakenSpot from '../archive/kraken/KrakenSpot.js';
 // import KrakenFutures from '../archive/kraken/KrakenFutures.js';
@@ -70,7 +71,7 @@ export class ExchangeFactory {
             case ExchangeList.OKX:
                 const connectionOkx: IUnifiedExchange = {
                     spot: new OkxSpot(apiKey, apiSecret, apiPassphrase, isTestnet),
-                    futures: new OkxFutures(apiKey, apiSecret, apiPassphrase, isTestnet, connectionOptions?.exchangeInfoFutures),
+                    futures: new OkxFutures(apiKey, apiSecret, apiPassphrase, isTestnet, connectionOptions?.exchangeInfoFutures, connectionOptions?.useWebsocketApi),
                     streams: new OkxStreams(apiKey, apiSecret, apiPassphrase, isTestnet, connectionOptions?.exchangeInfoFutures),
                 };
                 if (apiKey && apiSecret && apiPassphrase) {
@@ -126,12 +127,7 @@ export {
     OkxSpot,
     OkxFutures,
     OkxStreams,
-
-    // KrakenBase,
-    // KrakenSpot,
-    // KrakenFutures,
-    // KrakenStreams,
-    // KrakenUserData,
+    OkxWebsocketApiClient,
 
     BitgetBase,
     BitgetSpot,

@@ -17,6 +17,7 @@ import OkxSpot from '../okx/OkxSpot.js';
 import OkxFutures from '../okx/OkxFutures.js';
 import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
+import { OkxWebsocketApiClient } from '../okx/OkxWebsocketApi.js';
 import BitgetSpot from '../bitget/BitgetSpot.js';
 import BitgetFutures from '../bitget/BitgetFutures.js';
 import BitgetStreams from '../bitget/BitgetStreams.js';
@@ -25,5 +26,5 @@ import BitgetUserData from '../bitget/BitgetUserData.js';
 export declare class ExchangeFactory {
     static create(exchangeId: ExchangeList, apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTestnet?: boolean, connectionOptions?: ExchangeConnectionOptions): IUnifiedExchange;
 }
-export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitWebsocketApiClient, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };
+export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitWebsocketApiClient, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, OkxWebsocketApiClient, BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };
 //# sourceMappingURL=ExchangeConnection.d.ts.map

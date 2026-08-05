@@ -2,8 +2,8 @@ import OkxStreams from "./OkxStreams.js";
 import Decimal from "decimal.js";
 import { convertExchangeInfo, convertOkxKline, convertOkxOrder } from "./converters.js";
 export default class OkxFutures extends OkxStreams {
-    constructor(apiKey, apiSecret, apiPassphrase, isTest = false, exchangeInfoFutures) {
-        super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures);
+    constructor(apiKey, apiSecret, apiPassphrase, isTest = false, exchangeInfoFutures, useWebsocketApi = false) {
+        super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures, useWebsocketApi);
     }
     async closeListenKey() {
         return this.formattedResponse({ data: "Not applicable for OKX V5" });
@@ -302,12 +302,26 @@ export default class OkxFutures extends OkxStreams {
             return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-algos', algoPayload);
         }
         payload.ordId = params.clientOrderId;
-        return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
+        if (!this.isTradingWsApiConfigured()) {
+            return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
+        }
+        await this.ensureInstrumentMetadataLoaded();
+        const instIdCode = this.getInstIdCode(params.symbol);
+        if (!instIdCode) {
+            return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
+        }
+        const wsPayload = { ...payload, instIdCode };
+        delete wsPayload.instId;
+        const wsResult = await this.sendTradingWsRequest('cancel-order', wsPayload);
+        if (wsResult.status === 'unavailable') {
+            return await this.signedRequest('private', 'POST', '/api/v5/trade/cancel-order', payload);
+        }
+        return wsResult.response;
     }
     // --- Order Execution ---
     async customOrder(orderInput) {
         const { symbol, side, type, quantity, price, triggerPrice, reduceOnly = false, workingType = 'CONTRACT_PRICE' } = orderInput;
-        this.assertInstrumentsReady();
+        await this.assertInstrumentsReady();
         const contractSize = this.convertAssetSizeToContracts(symbol, quantity);
         // const clOrdId = `okx-${Date.now().toString(36)}${Math.floor(Math.random() * 10000).toString(36)}`;
         const clOrdId = undefined;
@@ -372,8 +386,20 @@ export default class OkxFutures extends OkxStreams {
         else {
             payload.clOrdId = clOrdId;
         }
-        const res = await this.signedRequest('private', 'POST', endpoint, payload);
-        console.log(`Raw order response:`, res);
+        let res;
+        const instIdCode = this.getInstIdCode(symbol);
+        if (endpoint !== '/api/v5/trade/order' || !this.isTradingWsApiConfigured() || !instIdCode) {
+            res = await this.signedRequest('private', 'POST', endpoint, payload);
+        }
+        else {
+            const wsPayload = { ...payload, instIdCode };
+            delete wsPayload.instId;
+            const wsResult = await this.sendTradingWsRequest('order', wsPayload);
+            console.log('OKX: Sent order via WebSocket API', wsResult);
+            res = wsResult.status === 'unavailable'
+                ? await this.signedRequest('private', 'POST', endpoint, payload)
+                : wsResult.response;
+        }
         if (res.success && res.data && Array.isArray(res.data) && res.data[0]) {
             const orderRes = res.data[0];
             const normalizedType = triggerPrice && !reduceOnly && orderInput.closePosition !== true && type === 'MARKET'

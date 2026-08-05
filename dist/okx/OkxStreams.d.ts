@@ -1,15 +1,29 @@
 import OkxBase from "./OkxBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions, WebsocketApiOption, FormattedResponse } from "../core/types.js";
+export type TradingWsRequestResult<T> = {
+    status: 'success';
+    response: FormattedResponse<T>;
+} | {
+    status: 'unavailable';
+    error: string;
+};
 export default class OkxStreams extends OkxBase implements IStreamManager {
     protected subscriptions: {
         id: string;
         disconnect: Function;
         title: string;
     }[];
-    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean, exchangeInfoFutures?: ExtractedInfo[] | false);
+    constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean, exchangeInfoFutures?: ExtractedInfo[] | false, useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
+    protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient>;
+    protected tradingWsApiClient: IWebsocketApiClient | undefined;
     getTradingWsApiClient(): () => IWebsocketApiClient | undefined;
+    protected isTradingWsApiConfigured(): boolean;
+    protected initTradingWsApiClient(): void;
+    protected sendTradingWsRequest<T>(method: string, params: Record<string, any>, timeoutMs?: number): Promise<TradingWsRequestResult<T>>;
+    protected destroyTradingWsApiClient(): void;
+    private createTradingWsApiClient;
     protected handleWebSocket(url: string, args: any[], callback: Function, parser: Function, title: string, statusCallback?: (status: SocketStatus) => void, auth?: boolean): Promise<HandleWebSocket>;
     closeAllSockets(): void;
     closeById(id: string): void;

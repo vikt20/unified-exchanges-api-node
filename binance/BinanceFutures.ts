@@ -596,6 +596,7 @@ export default class BinanceFutures extends BinanceStreams implements IFuturesEx
         }
 
         const wsResult = await this.sendTradingWsRequest<OrderRequestResponse>('order.place', params);
+        console.log('BINANCE: Sent order via WebSocket API', wsResult);
         if (wsResult.status === 'unavailable') {
             return await this.signedRequest('futures', 'POST', '/fapi/v1/order', params);
         }

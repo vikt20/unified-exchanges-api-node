@@ -62,6 +62,7 @@ export type ExtractedInfo = {
     quoteAsset: string;
     additionalInfo?: {
         okx_ctVal?: number;
+        okx_instIdCode?: number;
     };
 };
 export interface ProcessedSymbolInfo {
