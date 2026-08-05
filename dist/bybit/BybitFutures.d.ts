@@ -1,8 +1,8 @@
 import BybitStreams from "./BybitStreams.js";
 import { IFuturesExchangeClient } from "../core/IExchangeClient.js";
-import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo, SymbolLeverageData, SymbolMarginModeData, MarginMode } from "../core/types.js";
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, KlineData, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, AccountData, PositionRiskData, PositionData, OrderData, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, OrderRequestResponse, MarketOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, TrailingStopOrderParams, OrderInput, ExtractedInfo, SymbolLeverageData, SymbolMarginModeData, MarginMode, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
 export default class BybitFutures extends BybitStreams implements IFuturesExchangeClient {
-    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
     closeListenKey(): Promise<FormattedResponse<unknown>>;
     getExchangeInfo(): Promise<FormattedResponse<{
         [key: string]: ExtractedInfo;

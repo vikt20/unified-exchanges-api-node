@@ -7,8 +7,8 @@ import BybitFutures from '../bybit/BybitFutures.js';
 import BybitSpot from '../bybit/BybitSpot.js';
 import OkxFutures from '../okx/OkxFutures.js';
 import OkxSpot from '../okx/OkxSpot.js';
-import KrakenFutures from '../archive/kraken/KrakenFutures.js';
-import KrakenSpot from '../archive/kraken/KrakenSpot.js';
+// import KrakenFutures from '../archive/kraken/KrakenFutures.js';
+// import KrakenSpot from '../archive/kraken/KrakenSpot.js';
 import BitgetFutures from '../bitget/BitgetFutures.js';
 import BitgetSpot from '../bitget/BitgetSpot.js';
 
@@ -75,10 +75,10 @@ export class UniversalTester {
                 return new OkxFutures(apiKey, apiSecret, apiPassphrase, isTest);
             case 'okx_spot':
                 return new OkxSpot(apiKey, apiSecret, apiPassphrase, isTest);
-            case 'kraken_futures':
-                return new KrakenFutures(apiKey, apiSecret, isTest);
-            case 'kraken_spot':
-                return new KrakenSpot(apiKey, apiSecret, isTest);
+            // case 'kraken_futures':
+            //     return new KrakenFutures(apiKey, apiSecret, isTest);
+            // case 'kraken_spot':
+            //     return new KrakenSpot(apiKey, apiSecret, isTest);
             case 'bitget_futures':
                 return new BitgetFutures(apiKey, apiSecret, apiPassphrase, isTest);
             case 'bitget_spot':

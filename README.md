@@ -57,6 +57,34 @@ async function main() {
 main();
 ```
 
+### WebSocket order entry (Binance and Bybit Futures)
+
+Pass `useWebsocketApi: true` in the connection options to send supported futures
+order operations over the exchange's authenticated WebSocket API:
+
+```typescript
+import { ExchangeFactory, ExchangeList } from 'unified-exchanges-api-node';
+
+const bybit = ExchangeFactory.create(
+    ExchangeList.BYBIT,
+    'YOUR_API_KEY',
+    'YOUR_API_SECRET',
+    undefined,
+    false,
+    { useWebsocketApi: true }
+);
+
+const order = await bybit.futures.marketBuy({
+    symbol: 'BTCUSDT',
+    quantity: 0.001
+});
+```
+
+Bybit uses WebSocket order entry for order creation and single-order cancellation.
+If the WebSocket is unavailable, those calls fall back to signed REST. Bybit does
+not provide a WebSocket `cancel-all` operation, so `cancelAllOpenOrders` continues
+to use REST.
+
 ## Architecture Overview
 
 When you create a connection using `ExchangeFactory`, it returns an `IUnifiedExchange` object containing:

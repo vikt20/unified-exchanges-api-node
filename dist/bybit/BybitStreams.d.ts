@@ -1,14 +1,28 @@
 import BybitBase from "./BybitBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, FundingStreamOptions } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, FundingStreamOptions, WebsocketApiOption, FormattedResponse } from "../core/types.js";
+export type TradingWsRequestResult<T> = {
+    status: 'success';
+    response: FormattedResponse<T>;
+} | {
+    status: 'unavailable';
+    error: string;
+};
 export default class BybitStreams extends BybitBase implements IStreamManager {
     protected subscriptions: {
         id: string;
         disconnect: Function;
     }[];
-    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean);
+    constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
+    protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient>;
+    protected tradingWsApiClient: IWebsocketApiClient | undefined;
     getTradingWsApiClient(): () => IWebsocketApiClient | undefined;
+    protected isTradingWsApiConfigured(): boolean;
+    protected initTradingWsApiClient(): void;
+    protected sendTradingWsRequest<T>(method: string, params: Record<string, any>, timeoutMs?: number): Promise<TradingWsRequestResult<T>>;
+    protected destroyTradingWsApiClient(): void;
+    private createTradingWsApiClient;
     protected handleWebSocket(url: string, topics: string[], callback: Function, parser: Function, title: string, statusCallback?: (status: SocketStatus) => void, auth?: boolean): Promise<HandleWebSocket>;
     private generateHmacSignature;
     closeAllSockets(): void;

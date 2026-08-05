@@ -4,8 +4,7 @@
  * Extracted from BinanceStreams - Binance is the reference implementation.
  * All exchanges must implement this interface for WebSocket streams.
  */
-import { IBinanceWebsocketApiClient } from '../binance/BinanceWebsocketApi.js';
-import type { KlineData, DepthData, BookTickerData, TradeData, FundingData, FundingStreamOptions, UserData, HandleWebSocket, SocketStatus } from './types.js';
+import type { KlineData, DepthData, BookTickerData, TradeData, FundingData, FundingStreamOptions, UserData, HandleWebSocket, SocketStatus, IWebsocketApiClient } from './types.js';
 /**
  * Unified Stream Manager Interface
  *
@@ -15,7 +14,7 @@ import type { KlineData, DepthData, BookTickerData, TradeData, FundingData, Fund
 export interface IStreamManager {
     closeAllSockets(): void;
     closeById(id: string): void;
-    getTradingWsApiClient(): () => IBinanceWebsocketApiClient | undefined;
+    getTradingWsApiClient(): () => IWebsocketApiClient | undefined;
     spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void, levels?: number): Promise<HandleWebSocket>;
     futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void, levels?: number): Promise<HandleWebSocket>;
     spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;

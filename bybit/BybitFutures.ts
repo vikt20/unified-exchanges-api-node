@@ -30,14 +30,20 @@ import {
     OrderType,
     TimeInForce,
     PositionDirection,
-    ExtractedInfo, SymbolLeverageData, SymbolMarginModeData, MarginMode
+    ExtractedInfo, SymbolLeverageData, SymbolMarginModeData, MarginMode,
+    IWebsocketApiClient, WebsocketApiOption
 } from "../core/types.js";
 import { convertBybitKline, convertBybitOrder, convertBybitPosition, convertExchangeInfo } from "./converters.js";
 
 export default class BybitFutures extends BybitStreams implements IFuturesExchangeClient {
 
-    constructor(apiKey?: string, apiSecret?: string, isTest: boolean = false) {
-        super(apiKey, apiSecret, isTest);
+    constructor(
+        apiKey?: string,
+        apiSecret?: string,
+        isTest: boolean = false,
+        useWebsocketApi: WebsocketApiOption<IWebsocketApiClient> = false
+    ) {
+        super(apiKey, apiSecret, isTest, useWebsocketApi);
     }
 
     async closeListenKey(): Promise<FormattedResponse<unknown>> {
@@ -301,7 +307,16 @@ export default class BybitFutures extends BybitStreams implements IFuturesExchan
         };
         if (params.clientOrderId) payload.orderLinkId = params.clientOrderId;
 
-        return await this.signedRequest('linear', 'POST', '/v5/order/cancel', payload);
+        if (!this.isTradingWsApiConfigured()) {
+            return await this.signedRequest('linear', 'POST', '/v5/order/cancel', payload);
+        }
+
+        const wsResult = await this.sendTradingWsRequest<unknown>('order.cancel', payload);
+        if (wsResult.status === 'unavailable') {
+            return await this.signedRequest('linear', 'POST', '/v5/order/cancel', payload);
+        }
+
+        return wsResult.response;
     }
 
     // --- Order Execution ---
@@ -360,7 +375,15 @@ export default class BybitFutures extends BybitStreams implements IFuturesExchan
             }
         }
 
-        const res = await this.signedRequest('linear', 'POST', '/v5/order/create', payload);
+        let res: FormattedResponse<any>;
+        if (!this.isTradingWsApiConfigured()) {
+            res = await this.signedRequest('linear', 'POST', '/v5/order/create', payload);
+        } else {
+            const wsResult = await this.sendTradingWsRequest<any>('order.create', payload);
+            res = wsResult.status === 'unavailable'
+                ? await this.signedRequest('linear', 'POST', '/v5/order/create', payload)
+                : wsResult.response;
+        }
 
         if (res.success && res.data) {
             const data: OrderRequestResponse = {

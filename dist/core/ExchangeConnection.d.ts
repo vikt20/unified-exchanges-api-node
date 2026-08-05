@@ -10,17 +10,13 @@ import BybitFutures from '../bybit/BybitFutures.js';
 import BybitStreams from '../bybit/BybitStreams.js';
 import BybitUserData from '../bybit/BybitUserData.js';
 import BybitBase from '../bybit/BybitBase.js';
+import { BybitWebsocketApiClient } from '../bybit/BybitWebsocketApi.js';
 import { ExchangeList } from './types.js';
 import type { ExchangeConnectionOptions } from './types.js';
 import OkxSpot from '../okx/OkxSpot.js';
 import OkxFutures from '../okx/OkxFutures.js';
 import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
-import KrakenSpot from '../archive/kraken/KrakenSpot.js';
-import KrakenFutures from '../archive/kraken/KrakenFutures.js';
-import KrakenStreams from '../archive/kraken/KrakenStreams.js';
-import KrakenBase from '../archive/kraken/KrakenBase.js';
-import KrakenUserData from '../archive/kraken/KrakenUserData.js';
 import BitgetSpot from '../bitget/BitgetSpot.js';
 import BitgetFutures from '../bitget/BitgetFutures.js';
 import BitgetStreams from '../bitget/BitgetStreams.js';
@@ -29,5 +25,5 @@ import BitgetUserData from '../bitget/BitgetUserData.js';
 export declare class ExchangeFactory {
     static create(exchangeId: ExchangeList, apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTestnet?: boolean, connectionOptions?: ExchangeConnectionOptions): IUnifiedExchange;
 }
-export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, KrakenBase, KrakenSpot, KrakenFutures, KrakenStreams, KrakenUserData, BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };
+export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitWebsocketApiClient, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };
 //# sourceMappingURL=ExchangeConnection.d.ts.map

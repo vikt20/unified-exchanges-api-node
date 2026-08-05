@@ -12,6 +12,7 @@ import BybitFutures from '../bybit/BybitFutures.js';
 import BybitStreams from '../bybit/BybitStreams.js';
 import BybitUserData from '../bybit/BybitUserData.js';
 import BybitBase from '../bybit/BybitBase.js';
+import { BybitWebsocketApiClient } from '../bybit/BybitWebsocketApi.js';
 import { ExchangeList } from './types.js';
 import type { ExchangeConnectionOptions } from './types.js';
 
@@ -21,11 +22,11 @@ import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
 import OkxUserData from '../okx/OkxUserData.js';
 
-import KrakenSpot from '../archive/kraken/KrakenSpot.js';
-import KrakenFutures from '../archive/kraken/KrakenFutures.js';
-import KrakenStreams from '../archive/kraken/KrakenStreams.js';
-import KrakenBase from '../archive/kraken/KrakenBase.js';
-import KrakenUserData from '../archive/kraken/KrakenUserData.js';
+// import KrakenSpot from '../archive/kraken/KrakenSpot.js';
+// import KrakenFutures from '../archive/kraken/KrakenFutures.js';
+// import KrakenStreams from '../archive/kraken/KrakenStreams.js';
+// import KrakenBase from '../archive/kraken/KrakenBase.js';
+// import KrakenUserData from '../archive/kraken/KrakenUserData.js';
 
 import BitgetSpot from '../bitget/BitgetSpot.js';
 import BitgetFutures from '../bitget/BitgetFutures.js';
@@ -58,7 +59,7 @@ export class ExchangeFactory {
             case ExchangeList.BYBIT:
                 const connectionBybit: IUnifiedExchange = {
                     spot: new BybitSpot(apiKey, apiSecret, isTestnet),
-                    futures: new BybitFutures(apiKey, apiSecret, isTestnet),
+                    futures: new BybitFutures(apiKey, apiSecret, isTestnet, connectionOptions?.useWebsocketApi),
                     streams: new BybitStreams(apiKey, apiSecret, isTestnet),
                 };
                 if (apiKey && apiSecret) {
@@ -118,6 +119,7 @@ export {
     BybitSpot,
     BybitFutures,
     BybitStreams,
+    BybitWebsocketApiClient,
     BybitUserData,
 
     OkxBase,
@@ -125,11 +127,11 @@ export {
     OkxFutures,
     OkxStreams,
 
-    KrakenBase,
-    KrakenSpot,
-    KrakenFutures,
-    KrakenStreams,
-    KrakenUserData,
+    // KrakenBase,
+    // KrakenSpot,
+    // KrakenFutures,
+    // KrakenStreams,
+    // KrakenUserData,
 
     BitgetBase,
     BitgetSpot,

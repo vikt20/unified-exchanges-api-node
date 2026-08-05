@@ -1,8 +1,8 @@
 import BybitStreams from "./BybitStreams.js";
 import { convertBybitKline, convertBybitOrder, convertExchangeInfo } from "./converters.js";
 export default class BybitFutures extends BybitStreams {
-    constructor(apiKey, apiSecret, isTest = false) {
-        super(apiKey, apiSecret, isTest);
+    constructor(apiKey, apiSecret, isTest = false, useWebsocketApi = false) {
+        super(apiKey, apiSecret, isTest, useWebsocketApi);
     }
     async closeListenKey() {
         return this.formattedResponse({ data: "Not applicable for Bybit V5" });
@@ -247,7 +247,14 @@ export default class BybitFutures extends BybitStreams {
         };
         if (params.clientOrderId)
             payload.orderLinkId = params.clientOrderId;
-        return await this.signedRequest('linear', 'POST', '/v5/order/cancel', payload);
+        if (!this.isTradingWsApiConfigured()) {
+            return await this.signedRequest('linear', 'POST', '/v5/order/cancel', payload);
+        }
+        const wsResult = await this.sendTradingWsRequest('order.cancel', payload);
+        if (wsResult.status === 'unavailable') {
+            return await this.signedRequest('linear', 'POST', '/v5/order/cancel', payload);
+        }
+        return wsResult.response;
     }
     // --- Order Execution ---
     async customOrder(orderInput) {
@@ -287,7 +294,16 @@ export default class BybitFutures extends BybitStreams {
                 }
             }
         }
-        const res = await this.signedRequest('linear', 'POST', '/v5/order/create', payload);
+        let res;
+        if (!this.isTradingWsApiConfigured()) {
+            res = await this.signedRequest('linear', 'POST', '/v5/order/create', payload);
+        }
+        else {
+            const wsResult = await this.sendTradingWsRequest('order.create', payload);
+            res = wsResult.status === 'unavailable'
+                ? await this.signedRequest('linear', 'POST', '/v5/order/create', payload)
+                : wsResult.response;
+        }
         if (res.success && res.data) {
             const data = {
                 orderId: res.data.orderId,

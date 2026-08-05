@@ -9,17 +9,18 @@ import BybitFutures from '../bybit/BybitFutures.js';
 import BybitStreams from '../bybit/BybitStreams.js';
 import BybitUserData from '../bybit/BybitUserData.js';
 import BybitBase from '../bybit/BybitBase.js';
+import { BybitWebsocketApiClient } from '../bybit/BybitWebsocketApi.js';
 import { ExchangeList } from './types.js';
 import OkxSpot from '../okx/OkxSpot.js';
 import OkxFutures from '../okx/OkxFutures.js';
 import OkxStreams from '../okx/OkxStreams.js';
 import OkxBase from '../okx/OkxBase.js';
 import OkxUserData from '../okx/OkxUserData.js';
-import KrakenSpot from '../archive/kraken/KrakenSpot.js';
-import KrakenFutures from '../archive/kraken/KrakenFutures.js';
-import KrakenStreams from '../archive/kraken/KrakenStreams.js';
-import KrakenBase from '../archive/kraken/KrakenBase.js';
-import KrakenUserData from '../archive/kraken/KrakenUserData.js';
+// import KrakenSpot from '../archive/kraken/KrakenSpot.js';
+// import KrakenFutures from '../archive/kraken/KrakenFutures.js';
+// import KrakenStreams from '../archive/kraken/KrakenStreams.js';
+// import KrakenBase from '../archive/kraken/KrakenBase.js';
+// import KrakenUserData from '../archive/kraken/KrakenUserData.js';
 import BitgetSpot from '../bitget/BitgetSpot.js';
 import BitgetFutures from '../bitget/BitgetFutures.js';
 import BitgetStreams from '../bitget/BitgetStreams.js';
@@ -41,7 +42,7 @@ export class ExchangeFactory {
             case ExchangeList.BYBIT:
                 const connectionBybit = {
                     spot: new BybitSpot(apiKey, apiSecret, isTestnet),
-                    futures: new BybitFutures(apiKey, apiSecret, isTestnet),
+                    futures: new BybitFutures(apiKey, apiSecret, isTestnet, connectionOptions?.useWebsocketApi),
                     streams: new BybitStreams(apiKey, apiSecret, isTestnet),
                 };
                 if (apiKey && apiSecret) {
@@ -84,4 +85,10 @@ export class ExchangeFactory {
         }
     }
 }
-export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, KrakenBase, KrakenSpot, KrakenFutures, KrakenStreams, KrakenUserData, BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };
+export { BinanceBase, BinanceSpot, BinanceFutures, BinanceStreams, BinanceWebsocketApiClient, BinanceUserData, BybitBase, BybitSpot, BybitFutures, BybitStreams, BybitWebsocketApiClient, BybitUserData, OkxBase, OkxSpot, OkxFutures, OkxStreams, 
+// KrakenBase,
+// KrakenSpot,
+// KrakenFutures,
+// KrakenStreams,
+// KrakenUserData,
+BitgetBase, BitgetSpot, BitgetFutures, BitgetStreams, BitgetUserData };

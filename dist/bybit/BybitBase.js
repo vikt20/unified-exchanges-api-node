@@ -9,9 +9,11 @@ export default class BybitBase extends AbstractExchangeBase {
     static WS_PUBLIC_LINEAR_MAINNET = 'wss://stream.bybit.com/v5/public/linear';
     static WS_PUBLIC_SPOT_MAINNET = 'wss://stream.bybit.com/v5/public/spot';
     static WS_PRIVATE_MAINNET = 'wss://stream.bybit.com/v5/private';
+    static WS_TRADE_MAINNET = 'wss://stream.bybit.com/v5/trade';
     static WS_PUBLIC_LINEAR_TESTNET = 'wss://stream-testnet.bybit.com/v5/public/linear';
     static WS_PUBLIC_SPOT_TESTNET = 'wss://stream-testnet.bybit.com/v5/public/spot';
     static WS_PRIVATE_TESTNET = 'wss://stream-testnet.bybit.com/v5/private';
+    static WS_TRADE_TESTNET = 'wss://stream-testnet.bybit.com/v5/trade';
     constructor(apiKey, apiSecret, isTest = false) {
         super(apiKey, apiSecret, isTest);
     }
@@ -31,6 +33,9 @@ export default class BybitBase extends AbstractExchangeBase {
         if (marketType === 'spot')
             return BybitBase.WS_PUBLIC_SPOT_MAINNET;
         return BybitBase.WS_PRIVATE_MAINNET;
+    }
+    getTradingWsApiUrl() {
+        return this.isTest ? BybitBase.WS_TRADE_TESTNET : BybitBase.WS_TRADE_MAINNET;
     }
     async setTimeOffset() {
         try {

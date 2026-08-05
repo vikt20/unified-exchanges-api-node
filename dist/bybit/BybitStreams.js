@@ -2,14 +2,80 @@ import BybitBase from "./BybitBase.js";
 import ws from 'ws';
 import { mapBybitTriggerBy, convertBybitFunding, mapBybitOrderType } from "./converters.js";
 import crypto from 'crypto';
+import { BybitWebsocketApiClient, BybitWsUnavailableError } from './BybitWebsocketApi.js';
 // Extend BybitBase to get access to API keys and Base URLs
 export default class BybitStreams extends BybitBase {
     subscriptions = [];
-    constructor(apiKey, apiSecret, isTest = false) {
+    constructor(apiKey, apiSecret, isTest = false, useWebsocketApi = false) {
         super(apiKey, apiSecret, isTest);
+        this.useWebsocketApi = useWebsocketApi;
+        if (this.useWebsocketApi) {
+            this.initTradingWsApiClient();
+        }
     }
+    useWebsocketApi = false;
+    tradingWsApiClient = undefined;
     getTradingWsApiClient() {
-        return () => undefined; // BybitStreams does not use BinanceWebsocketApiClient, so we return undefined
+        return () => this.tradingWsApiClient;
+    }
+    isTradingWsApiConfigured() {
+        return Boolean(this.tradingWsApiClient);
+    }
+    initTradingWsApiClient() {
+        if (this.useWebsocketApi === true) {
+            this.tradingWsApiClient = this.createTradingWsApiClient();
+        }
+        if (typeof this.useWebsocketApi === 'function') {
+            this.tradingWsApiClient = this.useWebsocketApi();
+        }
+        if (typeof this.useWebsocketApi === 'object') {
+            this.tradingWsApiClient = this.useWebsocketApi;
+        }
+    }
+    async sendTradingWsRequest(method, params, timeoutMs = 5000) {
+        const client = this.tradingWsApiClient;
+        if (!client)
+            return { status: 'unavailable', error: 'WebSocket API is not configured' };
+        try {
+            await client.ensureConnected();
+        }
+        catch (error) {
+            return { status: 'unavailable', error: error?.message || 'WebSocket API is unavailable' };
+        }
+        if (!client.isOnline()) {
+            return { status: 'unavailable', error: 'WebSocket API is not online' };
+        }
+        try {
+            const response = await client.request(method, params, { timeoutMs });
+            return { status: 'success', response };
+        }
+        catch (error) {
+            if (error instanceof BybitWsUnavailableError) {
+                return { status: 'unavailable', error: error.message };
+            }
+            return {
+                status: 'success',
+                response: this.formattedResponse({ errors: error?.message || 'WebSocket API request failed' })
+            };
+        }
+    }
+    destroyTradingWsApiClient() {
+        if (this.useWebsocketApi !== true) {
+            this.tradingWsApiClient = undefined;
+            return;
+        }
+        this.tradingWsApiClient?.destroy();
+        this.tradingWsApiClient = undefined;
+    }
+    createTradingWsApiClient() {
+        return new BybitWebsocketApiClient({
+            getUrl: () => this.getTradingWsApiUrl(),
+            getApiKey: () => this.apiKey,
+            getRecvWindow: () => this.recvWindow,
+            getTimestamp: () => Date.now() - this.timeOffset,
+            sign: (payload) => this.generateSignature(payload),
+            formattedResponse: (object) => this.formattedResponse(object)
+        });
     }
     // --- Base WebSocket Handler ---
     handleWebSocket(url, topics, callback, parser, title, statusCallback, auth = false) {
@@ -145,6 +211,7 @@ export default class BybitStreams extends BybitBase {
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];
+        this.destroyTradingWsApiClient();
     }
     closeById(id) {
         const index = this.subscriptions.findIndex(i => i.id === id);
