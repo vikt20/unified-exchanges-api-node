@@ -115,6 +115,7 @@ export const ExtractedInfoSchema = {
     required: true,
     properties: {
         symbol: { type: 'string', required: true },
+        deliveryDate: { type: 'number', required: true },
         rawData: { type: 'object', required: true },
         status: { type: 'string', required: true },
         type: { type: 'string', required: true, enum: ['COIN', 'STOCK', 'TRADFI', 'PRE_IPO', 'UNKNOWN'] },

@@ -2,8 +2,8 @@ import OkxBase from "./OkxBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import ws from 'ws';
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions, WebsocketApiOption, FormattedResponse } from "../core/types.js";
-import { convertOkxKline, convertOkxOrder, convertOkxPosition, OkxWsMessage } from "./converters.js";
+import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions, WebsocketApiOption, FormattedResponse, ExchangeInfoStreamCallback, ExchangeInfoStreamOptions } from "../core/types.js";
+import { convertExchangeInfo, convertOkxKline, convertOkxOrder, convertOkxPosition, OkxWsMessage } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
 import crypto from 'crypto';
 import { OkxWebsocketApiClient, OkxWsUnavailableError } from './OkxWebsocketApi.js';
@@ -15,6 +15,22 @@ export type TradingWsRequestResult<T> =
 export default class OkxStreams extends OkxBase implements IStreamManager {
 
     protected subscriptions: { id: string, disconnect: Function, title: string }[] = [];
+
+    futuresExchangeInfoStream(
+        callback: ExchangeInfoStreamCallback,
+        statusCallback?: (status: SocketStatus) => void,
+        _options?: ExchangeInfoStreamOptions
+    ): Promise<HandleWebSocket> {
+        return this.handleWebSocket(
+            this.getStreamUrl('public'),
+            [{ channel: 'instruments', instType: 'SWAP' }],
+            (updates: ExtractedInfo[]) => updates.forEach(callback),
+            (message: OkxWsMessage) => Object.values(convertExchangeInfo(message.data, true)),
+            'futuresExchangeInfoStream',
+            statusCallback,
+            false
+        );
+    }
 
     constructor(
         apiKey?: string,

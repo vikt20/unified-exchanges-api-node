@@ -204,8 +204,9 @@ export function convertSpotExchangeInfo(items) {
             continue;
         info[item.symbol] = {
             symbol: item.symbol,
+            deliveryDate: 0,
             rawData: item,
-            status: 'TRADING',
+            status: item.status === 'online' ? 'TRADING' : String(item.status),
             type: 'COIN',
             baseAsset: item.baseCoin,
             quoteAsset: item.quoteCoin,
@@ -228,8 +229,9 @@ export function convertFuturesExchangeInfo(items) {
             continue;
         info[item.symbol] = {
             symbol: item.symbol,
+            deliveryDate: toNumber(item.deliveryTime),
             rawData: item,
-            status: 'TRADING',
+            status: item.symbolStatus === 'normal' ? 'TRADING' : String(item.symbolStatus),
             type: item.isRwa == "NO" ? 'COIN' : 'UNKNOWN',
             baseAsset: item.baseCoin,
             quoteAsset: item.quoteCoin,

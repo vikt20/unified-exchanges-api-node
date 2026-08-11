@@ -170,7 +170,6 @@ export default class BinanceFutures extends BinanceStreams implements IFuturesEx
         super(apiKey, apiSecret, isTest, useWebsocketApi);
     }
 
-
     async closeListenKey() {
         return await this.signedRequest('futures', 'DELETE', '/fapi/v1/listenKey');
     }
@@ -578,7 +577,7 @@ export default class BinanceFutures extends BinanceStreams implements IFuturesEx
             reduceOnly,
             workingType,
             timestamp,
-            recWindow: this.recvWindow,
+            recvWindow: this.recvWindow,
             newOrderResponseType: 'RESULT',
             callbackRate,
             activatePrice,

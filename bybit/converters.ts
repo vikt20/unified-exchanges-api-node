@@ -156,8 +156,9 @@ export function convertExchangeInfo(data: any): { [key: string]: ExtractedInfo }
             if (item.status !== 'Trading') continue;
             info[item.symbol] = {
                 symbol: item.symbol,
+                deliveryDate: Number(item.deliveryTime || 0),
                 rawData: item,
-                status: item.status === 'Trading' ? 'TRADING' : 'BREAK',
+                status: item.status === 'Trading' ? 'TRADING' : String(item.status),
                 type: normalizeBybitInstrumentType(item),
                 baseAsset: item.baseCoin,
                 quoteAsset: item.quoteCoin,

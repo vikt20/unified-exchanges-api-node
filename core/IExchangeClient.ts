@@ -35,6 +35,10 @@ import type {
     SymbolLeverageData,
     SymbolMarginModeData,
     MarginMode,
+    ExchangeInfoStreamCallback,
+    ExchangeInfoStreamOptions,
+    HandleWebSocket,
+    SocketStatus,
 } from './types.js';
 
 import { AbstractExchangeBase } from './AbstractExchangeBase.js';
@@ -113,6 +117,11 @@ export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
 }
 
 export interface IFuturesExchangeClient extends IExchangeClient {
+    futuresExchangeInfoStream(
+        callback: ExchangeInfoStreamCallback,
+        statusCallback?: (status: SocketStatus) => void,
+        options?: ExchangeInfoStreamOptions
+    ): Promise<HandleWebSocket>;
     getSymbolLeverage(params: { symbol: string }): Promise<FormattedResponse<SymbolLeverageData>>;
     updateSymbolLeverage(params: { symbol: string; leverage: number }): Promise<FormattedResponse<SymbolLeverageData>>;
     getSymbolMarginMode(params: { symbol: string }): Promise<FormattedResponse<SymbolMarginModeData>>;

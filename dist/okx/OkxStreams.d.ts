@@ -1,7 +1,7 @@
 import OkxBase from "./OkxBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions, WebsocketApiOption, FormattedResponse } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, ExtractedInfo, FundingStreamOptions, WebsocketApiOption, FormattedResponse, ExchangeInfoStreamCallback, ExchangeInfoStreamOptions } from "../core/types.js";
 export type TradingWsRequestResult<T> = {
     status: 'success';
     response: FormattedResponse<T>;
@@ -15,6 +15,7 @@ export default class OkxStreams extends OkxBase implements IStreamManager {
         disconnect: Function;
         title: string;
     }[];
+    futuresExchangeInfoStream(callback: ExchangeInfoStreamCallback, statusCallback?: (status: SocketStatus) => void, _options?: ExchangeInfoStreamOptions): Promise<HandleWebSocket>;
     constructor(apiKey?: string, apiSecret?: string, apiPassphrase?: string, isTest?: boolean, exchangeInfoFutures?: ExtractedInfo[] | false, useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
     protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient>;
     protected tradingWsApiClient: IWebsocketApiClient | undefined;

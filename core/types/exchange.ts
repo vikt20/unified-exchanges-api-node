@@ -68,6 +68,8 @@ export type ExtractedInfoType = 'COIN' | 'STOCK' | 'TRADFI' | 'PRE_IPO' | 'UNKNO
 
 export type ExtractedInfo = {
     symbol: string;
+    /** Exchange-provided delivery/expiry timestamp in milliseconds. Zero when not applicable. */
+    deliveryDate: number;
     rawData: unknown;
     status: string;
     type: ExtractedInfoType;
@@ -86,6 +88,9 @@ export type ExtractedInfo = {
         okx_instIdCode?: number; // OKX WebSocket trading instrument identifier
     }
 };
+
+/** A mergeable exchange-info update. Symbol is always present even when other fields are omitted. */
+export type ExchangeInfoUpdate = Pick<ExtractedInfo, 'symbol'> & Partial<ExtractedInfo>;
 
 // ━━ Extracted/Processed Symbol Info (Normalized data) ━━
 export interface ProcessedSymbolInfo {

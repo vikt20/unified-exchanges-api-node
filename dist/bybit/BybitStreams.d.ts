@@ -1,7 +1,7 @@
 import BybitBase from "./BybitBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, FundingStreamOptions, WebsocketApiOption, FormattedResponse } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, IWebsocketApiClient, FundingStreamOptions, WebsocketApiOption, FormattedResponse, ExchangeInfoStreamCallback, ExchangeInfoStreamOptions } from "../core/types.js";
 export type TradingWsRequestResult<T> = {
     status: 'success';
     response: FormattedResponse<T>;
@@ -14,6 +14,7 @@ export default class BybitStreams extends BybitBase implements IStreamManager {
         id: string;
         disconnect: Function;
     }[];
+    futuresExchangeInfoStream(callback: ExchangeInfoStreamCallback, statusCallback?: (status: SocketStatus) => void, options?: ExchangeInfoStreamOptions): Promise<HandleWebSocket>;
     constructor(apiKey?: string, apiSecret?: string, isTest?: boolean, useWebsocketApi?: WebsocketApiOption<IWebsocketApiClient>);
     protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient>;
     protected tradingWsApiClient: IWebsocketApiClient | undefined;

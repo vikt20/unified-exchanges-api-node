@@ -3,9 +3,14 @@ import ws from 'ws';
 import { mapBybitTriggerBy, convertBybitFunding, mapBybitOrderType } from "./converters.js";
 import crypto from 'crypto';
 import { BybitWebsocketApiClient, BybitWsUnavailableError } from './BybitWebsocketApi.js';
+import { createExchangeInfoPollingStream } from '../core/exchangeInfoPolling.js';
 // Extend BybitBase to get access to API keys and Base URLs
 export default class BybitStreams extends BybitBase {
     subscriptions = [];
+    futuresExchangeInfoStream(callback, statusCallback, options) {
+        const client = this;
+        return createExchangeInfoPollingStream(() => client.getExchangeInfo(), callback, subscription => this.subscriptions.push(subscription), statusCallback, options);
+    }
     constructor(apiKey, apiSecret, isTest = false, useWebsocketApi = false) {
         super(apiKey, apiSecret, isTest);
         this.useWebsocketApi = useWebsocketApi;

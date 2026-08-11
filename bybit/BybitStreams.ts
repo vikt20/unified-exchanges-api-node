@@ -3,11 +3,12 @@ import BybitBase from "./BybitBase.js";
 import { IStreamManager } from "../core/IStreamManager.js";
 import ws from 'ws';
 import { SocketStatus, HandleWebSocket, UserData } from "../core/types/streams.js";
-import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, OrderWorkingType, OrderType, IWebsocketApiClient, FundingStreamOptions, WebsocketApiOption, FormattedResponse } from "../core/types.js";
+import { DepthData, KlineData, TradeData, BookTickerData, OrderData, PositionData, BalanceData, OrderStatus, OrderWorkingType, OrderType, IWebsocketApiClient, FundingStreamOptions, WebsocketApiOption, FormattedResponse, ExchangeInfoStreamCallback, ExchangeInfoStreamOptions, ExtractedInfo } from "../core/types.js";
 import { convertBybitKline, BybitWsMessage, BybitOrderWsData, BybitPositionWsData, BybitWalletWsData, mapBybitTriggerBy, BybitDepthWsData, BybitKlineWsData, BybitBookTickerWsData, BybitTradeWsData, convertBybitFunding, BybitTickerWsData, mapBybitOrderType } from "./converters.js";
 import { PositionDirection, TimeInForce } from "../core/types.js";
 import crypto from 'crypto';
 import { BybitWebsocketApiClient, BybitWsUnavailableError } from './BybitWebsocketApi.js';
+import { createExchangeInfoPollingStream } from '../core/exchangeInfoPolling.js';
 
 export type TradingWsRequestResult<T> =
     | { status: 'success'; response: FormattedResponse<T> }
@@ -17,6 +18,19 @@ export type TradingWsRequestResult<T> =
 export default class BybitStreams extends BybitBase implements IStreamManager {
 
     protected subscriptions: { id: string, disconnect: Function }[] = [];
+
+    futuresExchangeInfoStream(
+        callback: ExchangeInfoStreamCallback,
+        statusCallback?: (status: SocketStatus) => void,
+        options?: ExchangeInfoStreamOptions
+    ): Promise<HandleWebSocket> {
+        const client = this as typeof this & {
+            getExchangeInfo(): Promise<FormattedResponse<Record<string, ExtractedInfo>>>;
+        };
+        return createExchangeInfoPollingStream(
+            () => client.getExchangeInfo(), callback, subscription => this.subscriptions.push(subscription), statusCallback, options
+        );
+    }
 
     constructor(
         apiKey?: string,

@@ -64,6 +64,7 @@ export type ListenKey = {
 export type ExchangeInfo = {
     symbols: Array<{
         symbol: string;
+        deliveryDate?: number;
         status: string;
         underlyingType?: string;
         baseAsset: string;

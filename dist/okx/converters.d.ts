@@ -1,5 +1,5 @@
 import { KlineData, OrderData, PositionData, OrderType, ExtractedInfo } from '../core/types.js';
-export declare function convertExchangeInfo(data: any): {
+export declare function convertExchangeInfo(data: any, includeInactive?: boolean): {
     [key: string]: ExtractedInfo;
 };
 export declare function convertOkxKline(item: string[], symbol: string): KlineData;

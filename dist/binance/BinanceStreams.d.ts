@@ -1,7 +1,7 @@
 import { IStreamManager } from "../core/IStreamManager.js";
 import BinanceBase, { FormattedResponse, OrderStatus, OrderType, OrderWorkingType, PositionDirection, TimeInForce, Type } from "./BinanceBase.js";
 import ws from 'ws';
-import type { FundingData, FundingStreamOptions, UserData, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
+import type { ExchangeInfoStreamCallback, ExchangeInfoStreamOptions, FundingData, FundingStreamOptions, UserData, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
 export type UserDataWebSocket = {
     e: UserData['event'];
     o?: OrderDataWebSocket | AlgoOrderDataWebSocket;
@@ -207,6 +207,7 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
     protected listenKeyInterval: NodeJS.Timeout | undefined;
     protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient>;
     protected tradingWsApiClient: IWebsocketApiClient | undefined;
+    futuresExchangeInfoStream(callback: ExchangeInfoStreamCallback, statusCallback?: (status: SocketStatus) => void, _options?: ExchangeInfoStreamOptions): Promise<HandleWebSocket>;
     closeAllSockets(): void;
     closeById(id: string): void;
     protected isTradingWsApiConfigured(): boolean;

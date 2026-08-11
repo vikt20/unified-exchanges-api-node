@@ -13,15 +13,16 @@ import {
 
 // --- OKX REST Types ---
 
-export function convertExchangeInfo(data: any): { [key: string]: ExtractedInfo } {
+export function convertExchangeInfo(data: any, includeInactive: boolean = false): { [key: string]: ExtractedInfo } {
     const info: { [key: string]: ExtractedInfo } = {};
     if (data && Array.isArray(data)) {
         for (const item of data) {
-            if (item.state !== 'live') continue;
+            if (!includeInactive && item.state !== 'live') continue;
             info[item.instId] = {
                 symbol: item.instId,
+                deliveryDate: Number(item.expTime || 0),
                 rawData: item,
-                status: item.state === 'live' ? 'TRADING' : 'BREAK',
+                status: item.state === 'live' ? 'TRADING' : String(item.state),
                 type: parseFloat(item.instCategory || '0') === 1 && item.ruleType === 'normal' ? 'COIN' : 'UNKNOWN',
                 baseAsset: item.baseCcy || item.settleCcy,
                 quoteAsset: item.quoteCcy || item.settleCcy,

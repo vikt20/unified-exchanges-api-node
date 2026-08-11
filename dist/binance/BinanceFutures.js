@@ -409,7 +409,7 @@ export default class BinanceFutures extends BinanceStreams {
             reduceOnly,
             workingType,
             timestamp,
-            recWindow: this.recvWindow,
+            recvWindow: this.recvWindow,
             newOrderResponseType: 'RESULT',
             callbackRate,
             activatePrice,

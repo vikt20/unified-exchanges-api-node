@@ -6,6 +6,7 @@
 
 import { AccountData } from './account.js';
 import { OrderData } from './orders.js';
+import { ExchangeInfoUpdate } from './exchange.js';
 
 // ━━ WebSocket Handle ━━
 export interface HandleWebSocket {
@@ -23,6 +24,13 @@ export interface FundingStreamOptions {
      */
     fetchInterval?: boolean;
 }
+
+export interface ExchangeInfoStreamOptions {
+    /** REST fallback refresh interval. Defaults to ten minutes. */
+    pollingIntervalMs?: number;
+}
+
+export type ExchangeInfoStreamCallback = (data: ExchangeInfoUpdate) => void;
 
 // ━━ User Data Event ━━
 export interface UserData {

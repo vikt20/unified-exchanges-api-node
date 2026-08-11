@@ -1,10 +1,13 @@
 import OkxBase from "./OkxBase.js";
 import ws from 'ws';
-import { convertOkxKline, convertOkxOrder, convertOkxPosition } from "./converters.js";
+import { convertExchangeInfo, convertOkxKline, convertOkxOrder, convertOkxPosition } from "./converters.js";
 import crypto from 'crypto';
 import { OkxWebsocketApiClient, OkxWsUnavailableError } from './OkxWebsocketApi.js';
 export default class OkxStreams extends OkxBase {
     subscriptions = [];
+    futuresExchangeInfoStream(callback, statusCallback, _options) {
+        return this.handleWebSocket(this.getStreamUrl('public'), [{ channel: 'instruments', instType: 'SWAP' }], (updates) => updates.forEach(callback), (message) => Object.values(convertExchangeInfo(message.data, true)), 'futuresExchangeInfoStream', statusCallback, false);
+    }
     constructor(apiKey, apiSecret, apiPassphrase, isTest = false, exchangeInfoFutures, useWebsocketApi = false) {
         super(apiKey, apiSecret, apiPassphrase, isTest, exchangeInfoFutures);
         this.useWebsocketApi = useWebsocketApi;

@@ -5,6 +5,7 @@
  */
 import { AccountData } from './account.js';
 import { OrderData } from './orders.js';
+import { ExchangeInfoUpdate } from './exchange.js';
 export interface HandleWebSocket {
     disconnect: Function;
     id: string;
@@ -17,6 +18,11 @@ export interface FundingStreamOptions {
      */
     fetchInterval?: boolean;
 }
+export interface ExchangeInfoStreamOptions {
+    /** REST fallback refresh interval. Defaults to ten minutes. */
+    pollingIntervalMs?: number;
+}
+export type ExchangeInfoStreamCallback = (data: ExchangeInfoUpdate) => void;
 export interface UserData {
     event: 'ACCOUNT_UPDATE' | 'ORDER_TRADE_UPDATE' | 'ALGO_UPDATE' | 'listenKeyExpired';
     accountData: AccountData | undefined;

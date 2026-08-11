@@ -5,7 +5,7 @@
  * All exchanges must implement this interface.
  */
 import { IStreamManager } from './IStreamManager.js';
-import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData, PositionData, PositionRiskData, ExtractedInfo, OrderData, OrderRequestResponse, GetOpenOrdersBySymbolParams, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, KlineData, OrderInput, SymbolLeverageData, SymbolMarginModeData, MarginMode } from './types.js';
+import type { FormattedResponse, StaticDepth, GetStaticDepthParams, AccountData, PositionData, PositionRiskData, ExtractedInfo, OrderData, OrderRequestResponse, GetOpenOrdersBySymbolParams, GetAggTradesParams, AggTradesData, GetFundingHistoryParams, FundingHistoryData, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, StopOrderParams, StopMarketOrderParams, ReduceOrderParams, ReducePositionParams, KlineData, OrderInput, SymbolLeverageData, SymbolMarginModeData, MarginMode, ExchangeInfoStreamCallback, ExchangeInfoStreamOptions, HandleWebSocket, SocketStatus } from './types.js';
 import { AbstractExchangeBase } from './AbstractExchangeBase.js';
 /**
  * Unified Exchange Client Interface
@@ -55,6 +55,7 @@ export interface IExchangeClient extends IStreamManager, AbstractExchangeBase {
     getLatestPnlBySymbol(symbol: string, startTime?: number, endTime?: number): Promise<FormattedResponse<number>>;
 }
 export interface IFuturesExchangeClient extends IExchangeClient {
+    futuresExchangeInfoStream(callback: ExchangeInfoStreamCallback, statusCallback?: (status: SocketStatus) => void, options?: ExchangeInfoStreamOptions): Promise<HandleWebSocket>;
     getSymbolLeverage(params: {
         symbol: string;
     }): Promise<FormattedResponse<SymbolLeverageData>>;

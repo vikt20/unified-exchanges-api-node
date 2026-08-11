@@ -14,6 +14,15 @@ export default class BinanceStreams extends BinanceBase {
     listenKeyInterval;
     useWebsocketApi = false;
     tradingWsApiClient = undefined;
+    async futuresExchangeInfoStream(callback, statusCallback, _options) {
+        const createWs = () => new ws(`${this.getStreamUrl('futures', 'market')}!contractInfo`);
+        return this.handleWebSocket(createWs, (event) => ({
+            symbol: event.s || '',
+            status: event.cs,
+            deliveryDate: Number(event.dt || 0),
+            rawData: event
+        }), callback, 'futuresExchangeInfoStream()', statusCallback);
+    }
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());
         this.subscriptions = [];

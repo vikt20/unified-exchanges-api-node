@@ -1,14 +1,15 @@
 // --- OKX REST Types ---
-export function convertExchangeInfo(data) {
+export function convertExchangeInfo(data, includeInactive = false) {
     const info = {};
     if (data && Array.isArray(data)) {
         for (const item of data) {
-            if (item.state !== 'live')
+            if (!includeInactive && item.state !== 'live')
                 continue;
             info[item.instId] = {
                 symbol: item.instId,
+                deliveryDate: Number(item.expTime || 0),
                 rawData: item,
-                status: item.state === 'live' ? 'TRADING' : 'BREAK',
+                status: item.state === 'live' ? 'TRADING' : String(item.state),
                 type: parseFloat(item.instCategory || '0') === 1 && item.ruleType === 'normal' ? 'COIN' : 'UNKNOWN',
                 baseAsset: item.baseCcy || item.settleCcy,
                 quoteAsset: item.quoteCcy || item.settleCcy,

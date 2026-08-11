@@ -2,7 +2,7 @@ import { IStreamManager } from "../core/IStreamManager.js";
 import BinanceBase, { AccountData, FormattedResponse, OrderData, OrderStatus, OrderType, OrderWorkingType, PositionDirection, TimeInForce, Type } from "./BinanceBase.js";
 import { convertBookTickerData, convertDepthData, convertFundingData, convertKlineData, convertTradeDataWebSocket, convertUserData } from "./converters.js";
 import ws from 'ws';
-import type { FundingData, FundingStreamOptions, UserData, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
+import type { ExchangeInfoStreamCallback, ExchangeInfoStreamOptions, FundingData, FundingStreamOptions, UserData, IWebsocketApiClient, WebsocketApiOption } from "../core/types.js";
 import { BinanceWebsocketApiClient, BinanceWsUnavailableError } from "./BinanceWebsocketApi.js";
 import { createFundingIntervalCallback } from "../core/fundingInterval.js";
 
@@ -230,6 +230,26 @@ export default class BinanceStreams extends BinanceBase implements IStreamManage
 
     protected useWebsocketApi: WebsocketApiOption<IWebsocketApiClient> = false;
     protected tradingWsApiClient: IWebsocketApiClient | undefined = undefined;
+
+    async futuresExchangeInfoStream(
+        callback: ExchangeInfoStreamCallback,
+        statusCallback?: (status: SocketStatus) => void,
+        _options?: ExchangeInfoStreamOptions
+    ): Promise<HandleWebSocket> {
+        const createWs = () => new ws(`${this.getStreamUrl('futures', 'market')}!contractInfo`);
+        return this.handleWebSocket(
+            createWs,
+            (event: { s?: string; cs?: string; dt?: number; [key: string]: unknown }) => ({
+                symbol: event.s || '',
+                status: event.cs,
+                deliveryDate: Number(event.dt || 0),
+                rawData: event
+            }),
+            callback,
+            'futuresExchangeInfoStream()',
+            statusCallback
+        );
+    }
 
     closeAllSockets() {
         this.subscriptions.forEach(sub => sub.disconnect());

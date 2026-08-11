@@ -8,34 +8,45 @@ dotenv.config({
 
 // console.log(process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE);
 // console.log(`starting okx futures instance...`)
-// const okxFutures = new OkxFutures();
+const okxFutures = ExchangeFactory.create(ExchangeList.OKX);
 
 // const info = await okxFutures.getExchangeInfo().then(request => request.success && request.data ? Object.values(request.data) : [] );
 
 // const bybitApi = ExchangeFactory.create(ExchangeList.BYBIT, process.env.BYBIT_API_KEY, process.env.BYBIT_API_SECRET);
-// const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
+const binanceApi = ExchangeFactory.create(ExchangeList.BINANCE, process.env.BINANCE_APIKEY_2, process.env.BINANCE_APISECRET_2);
 // const krakenApi = ExchangeFactory.create(ExchangeList.KRAKEN, process.env.KRAKEN_API_KEY, process.env.KRAKEN_API_SECRET);
 const bitgetApi = ExchangeFactory.create(ExchangeList.BITGET, process.env.BITGET_API_KEY, process.env.BITGET_API_SECRET, process.env.BITGET_API_PASSPHRASE, false);
+
+binanceApi.futures.futuresExchangeInfoStream((data) => {
+    console.log(`Binance Futures Exchange Info Stream:`, data);
+}, (status) => {
+    console.log(`Binance Futures Exchange Info Stream Status:`, status);
+})
+okxFutures.futures.futuresExchangeInfoStream((data) => {
+    console.log(`OKX Futures Exchange Info Stream:`, data);
+}, (status) => {
+    console.log(`OKX Futures Exchange Info Stream Status:`, status);
+})
 
 // console.log(`starting okx api instance...`)
 // const okxApi = ExchangeFactory.create(ExchangeList.OKX, process.env.OKX_API_KEY, process.env.OKX_API_SECRET, process.env.OKX_TESTNET_PASSPHRASE, false);
 
-const userData = bitgetApi.userData;
-if(userData) {
-    await userData.init().then(() => {
-        console.log(`user data stream initialized.`);
-    })
+// const userData = bitgetApi.userData;
+// if(userData) {
+//     await userData.init().then(() => {
+//         console.log(`user data stream initialized.`);
+//     })
 
-    // userData.onPositionUpdate((symbol, position) => {
-    //     console.log(`Final Position ${symbol}:`, position);
-    // }); 
+//     // userData.onPositionUpdate((symbol, position) => {
+//     //     console.log(`Final Position ${symbol}:`, position);
+//     // }); 
 
-    userData.onOrderUpdate((symbol, orders) => {
-        console.log(`Order update for ${symbol}:`, orders);
-    });
+//     userData.onOrderUpdate((symbol, orders) => {
+//         console.log(`Order update for ${symbol}:`, orders);
+//     });
 
     
-}
+// }
 
 // bitgetApi.streams.futuresUserDataStream((data) => {
 //     console.log(`Futures User Data Stream:`, data);

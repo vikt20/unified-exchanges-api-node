@@ -5,6 +5,10 @@ import type { IBinanceWebsocketApiClient } from '../binance/BinanceWebsocketApi.
 import type {
     BookTickerData,
     DepthData,
+    ExchangeInfoStreamCallback,
+    ExchangeInfoStreamOptions,
+    ExtractedInfo,
+    FormattedResponse,
     FundingData,
     FundingStreamOptions,
     HandleWebSocket,
@@ -15,6 +19,7 @@ import type {
     UserData
 } from '../core/types.js';
 import { createFundingIntervalCallback } from '../core/fundingInterval.js';
+import { createExchangeInfoPollingStream } from '../core/exchangeInfoPolling.js';
 import {
     BitgetInstType,
     BitgetWsArg,
@@ -62,6 +67,19 @@ interface BitgetLoginMessage {
 
 export default class BitgetStreams extends BitgetBase implements IStreamManager {
     protected subscriptions: { id: string; disconnect: () => void }[] = [];
+
+    futuresExchangeInfoStream(
+        callback: ExchangeInfoStreamCallback,
+        statusCallback?: (status: SocketStatus) => void,
+        options?: ExchangeInfoStreamOptions
+    ): Promise<HandleWebSocket> {
+        const client = this as typeof this & {
+            getExchangeInfo(): Promise<FormattedResponse<Record<string, ExtractedInfo>>>;
+        };
+        return createExchangeInfoPollingStream(
+            () => client.getExchangeInfo(), callback, subscription => this.subscriptions.push(subscription), statusCallback, options
+        );
+    }
 
     public getTradingWsApiClient(): () => IBinanceWebsocketApiClient | undefined {
         return () => undefined;

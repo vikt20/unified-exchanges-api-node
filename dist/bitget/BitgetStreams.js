@@ -1,9 +1,14 @@
 import ws from 'ws';
 import BitgetBase from './BitgetBase.js';
 import { createFundingIntervalCallback } from '../core/fundingInterval.js';
+import { createExchangeInfoPollingStream } from '../core/exchangeInfoPolling.js';
 import { convertBookTickerFromDepth, convertAlgoOrder, convertFunding, convertCandle, convertOrder, convertPosition, convertTicker, convertWsCandle, convertWsDepth, convertWsTrade, isBitgetOrder, isBitgetAlgoOrder, isBitgetWsAccount, isBitgetWsCandle, isBitgetWsDepth, isBitgetWsEvent, isBitgetWsPosition, isBitgetWsTicker, isBitgetWsTrade, isRecord, isBitgetCandle, toNumber } from './converters.js';
 export default class BitgetStreams extends BitgetBase {
     subscriptions = [];
+    futuresExchangeInfoStream(callback, statusCallback, options) {
+        const client = this;
+        return createExchangeInfoPollingStream(() => client.getExchangeInfo(), callback, subscription => this.subscriptions.push(subscription), statusCallback, options);
+    }
     getTradingWsApiClient() {
         return () => undefined;
     }

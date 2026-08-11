@@ -1,7 +1,7 @@
 import BitgetBase from './BitgetBase.js';
 import type { IStreamManager } from '../core/IStreamManager.js';
 import type { IBinanceWebsocketApiClient } from '../binance/BinanceWebsocketApi.js';
-import type { BookTickerData, DepthData, FundingData, FundingStreamOptions, HandleWebSocket, KlineData, SocketStatus, TradeData, UserData } from '../core/types.js';
+import type { BookTickerData, DepthData, ExchangeInfoStreamCallback, ExchangeInfoStreamOptions, FundingData, FundingStreamOptions, HandleWebSocket, KlineData, SocketStatus, TradeData, UserData } from '../core/types.js';
 import { BitgetInstType, BitgetWsArg, BitgetWsEvent } from './converters.js';
 type BitgetParser<T> = (message: BitgetWsEvent) => T | T[] | undefined;
 export default class BitgetStreams extends BitgetBase implements IStreamManager {
@@ -9,6 +9,7 @@ export default class BitgetStreams extends BitgetBase implements IStreamManager 
         id: string;
         disconnect: () => void;
     }[];
+    futuresExchangeInfoStream(callback: ExchangeInfoStreamCallback, statusCallback?: (status: SocketStatus) => void, options?: ExchangeInfoStreamOptions): Promise<HandleWebSocket>;
     getTradingWsApiClient(): () => IBinanceWebsocketApiClient | undefined;
     closeAllSockets(): void;
     closeById(id: string): void;
